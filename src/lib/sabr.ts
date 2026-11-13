@@ -1,14 +1,14 @@
 import type { StreamFormat } from "@/lib/schemas";
 import { VideoPlaybackAbrRequest } from "googlevideo/protos";
 import { SabrStream } from "googlevideo/sabr-stream";
-import { EnabledTrackTypes, buildSabrFormat } from "googlevideo/utils";
+import { buildSabrFormat, EnabledTrackTypes } from "googlevideo/utils";
 
 const MIN_ATTESTED_PO_TOKEN_BYTES = 32;
 const REQUEST_NUMBER_PARAM = "rn";
 const MAX_SABR_RETRIES = 2;
 const AUDIO_MIME_PREFIX = "audio/";
 
-export type SabrSession = {
+export interface SabrSession {
   url: string;
   ustreamerConfig: string;
   poToken: string;
@@ -16,16 +16,16 @@ export type SabrSession = {
   clientVersion: string;
   durationMs: number;
   formats: StreamFormat[];
-};
+}
 
-type CapturedRequest = {
+interface CapturedRequest {
   url: string;
   body: string;
-};
-type SessionSource = {
+}
+interface SessionSource {
   requests: CapturedRequest[];
   formats: StreamFormat[];
-};
+}
 
 function fromBase64(text: string) {
   return Uint8Array.from(atob(text), character => character.charCodeAt(0));
@@ -85,12 +85,12 @@ function toSabrFormat(format: StreamFormat) {
   });
 }
 
-type DownloadParams = {
+interface DownloadParams {
   session: SabrSession;
   format: StreamFormat;
   signal: AbortSignal;
   onProgress: (ratio: number) => void;
-};
+}
 
 export async function downloadSabrTrack({ session, format, signal, onProgress }: DownloadParams) {
   const stream = new SabrStream({

@@ -1,21 +1,21 @@
 const RANGE_SEPARATOR = ":";
 const DEFAULT_STEP = 1;
 
-type IndexRequest = {
+interface IndexRequest {
   text: string;
   count: number;
   fallback: number;
-};
-type PartRequest = {
+}
+interface PartRequest {
   part: string;
   count: number;
-};
-export type PlaylistSelection = {
+}
+export interface PlaylistSelection {
   count: number;
   spec: string | undefined;
   start: number | undefined;
   end: number | undefined;
-};
+}
 
 function resolveIndex({ text, count, fallback }: IndexRequest) {
   if (text === "") {

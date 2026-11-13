@@ -23,7 +23,7 @@ export const taskRequestSchema = z.object({
 });
 export type TaskRequest = z.infer<typeof taskRequestSchema>;
 
-export type TabTask = {
+export interface TabTask {
   tabId: number | undefined;
   task: PageTask;
-};
+}

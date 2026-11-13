@@ -35,11 +35,11 @@ const audioQualitySchema = z.string().regex(AUDIO_QUALITY_PATTERN, "use 0-10 or 
 const countSchema = z.coerce.number().int().nonnegative();
 const positiveCountSchema = z.coerce.number().int().positive();
 
-type ParseRequest<Schema extends z.ZodType> = {
+interface ParseRequest<Schema extends z.ZodType> {
   flag: string;
   schema: Schema;
   value: string;
-};
+}
 
 function parseOptionValue<Schema extends z.ZodType>({ flag, schema, value }: ParseRequest<Schema>): z.output<Schema> {
   const result = schema.safeParse(value);
@@ -51,19 +51,19 @@ function parseOptionValue<Schema extends z.ZodType>({ flag, schema, value }: Par
 }
 const DEFAULT_PROCESSOR = "ffmpeg";
 
-export type Section = {
+export interface Section {
   start?: number;
   end?: number;
   chapterPattern?: string;
-};
+}
 
-export type MetadataReplacement = {
+export interface MetadataReplacement {
   fields: string[];
   pattern: string;
   replacement: string;
-};
+}
 
-export type YtDlpOptions = {
+export interface YtDlpOptions {
   urls: string[];
   format?: string;
   formatSort: string[];
@@ -124,37 +124,37 @@ export type YtDlpOptions = {
   parseMetadata: string[];
   replaceInMetadata: MetadataReplacement[];
   ignoredFlags: string[];
-};
+}
 
-type ApplierRequest = {
+interface ApplierRequest {
   options: YtDlpOptions;
   values: string[];
   flag: string;
-};
+}
 type Applier = (request: ApplierRequest) => void;
-type OptionDefinition = {
+interface OptionDefinition {
   flags: string[];
   arity: number;
   apply: Applier;
   isNegatable: boolean;
-};
-type OptionsValue = {
+}
+interface OptionsValue {
   options: YtDlpOptions;
   value: string;
-};
+}
 type ValueRequest = OptionsValue & { flag: string };
-type SwitchRequest = {
+interface SwitchRequest {
   options: YtDlpOptions;
   isOn: boolean;
-};
-type ValueDefinition = {
+}
+interface ValueDefinition {
   flags: string[];
   apply: (request: ValueRequest) => void;
-};
-type SwitchDefinition = {
+}
+interface SwitchDefinition {
   flags: string[];
   apply: (request: SwitchRequest) => void;
-};
+}
 
 const definitions = new Map<string, OptionDefinition>();
 
@@ -876,12 +876,12 @@ function resolveDefinition(flag: string) {
   } : undefined;
 }
 
-type FlagRequest = {
+interface FlagRequest {
   options: YtDlpOptions;
   rawFlag: string;
   tokens: string[];
   inlineValue?: string;
-};
+}
 
 function applyFlag({ options, rawFlag, tokens, inlineValue }: FlagRequest) {
   const resolved = resolveDefinition(rawFlag);

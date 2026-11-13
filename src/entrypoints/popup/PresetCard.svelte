@@ -5,7 +5,7 @@
 
   const GEAR_PATH = "M19.14 12.94a7.4 7.4 0 0 0 0-1.88l2.03-1.58a.48.48 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96a7 7 0 0 0-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84a.48.48 0 0 0-.47.41l-.36 2.54a7.4 7.4 0 0 0-1.62.94l-2.39-.96a.48.48 0 0 0-.59.22L2.74 8.87a.47.47 0 0 0 .12.61l2.03 1.58a7.4 7.4 0 0 0 0 1.88l-2.03 1.58a.48.48 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.04.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54a7.4 7.4 0 0 0 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.47.47 0 0 0-.12-.61zM12 15.6a3.6 3.6 0 1 1 0-7.2 3.6 3.6 0 0 1 0 7.2";
 
-  type Props = {
+  interface Props {
     preset: Preset;
     isBuiltIn: boolean;
     isDefault: boolean;
@@ -25,7 +25,7 @@
     ondragend: () => void;
     ondropped: () => void;
     ondelete: () => void;
-  };
+  }
 
   const {
     preset,
@@ -56,10 +56,10 @@
   // svelte-ignore state_referenced_locally
   let isEditing = $state(isOpenForEditing);
 
-  type ListOption = {
+  interface ListOption {
     label: string;
     value: string;
-  };
+  }
 
   function parseOptions(text: string): ListOption[] {
     return text
@@ -84,24 +84,24 @@
     return variable.options.map(option => `${option.label}=${option.value}`).join("\n");
   }
 
-  type VariableInput = {
+  interface VariableInput {
     variable: Variable;
     raw: string;
-  };
+  }
   type LimitChange = VariableInput & { key: "min" | "max" | "step" };
-  type VariableBlueprint = {
+  interface VariableBlueprint {
     type: VariableType;
     name: string;
     label: string;
-  };
-  type VariableRetype = {
+  }
+  interface VariableRetype {
     index: number;
     type: VariableType;
-  };
-  type IndexedInput = {
+  }
+  interface IndexedInput {
     index: number;
     raw: string;
-  };
+  }
 
   function applyOptions({ variable, raw }: VariableInput): void {
     if (variable.type !== "list") {
@@ -461,13 +461,13 @@
     color: var(--md-sys-color-inverse-on-surface);
     font-size: 0.75rem;
     white-space: nowrap;
-    opacity: 0%;
+    opacity: 0;
     pointer-events: none;
     transition: opacity calc(150ms * var(--motion));
   }
 
   .gear:is(:hover, :focus-visible)::after {
-    opacity: 100%;
+    opacity: 1;
   }
 
   .handle {

@@ -5,18 +5,18 @@ const CHUNK_SIZE = 10 * 1024 * 1024;
 const FFMPEG_STDERR = "stderr";
 const HTTP_PARTIAL_CONTENT = 206;
 
-export type WorkerInput = {
+export interface WorkerInput {
   name: string;
   url?: string;
   text?: string;
   data?: ArrayBuffer;
   contentLength?: number;
-};
-export type WorkerRequest = {
+}
+export interface WorkerRequest {
   wasmUrl: string;
   inputs: WorkerInput[];
   args: string[];
-};
+}
 export type WorkerMessage =
   | {
     type: "log";
@@ -40,29 +40,29 @@ export type WorkerMessage =
     message: string;
   };
 
-type PostRequest = {
+interface PostRequest {
   message: WorkerMessage;
   transfer?: Transferable[];
-};
-type RangeRequest = {
+}
+interface RangeRequest {
   url: string;
   start: number;
   end: number;
-};
-type CoreSource = {
+}
+interface CoreSource {
   core: FFmpegCoreModule;
   name: string;
   url: string;
-};
+}
 type ChunkedSource = CoreSource & { contentLength: number };
-type CoreInput = {
+interface CoreInput {
   core: FFmpegCoreModule;
   input: WorkerInput;
-};
-type OutputCollection = {
+}
+interface OutputCollection {
   core: FFmpegCoreModule;
   ignoredNames: Set<string>;
-};
+}
 
 function post({ message, transfer = [] }: PostRequest) {
   postMessage(message, { transfer });

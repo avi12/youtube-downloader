@@ -58,98 +58,98 @@ export type JobInput = WorkerInput & {
   };
 };
 
-export type Job = {
+export interface Job {
   label: string;
   inputs: JobInput[];
   args: string[];
   outputFile: string;
   saveAs: string;
   isMedia?: boolean;
-};
+}
 
-export type DirectFile = {
+export interface DirectFile {
   saveAs: string;
   text?: string;
   url?: string;
-};
+}
 
-export type VideoContext = {
+export interface VideoContext {
   video: ResolvedVideo;
   chapters: Chapter[];
   playlist?: PlaylistPosition;
   autonumber: number;
   now?: Date;
-};
+}
 
-export type VideoPlan = {
+export interface VideoPlan {
   jobs: Job[];
   directFiles: DirectFile[];
   printed: string[];
   skipReason?: string;
   isBreak?: boolean;
-};
+}
 
-type MediaInput = {
+interface MediaInput {
   worker: JobInput;
   before: string[];
-};
-type OptionsPicks = {
+}
+interface OptionsPicks {
   options: YtDlpOptions;
   picks: FormatFields[];
-};
-type OptionsVideo = {
+}
+interface OptionsVideo {
   options: YtDlpOptions;
   video: ResolvedVideo;
-};
+}
 type OptionsFieldsVideo = OptionsVideo & { fields: TemplateFields };
-type FieldsVideo = {
+interface FieldsVideo {
   fields: TemplateFields;
   video: ResolvedVideo;
-};
-type PlanRequest = {
+}
+interface PlanRequest {
   options: YtDlpOptions;
   context: VideoContext;
-};
-type AudioCodecRequest = {
+}
+interface AudioCodecRequest {
   options: YtDlpOptions;
   source: FormatFields;
-};
-type WorkerInputRequest = {
+}
+interface WorkerInputRequest {
   fields: FormatFields;
   video: ResolvedVideo;
-};
-type ProcessorRequest = {
+}
+interface ProcessorRequest {
   options: YtDlpOptions;
   names: string[];
-};
-type LanguageRequest = {
+}
+interface LanguageRequest {
   languageCode: string;
   patterns: string[];
-};
-type ChaptersTextRequest = {
+}
+interface ChaptersTextRequest {
   chapters: Chapter[];
   title: string;
-};
-type SectionsRequest = {
+}
+interface SectionsRequest {
   options: YtDlpOptions;
   chapters: Chapter[];
-};
-type TemplateKeyRequest = {
+}
+interface TemplateKeyRequest {
   options: YtDlpOptions;
   section: SectionContext | undefined;
   isChapterSplit: boolean;
-};
-type CompanionRequest = {
+}
+interface CompanionRequest {
   options: YtDlpOptions;
   context: VideoContext;
   fields: TemplateFields;
   tracks: CaptionOption[];
-};
-type RejectionRequest = {
+}
+interface RejectionRequest {
   options: YtDlpOptions;
   fields: TemplateFields;
   now: Date;
-};
+}
 
 function selectAudioCodecArgs({ options, source }: AudioCodecRequest) {
   const isSameCodec = source.ext === options.audioFormat || source.acodec.startsWith(options.audioFormat);
@@ -304,19 +304,19 @@ function resolveTemplateKey({ options, section, isChapterSplit }: TemplateKeyReq
   };
 }
 
-type MediaContext = {
+interface MediaContext {
   options: YtDlpOptions;
   context: VideoContext;
   fields: TemplateFields;
   picks: FormatFields[];
   tracks: CaptionOption[];
   notes: string[];
-};
-type MediaJobRequest = {
+}
+interface MediaJobRequest {
   media: MediaContext;
   section: SectionContext | undefined;
   isChapterSplit: boolean;
-};
+}
 
 function buildMediaJob({
   media: { options, context, fields, picks, tracks, notes },

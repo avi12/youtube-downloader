@@ -17,31 +17,31 @@ import {
   resolveVideoFromPage
 } from "@/lib/youtube";
 
-export type SessionHooks = {
+export interface SessionHooks {
   signal: AbortSignal;
   log: (text: string) => void;
   status: (text: string) => void;
   runJob: (job: Job) => Promise<void>;
   saveDirectFile: (file: DirectFile) => Promise<void>;
-};
+}
 
-export type TabContext = {
+export interface TabContext {
   tabId?: number;
   url?: string;
-};
+}
 
-type Target = {
+interface Target {
   videoId: string;
   title: string;
   index: number;
   count: number;
   playlistId?: string;
   playlistTitle?: string;
-};
-type SessionScope = {
+}
+interface SessionScope {
   options: YtDlpOptions;
   tab: TabContext;
-};
+}
 type UrlExpansion = SessionScope & { url: string };
 type ChapterLookup = SessionScope & {
   videoId: string;
@@ -52,16 +52,16 @@ type TargetRun = SessionScope & {
   autonumber: number;
   hooks: SessionHooks;
 };
-type FlatPrint = {
+interface FlatPrint {
   options: YtDlpOptions;
   targets: Target[];
   hooks: SessionHooks;
-};
-export type YtDlpRun = {
+}
+export interface YtDlpRun {
   command: string;
   tab: TabContext;
   hooks: SessionHooks;
-};
+}
 
 const FLAT_PLAYLIST_DEFAULT_PRINT = "%(id)s\t%(title)s";
 const CHAPTER_FIELD_PATTERN = /chapter|section/;

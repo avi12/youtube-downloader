@@ -23,50 +23,50 @@ const MAX_SEGMENT_LENGTH = 200;
 const TWO_DIGITS = 2;
 const BYTE_UNIT = 1024;
 
-export type PlaylistPosition = {
+export interface PlaylistPosition {
   id: string;
   title: string;
   index: number;
   count: number;
-};
-export type Chapter = {
+}
+export interface Chapter {
   title: string;
   start: number;
   end: number;
-};
-export type SectionContext = {
+}
+export interface SectionContext {
   title?: string;
   number: number;
   start?: number;
   end?: number;
-};
-export type VideoFieldsRequest = {
+}
+export interface VideoFieldsRequest {
   video: ResolvedVideo;
   playlist?: PlaylistPosition;
   autonumber?: number;
-};
-export type MetadataRulesRequest = {
+}
+export interface MetadataRulesRequest {
   fields: TemplateFields;
   options: YtDlpOptions;
-};
-export type SavePathRequest = {
+}
+export interface SavePathRequest {
   options: YtDlpOptions;
   type: string;
   fields: TemplateFields;
   extension: string;
-};
-type ParseRuleRequest = {
+}
+interface ParseRuleRequest {
   fields: TemplateFields;
   rule: string;
-};
-type SanitizeRequest = {
+}
+interface SanitizeRequest {
   text: string;
   options: YtDlpOptions;
-};
-type ExtensionRequest = {
+}
+interface ExtensionRequest {
   name: string;
   extension: string;
-};
+}
 
 export function formatDurationString(totalSeconds: number) {
   const hours = Math.floor(totalSeconds / SECONDS_PER_HOUR);

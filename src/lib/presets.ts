@@ -233,25 +233,25 @@ export function listShownPresets(state: LibraryState) {
   return (state.shownIds ?? DEFAULT_SHOWN_IDS).flatMap(id => findPreset(state, id) ?? []);
 }
 
-type MoveRequest = {
+interface MoveRequest {
   ids: string[];
   movedId: string;
   targetId: string;
-};
-type MergeRequest = {
+}
+interface MergeRequest {
   current: LibraryState;
   imported: LibraryState;
-};
-type FillRequest = {
+}
+interface FillRequest {
   text: string;
   variables: Variable[];
   values: Record<string, string>;
   builtInValues?: Record<string, string>;
-};
-type VariableReference = {
+}
+interface VariableReference {
   texts: (string | undefined)[];
   name: string;
-};
+}
 
 export function moveBefore({ ids, movedId, targetId }: MoveRequest) {
   if (movedId === targetId) {

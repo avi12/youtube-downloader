@@ -28,18 +28,18 @@ function isTruthy(value: string | number | undefined) {
   return value !== undefined && value !== "" && value !== 0 && value !== "false";
 }
 
-type ExpressionRequest = {
+interface ExpressionRequest {
   read: FieldReader;
   expression: string;
-};
-export type FilterRequest = {
+}
+export interface FilterRequest {
   fields: TemplateFields;
   expressions: string[];
-};
-export type DateSpecRequest = {
+}
+export interface DateSpecRequest {
   text: string;
   now?: Date;
-};
+}
 
 function matchesExpression({ read, expression }: ExpressionRequest) {
   const parts = expression.split("&").map(part => part.trim()).filter(Boolean);

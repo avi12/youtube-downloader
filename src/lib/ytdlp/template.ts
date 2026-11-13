@@ -13,24 +13,24 @@ const DURATION_FIELDS = new Set(["duration", "section_start", "section_end"]);
 
 export type TemplateValue = string | number | boolean | string[] | undefined;
 export type TemplateFields = Record<string, TemplateValue>;
-export type TemplateRequest = {
+export interface TemplateRequest {
   template: string;
   fields: TemplateFields;
   isPath?: boolean;
-};
-type DurationRequest = {
+}
+interface DurationRequest {
   totalSeconds: number;
   format: string;
-};
-type DateRequest = {
+}
+interface DateRequest {
   value: TemplateValue;
   format: string;
-};
-type StringifyRequest = {
+}
+interface StringifyRequest {
   name: string;
   value: TemplateValue;
   conversion: string | undefined;
-};
+}
 
 function pad(value: number) {
   return String(value).padStart(TWO_DIGITS, "0");

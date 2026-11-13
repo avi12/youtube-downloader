@@ -5,14 +5,14 @@ import { z } from "zod";
 
 export type { PlaylistEntry, PlaylistListing, RawChapter } from "@/lib/page-task";
 
-type TabVideo = {
+interface TabVideo {
   tabId: number | undefined;
   videoId: string;
-};
-type TabPlaylist = {
+}
+interface TabPlaylist {
   tabId: number | undefined;
   playlistId: string;
-};
+}
 export type TabPlayer = TabVideo & { withCaptions: boolean };
 
 async function runTask({ tabId, task }: TabTask) {

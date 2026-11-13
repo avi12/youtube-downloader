@@ -7,18 +7,18 @@ const EXTENSION_PATTERN = /\.[^./\\]+$/;
 const SEQUENCE_PATTERN = /%0?\d*d/;
 const REGEX_SPECIALS_PATTERN = /[.*+?^${}()|[\]\\]/g;
 
-type PlaceholderRequest = {
+interface PlaceholderRequest {
   arg: string;
   job: Job;
-};
-type FfmpegRequest = {
+}
+interface FfmpegRequest {
   job: Job;
   command: string;
-};
-type OutputLookup<File> = {
+}
+interface OutputLookup<File> {
   files: File[];
   job: Job;
-};
+}
 
 function resolvePlaceholders({ arg, job }: PlaceholderRequest) {
   return arg.replace(INPUT_PLACEHOLDER_PATTERN, (_match, position: string) => {

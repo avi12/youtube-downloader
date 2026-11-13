@@ -9,9 +9,9 @@
   import { mimeTypeForFile } from "@/lib/mime";
   import { fetchCurrentTime } from "@/lib/page";
   import {
+    createBlankPreset,
     CURRENT_TIME_VARIABLE,
     DEFAULT_SHOWN_IDS,
-    createBlankPreset,
     defaultValues,
     fillVariables,
     isBuiltInPreset,
@@ -138,19 +138,19 @@
     return valuesById[preset.id] ?? defaultValues(preset.variables);
   }
 
-  type CheckedChange = {
+  interface CheckedChange {
     id: string;
     isChecked: boolean;
-  };
-  type PresetSave = {
+  }
+  interface PresetSave {
     previousId: string;
     draft: Preset;
-  };
-  type BlobSave = {
+  }
+  interface BlobSave {
     name: string;
     parts: ConstructorParameters<typeof Blob>[0];
-  };
-  type Cancellable = { signal: AbortSignal };
+  }
+  interface Cancellable { signal: AbortSignal }
   type DirectFileSave = Cancellable & { file: DirectFile };
   type InputMaterialization = Cancellable & { input: JobInput };
   type WorkerRun = Cancellable & { request: WorkerRequest };
@@ -158,11 +158,11 @@
     plannedJob: Job;
     ffmpegCommand: string | undefined;
   };
-  type PresetRun = {
+  interface PresetRun {
     preset: Preset;
     values: Record<string, string>;
     isFresh?: boolean;
-  };
+  }
 
   function setChecked({ id, isChecked }: CheckedChange): void {
     const others = (library.checkedIds ?? []).filter(checkedId => checkedId !== id);

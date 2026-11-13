@@ -10,10 +10,10 @@ export async function runInsideYouTubePage(task: PageTask): Promise<PageResult> 
   const SAPISID_PATTERN = /(?:^|; )(?:__Secure-3PAPISID|SAPISID)=([^;]+)/;
   const BYTE_RADIX = 16;
   const BYTE_WIDTH = 2;
-  type CapturedRequest = {
+  interface CapturedRequest {
     url: string;
     body: string;
-  };
+  }
   type YouTubeWindow = Window & {
     ytcfg?: { get: (key: string) => unknown };
     __ffmpegLiteRequests?: CapturedRequest[];
@@ -23,10 +23,10 @@ export async function runInsideYouTubePage(task: PageTask): Promise<PageResult> 
   const ytcfg = youtubeWindow.ytcfg;
   const context = ytcfg?.get("INNERTUBE_CONTEXT");
 
-  type PlayerCapture = {
+  interface PlayerCapture {
     videoId: string;
     isCaptionsWanted: boolean;
-  };
+  }
 
   async function capturePlayer({ videoId, isCaptionsWanted }: PlayerCapture): Promise<PageResult> {
     const TIMEDTEXT_PATH = "/api/timedtext";
@@ -39,10 +39,10 @@ export async function runInsideYouTubePage(task: PageTask): Promise<PageResult> 
     const SEGMENT_PATH = "googlevideo.com/videoplayback";
     const playerElement = document.querySelector<HTMLElement & Record<string, unknown>>("#movie_player");
 
-    type PlayerCall = {
+    interface PlayerCall {
       method: string;
       args?: unknown[];
-    };
+    }
 
     function callPlayer({ method, args = [] }: PlayerCall): unknown {
       const member = playerElement?.[method];
@@ -240,10 +240,10 @@ export async function runInsideYouTubePage(task: PageTask): Promise<PageResult> 
     };
   }
 
-  type PostRequest = {
+  interface PostRequest {
     endpoint: string;
     body: object;
-  };
+  }
 
   async function post({ endpoint, body }: PostRequest) {
     const response = await fetch(`/youtubei/v1/${endpoint}?prettyPrint=false`, {
@@ -282,10 +282,10 @@ export async function runInsideYouTubePage(task: PageTask): Promise<PageResult> 
     }
   }
 
-  type NodePath = {
+  interface NodePath {
     node: unknown;
     path: string[];
-  };
+  }
 
   function child({ node, path }: NodePath): unknown {
     return path.reduce((current, key) => (isRecord(current) ? current[key] : undefined), node);

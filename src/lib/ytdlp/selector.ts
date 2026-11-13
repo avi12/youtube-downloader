@@ -19,7 +19,7 @@ export const DEFAULT_SORT_KEYS = ["res", "fps", "vcodec", "acodec", "br"];
 const VIDEO_CODEC_RANK = ["av01", "vp09", "vp9", "hev1", "hvc1", "avc1", "vp8"];
 const AUDIO_CODEC_RANK = ["flac", "alac", "opus", "vorbis", "mp4a", "ac-3", "ec-3"];
 
-export type FormatFields = {
+export interface FormatFields {
   format: StreamFormat;
   format_id: string;
   ext: string;
@@ -36,42 +36,42 @@ export type FormatFields = {
   hasVideo: boolean;
   hasAudio: boolean;
   resolution: string;
-};
+}
 
 type Comparator = (first: FormatFields, second: FormatFields) => number;
-type FieldLookup = {
+interface FieldLookup {
   fields: FormatFields;
   name: string;
-};
-type NumberComparison = {
+}
+interface NumberComparison {
   operator: string;
   actual: number;
   expected: number;
-};
-type StringComparison = {
+}
+interface StringComparison {
   operator: string;
   actual: string;
   expected: string;
-};
-type SplitRequest = {
+}
+interface SplitRequest {
   text: string;
   separator: string;
-};
-type RankRequest = {
+}
+interface RankRequest {
   codec: string;
   ranking: string[];
-};
-type SelectionContext = {
+}
+interface SelectionContext {
   candidates: FormatFields[];
   compare: Comparator;
-};
+}
 type ItemRequest = SelectionContext & { item: string };
 type SetRequest = SelectionContext & { selector: string };
-export type FormatSelection = {
+export interface FormatSelection {
   selector: string;
   formats: StreamFormat[];
   sortKeys: string[];
-};
+}
 
 export function describeFormat(format: StreamFormat): FormatFields {
   const codecs = format.mimeType.match(CODEC_LIST_PATTERN)?.[1]?.split(",").map(codec => codec.trim()) ?? [];
@@ -155,10 +155,10 @@ function compareStrings({ operator, actual, expected }: StringComparison) {
 }
 
 export type FieldReader = (name: string) => string | number | undefined;
-export type ComparisonRequest = {
+export interface ComparisonRequest {
   read: FieldReader;
   filterText: string;
-};
+}
 
 export function matchesComparison({ read, filterText }: ComparisonRequest) {
   const match = filterText.match(FILTER_PATTERN);
@@ -290,10 +290,10 @@ function buildComparator(sortKeys: string[]): Comparator {
   };
 }
 
-type NameRule = {
+interface NameRule {
   isWorst: boolean;
   matches: (fields: FormatFields) => boolean;
-};
+}
 
 type RuleDefinition = NameRule & { names: string[] };
 
