@@ -1,4 +1,3 @@
-import type { ProcessStreamEndData } from "@/lib/messaging/offscreen-messaging";
 import { createLogger, LogScope } from "@/lib/utils/logger";
 import { resolveQualityLabel } from "@/lib/youtube/audio-format-helpers";
 import { DownloadType, StreamType } from "@/types";

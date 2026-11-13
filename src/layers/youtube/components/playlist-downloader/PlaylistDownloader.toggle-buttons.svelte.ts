@@ -4,16 +4,15 @@ import {
   type ToggleButtonGroup
 } from "./helpers/playlist-toggle-button-groups";
 import { DATA_BUTTON_ID_ATTR, sendButtonData } from "@/lib/ui/polymer-utils";
-import type {
-  PlaylistDownloadMode,
+import type {PlaylistDownloadMode,
   PlaylistOutputMode} from "@/types";
 import {
   ButtonSize,
   ButtonState,
   ButtonStyle,
   ButtonType,
-  IconName,
   type DownloadTypePreference,
+  IconName,
   type Prettify
 } from "@/types";
 import { SvelteMap } from "svelte/reactivity";

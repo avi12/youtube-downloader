@@ -66,11 +66,11 @@ export interface ShortsPageData {
         reelPlayerOverlayViewModel?: {
           metapanel?: {
             reelMetapanelViewModel?: {
-              metadataItems?: Array<{
+              metadataItems?: {
                 shortsVideoTitleViewModel?: {
                   text?: { content?: string };
                 };
-              }>;
+              }[];
             };
           };
         };

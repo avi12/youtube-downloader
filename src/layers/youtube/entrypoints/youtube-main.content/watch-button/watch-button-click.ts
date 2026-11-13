@@ -1,7 +1,6 @@
 import { cancelActiveDownload, startDownload } from "@/layers/youtube/entrypoints/youtube-main.content/video/download";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
-import type {
-  DownloadType} from "@/types";
+import type {DownloadType} from "@/types";
 import {
   type CodecPreferences,
   type Prettify,

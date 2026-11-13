@@ -1,4 +1,4 @@
-import { type Choice, groupChoices, uniqueChoices } from "@/lib/utils/choices";
+import { groupChoices, uniqueChoices } from "@/lib/utils/choices";
 import {
   describeAudioCodec,
   describeVideoCodec,

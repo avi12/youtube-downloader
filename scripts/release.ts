@@ -54,7 +54,7 @@ console.log(`  ${chromeCrxPath}`);
 console.log(`  ${chromeZipPath}`);
 console.log(`  ${firefoxXpiPath}`);
 
-function requiredEnv(name: string): string {
+function requiredEnv(name: string) {
   const value = process.env[name];
   if (!value) {
     console.error(`${name} is required to produce all release artifacts`);
@@ -64,17 +64,17 @@ function requiredEnv(name: string): string {
   return value;
 }
 
-function buildAndPackageChrome(): void {
+function buildAndPackageChrome() {
   runPnpm(["build"]);
   runPnpm(["run", "pack"]);
   assertArtifact(chromeZipPath, "Chrome zip");
 }
 
-function buildFirefox(): void {
+function buildFirefox() {
   runPnpm(["build:firefox"]);
 }
 
-function runPnpm(args: string[]): void {
+function runPnpm(args: string[]) {
   const result = spawnSync("pnpm", args, {
     stdio: "inherit",
     shell: true
@@ -84,7 +84,7 @@ function runPnpm(args: string[]): void {
   }
 }
 
-function renderFirefoxUpdatesJson(appVersion: string, xpiUrl: string): string {
+function renderFirefoxUpdatesJson(appVersion: string, xpiUrl: string) {
   return `${JSON.stringify({
     addons: {
       [FIREFOX_GECKO_ID]: {
@@ -102,7 +102,7 @@ function renderFirefoxUpdatesJson(appVersion: string, xpiUrl: string): string {
   }, null, 2)}\n`;
 }
 
-function packChromeCrx(pemPath: string): void {
+function packChromeCrx(pemPath: string) {
   if (!existsSync(pemPath)) {
     console.error(`CHROME_CRX_PRIVATE_KEY_PATH=${pemPath} not found`);
     process.exit(1);
@@ -136,7 +136,7 @@ function packChromeCrx(pemPath: string): void {
   assertArtifact(chromeCrxPath, "Chrome CRX");
 }
 
-function findChromeBinary(): string | null {
+function findChromeBinary() {
   if (process.env.CHROME_BIN && existsSync(process.env.CHROME_BIN)) {
     return process.env.CHROME_BIN;
   }
@@ -145,7 +145,7 @@ function findChromeBinary(): string | null {
   return candidates.find(path => existsSync(path)) ?? null;
 }
 
-function chromeCandidatesFor(platform: NodeJS.Platform): string[] {
+function chromeCandidatesFor(platform: NodeJS.Platform) {
   if (platform === "win32") {
     return [
       "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
@@ -161,7 +161,7 @@ function chromeCandidatesFor(platform: NodeJS.Platform): string[] {
   return ["/usr/bin/google-chrome", "/usr/bin/google-chrome-stable", "/usr/bin/chromium"];
 }
 
-function signFirefoxXpi(issuer: string, secret: string): void {
+function signFirefoxXpi(issuer: string, secret: string) {
   if (existsSync(firefoxXpiPath)) {
     console.log(`Signed Firefox XPI already exists at ${firefoxXpiPath}; reusing it`);
     return;
@@ -188,7 +188,7 @@ function signFirefoxXpi(issuer: string, secret: string): void {
   assertArtifact(firefoxXpiPath, "Firefox XPI");
 }
 
-function findLatestSignedXpi(): string {
+function findLatestSignedXpi() {
   const signedXpis = readdirSync(ARTIFACTS_DIR)
     .filter(name => name.endsWith(`-${version}.xpi`) && resolve(ARTIFACTS_DIR, name) !== firefoxXpiPath)
     .map(name => resolve(ARTIFACTS_DIR, name))
@@ -201,7 +201,7 @@ function findLatestSignedXpi(): string {
   return signedXpis[0];
 }
 
-function assertArtifact(path: string, description: string): void {
+function assertArtifact(path: string, description: string) {
   if (!existsSync(path)) {
     console.error(`${description} was not created at ${path}`);
     process.exit(1);

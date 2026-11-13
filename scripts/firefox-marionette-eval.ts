@@ -64,7 +64,7 @@ class MarionetteClient {
     }
   }
 
-  async send<T = unknown>(name: string, params: Record<string, unknown> = {}): Promise<T> {
+  async send<T = unknown>(name: string, params: Record<string, unknown> = {}) {
     await this.ready;
     const id = this.nextMsgId++;
     const cmd = [0, id, name, params];

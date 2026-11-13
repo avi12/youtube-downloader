@@ -1,6 +1,5 @@
 import { DATA_BUTTON_ID_ATTR, sendButtonData } from "@/lib/ui/polymer-utils";
-import type {
-  IconName} from "@/types";
+import type {IconName} from "@/types";
 import {
   ButtonSize,
   ButtonState,

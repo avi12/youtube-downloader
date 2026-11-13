@@ -15,7 +15,6 @@ import { selectVideoFormatForOptions } from "@/lib/youtube/select-video-quality"
 import {
   type AdaptiveFormatItem,
   type CaptionTrack,
-  type DownloadRequest,
   DownloadType,
   type Options,
   PlaylistOutputMode,

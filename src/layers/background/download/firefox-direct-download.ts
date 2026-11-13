@@ -7,7 +7,7 @@ import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen
 import { stripMimeParams } from "@/lib/utils/containers";
 import { DownloadType, ProgressType, StreamType } from "@/types";
 import type { DownloadRequest, Prettify, VideoMetadata } from "@/types";
-import { resolveAndroidUrls, type ResolvedAndroidUrls } from "#background/lib/youtube/android-player";
+import { resolveAndroidUrls } from "#background/lib/youtube/android-player";
 
 const HTTP_STATUS_OK = 200;
 const HTTP_STATUS_PARTIAL_CONTENT = 206;

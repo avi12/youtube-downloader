@@ -107,7 +107,7 @@ export function listContentScripts(manifest: ExtensionManifest) {
       ...DEFAULT_CONTENT_SCRIPT,
       ...entry
     }))
-    .map(({ js, css, matches, world, all_frames: isAllFrames }): ContentScriptEntry => ({
+    .map(({ js, css, matches, world, all_frames: isAllFrames }) => ({
       names: js.map(file => basename(file, ".js")),
       world,
       matches,
@@ -305,7 +305,7 @@ function planPageRefresh({ after, changedFiles }: {
 export function planReload({ before, after }: {
   before: BuildSnapshot;
   after: BuildSnapshot;
-}): ReloadPlan {
+}) {
   const changedFiles = diffFileHashes({
     before: before.fileHashes,
     after: after.fileHashes

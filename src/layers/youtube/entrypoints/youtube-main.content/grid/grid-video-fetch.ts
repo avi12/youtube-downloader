@@ -1,6 +1,6 @@
 import { buildAndDispatchVideoData } from "@/layers/youtube/entrypoints/youtube-main.content/video/capture-dispatch";
 import { readYtcfg } from "@/layers/youtube/entrypoints/youtube-main.content/video/video-data";
-import { InnertubeClientName, type InnertubePlayerRequest } from "@/lib/youtube/innertube";
+import { InnertubeClientName } from "@/lib/youtube/innertube";
 import { playerResponseSchema } from "@/lib/youtube/schemas";
 import { extractPlayerResponseFromHtml } from "@/lib/youtube/youtube-api";
 import { buildWatchUrl } from "@/lib/youtube/youtube-url";

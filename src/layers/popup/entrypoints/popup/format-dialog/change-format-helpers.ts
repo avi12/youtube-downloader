@@ -14,7 +14,6 @@ import {
   TranscodeSpeed,
   videoContainers
 } from "@/lib/utils/containers";
-import type { FormatGroup } from "@/lib/utils/containers";
 import type { Prettify, RecentDownloadEntry } from "@/types";
 
 export function isAudioSourceEntry(entry: RecentDownloadEntry) {

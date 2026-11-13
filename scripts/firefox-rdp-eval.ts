@@ -76,7 +76,7 @@ class RdpClient {
     }
   }
 
-  async waitForFrom(actor: string, timeoutMs = 5000): Promise<RdpMessage> {
+  async waitForFrom(actor: string, timeoutMs = 5000) {
     const queue = this.queueByActor.get(actor);
     if (queue && queue.length) {
       return queue.shift()!;
@@ -93,7 +93,7 @@ class RdpClient {
     });
   }
 
-  async waitForFromMatching(actor: string, predicate: (msg: RdpMessage) => boolean, timeoutMs = 5000): Promise<RdpMessage> {
+  async waitForFromMatching(actor: string, predicate: (msg: RdpMessage) => boolean, timeoutMs = 5000) {
     const start = Date.now();
     while (Date.now() - start < timeoutMs) {
       const remaining = timeoutMs - (Date.now() - start);
@@ -111,7 +111,7 @@ class RdpClient {
     this.socket.write(wrapped);
   }
 
-  async request<T extends RdpMessage = RdpMessage>(actor: string, body: Record<string, unknown>): Promise<T> {
+  async request<T extends RdpMessage = RdpMessage>(actor: string, body: Record<string, unknown>) {
     this.send({
       to: actor,
       ...body

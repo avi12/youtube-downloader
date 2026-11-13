@@ -88,7 +88,7 @@ function extensionIdOf(target: CdpTarget) {
 }
 
 async function listTargets(cdpPort: number) {
-  return fetchTargets(cdpPort).catch((): CdpTarget[] => []);
+  return fetchTargets(cdpPort).catch(() => []);
 }
 
 function handlerObjectIdOf({ originalHandler, handler }: EventListenerInfo) {

@@ -13,17 +13,17 @@ type MoodsAndGenresResponse = Prettify<{
         tabRenderer?: {
           content?: {
             sectionListRenderer?: {
-              contents?: Array<{
+              contents?: {
                 gridRenderer?: {
-                  items?: Array<{
+                  items?: {
                     musicNavigationButtonRenderer?: {
                       buttonText?: {
                         runs?: Array<{ text: string }>;
                       };
                     };
-                  }>;
+                  }[];
                 };
-              }>;
+              }[];
             };
           };
         };

@@ -1,8 +1,7 @@
 import {
   MessageType,
   onMessage,
-  type PageSabrFetchRequest,
-  type PageSabrFetchResponse
+  type PageSabrFetchRequest
 } from "@/lib/messaging/messaging";
 import { sabrFetchBridge } from "@/lib/messaging/sabr-fetch-bridge";
 

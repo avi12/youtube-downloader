@@ -15,7 +15,6 @@ import {
   type ExtensionReloadPlan,
   PageAction,
   type PageRefreshPlan,
-  type RefreshedPage,
   type ReloadTarget,
   type TabUpdateResult,
   WXT_SCRIPT_STARTED_EVENT_SUFFIX,
@@ -518,7 +517,7 @@ export function createFirefoxReloadTarget({ profileDir, extensionId, reloadAddon
         name: string;
         isClosed: boolean;
       }[]>(buildPageRefreshSource(plan));
-      return refreshedPages.map(({ name, isClosed }): RefreshedPage => ({
+      return refreshedPages.map(({ name, isClosed }) => ({
         name,
         action: isClosed ? PageAction.Closed : PageAction.Reloaded
       }));

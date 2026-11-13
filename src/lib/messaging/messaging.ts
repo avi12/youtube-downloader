@@ -5,7 +5,7 @@ import type {
   ProgressType,
   VideoMetadata
 } from "@/types";
-import { defineExtensionMessaging, type GetDataType, type GetReturnType } from "@webext-core/messaging";
+import { defineExtensionMessaging, type GetDataType } from "@webext-core/messaging";
 
 export const MessageType = {
   BackgroundProxyFetch: "backgroundProxyFetch",

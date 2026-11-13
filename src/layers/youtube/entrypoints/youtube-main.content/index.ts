@@ -31,7 +31,7 @@ declare global {
             results?: {
               contents?: {
                 videoPrimaryInfoRenderer?: {
-                  title?: { runs?: Array<{ text?: string }> };
+                  title?: { runs?: { text?: string }[] };
                 };
               }[];
             };

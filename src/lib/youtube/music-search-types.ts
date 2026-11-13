@@ -49,11 +49,11 @@ export type MusicSearchResponse = Prettify<{
         tabRenderer?: {
           content?: {
             sectionListRenderer?: {
-              contents?: Array<{
+              contents?: {
                 musicShelfRenderer?: {
                   contents?: SearchItem[];
                 };
-              }>;
+              }[];
             };
           };
         };

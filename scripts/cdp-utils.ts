@@ -203,7 +203,7 @@ export async function closeTarget(port: number, targetId: string) {
   return response.ok;
 }
 
-export function fetchTargets(port: number): Promise<CdpTarget[]> {
+export function fetchTargets(port: number) {
   return new Promise((resolve, reject) => {
     http.get(`http://127.0.0.1:${port}/json`, response => {
       let data = "";

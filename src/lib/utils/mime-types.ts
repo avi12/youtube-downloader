@@ -1,4 +1,3 @@
-import type { Choice } from "./choices";
 import { extractBaseCodec, isAudioMimeNativeForContainer } from "./container-specs";
 import { getFileExtension } from "./filename";
 
