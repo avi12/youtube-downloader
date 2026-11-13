@@ -15,7 +15,7 @@ export type Choice<Value extends string = string> = LabeledOption<Value> & Pick<
 export function listChoices<Value extends string>({ values, texts }: {
   values: readonly Value[];
   texts: Record<Value, ChoiceText>;
-}): Choice<Value>[] {
+}) {
   return values.map(value => ({
     value,
     label: texts[value].label,

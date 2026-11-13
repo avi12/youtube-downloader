@@ -45,7 +45,7 @@ function filterSelectedTrack({ audioFormats, selectedAudioTrackId, uniqueAudioLa
 }
 
 // Rows are grouped under their codec, which carries the description once
-function toAudioChoice(format: AdaptiveFormatItem): Choice {
+function toAudioChoice(format: AdaptiveFormatItem) {
   return {
     value: toAudioFormatValue(format),
     label: formatAudioBitrateLabel(format),

@@ -47,10 +47,10 @@ type BuildFormatGroupsParams = Prettify<{
  */
 export function buildFormatGroups(
   { allowedExtensions, excludedExtensions }: BuildFormatGroupsParams = {}
-): FormatGroup[] {
+) {
   const allowed = allowedExtensions ? new Set(allowedExtensions) : null;
   const excluded = excludedExtensions ? new Set(excludedExtensions) : null;
-  function toItem(extension: string, group: FormatGroupHeading): FormatItem {
+  function toItem(extension: string, group: FormatGroupHeading) {
     return {
       extension,
       description: getFormatDescription(extension),
@@ -85,6 +85,6 @@ export function buildFormatGroups(
   return groups;
 }
 
-export function flattenFormatGroups(groups: FormatGroup[]): FormatItem[] {
+export function flattenFormatGroups(groups: FormatGroup[]) {
   return groups.flatMap(group => group.items);
 }

@@ -21,7 +21,7 @@
   } as const;
   type TagKind = (typeof TagKind)[keyof typeof TagKind];
 
-  function getTagKind(item: FormatItem): TagKind {
+  function getTagKind(item: FormatItem) {
     if (item.isCurrent) {
       return TagKind.Current;
     }
@@ -44,7 +44,7 @@
     [TagKind.Slower]: "Slower"
   };
 
-  function getTagIcon(kind: TagKind): string {
+  function getTagIcon(kind: TagKind) {
     if (kind === TagKind.Current) {
       return "";
     }

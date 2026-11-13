@@ -78,7 +78,7 @@
 
   const outputElements = new SvelteMap<string, HTMLElement>();
 
-  function refreshOutputButton(button: OutputButton): void {
+  function refreshOutputButton(button: OutputButton) {
     const elButton = outputElements.get(button.id);
     if (!elButton) {
       return;
@@ -111,14 +111,14 @@
     });
   }
 
-  function refreshOutputButtons(): void {
+  function refreshOutputButtons() {
     for (const button of outputButtons) {
       refreshOutputButton(button);
     }
   }
 
-  function createOutputAttacher(button: OutputButton): (elButton: Element) => void {
-    return elButton => {
+  function createOutputAttacher(button: OutputButton) {
+    return (elButton: Element) => {
       if (!(elButton instanceof HTMLElement)) {
         return;
       }
@@ -128,7 +128,7 @@
     };
   }
 
-  function handleOutputClick(buttonId: string): void {
+  function handleOutputClick(buttonId: string) {
     const match = outputButtons.find(button => button.id === buttonId);
     if (!match) {
       return;
@@ -137,7 +137,7 @@
     state.effectiveOutputMode = match.mode;
   }
 
-  function handleOutputKeydown(e: KeyboardEvent): void {
+  function handleOutputKeydown(e: KeyboardEvent) {
     const isArrowKey = e.key === "ArrowLeft" || e.key === "ArrowRight";
     if (!isArrowKey) {
       return;
@@ -182,7 +182,7 @@
   const videoExtOptions = listContainerChoices("video").map(toInlineLabeledOption);
   const audioExtOptions = listContainerChoices("audio").map(toInlineLabeledOption);
 
-  function handleZipNameInput(e: Event): void {
+  function handleZipNameInput(e: Event) {
     const isInputElement = e.target instanceof HTMLInputElement;
     if (isInputElement) {
       state.effectiveZipName = e.target.value;
@@ -194,7 +194,7 @@
     }
   }
 
-  function applyPaperInputTheme(elTarget: Element): void {
+  function applyPaperInputTheme(elTarget: Element) {
     const elInput = elTarget.querySelector("input");
     if (elInput) {
       elInput.dir = "auto";

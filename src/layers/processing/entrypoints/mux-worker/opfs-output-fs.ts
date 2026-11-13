@@ -19,7 +19,7 @@ export async function cleanupOpfsOutput(videoId: string) {
   } catch { /* no-op */ }
 }
 
-function asDir(node: EmscriptenFsNode): Record<string, EmscriptenFsNode> {
+function asDir(node: EmscriptenFsNode) {
   const { contents } = node;
   const isDirectory = !!contents && !(contents instanceof Uint8Array);
   if (!isDirectory) {
@@ -29,7 +29,7 @@ function asDir(node: EmscriptenFsNode): Record<string, EmscriptenFsNode> {
   return contents;
 }
 
-function makeNodeOps(opfsFs: ReturnType<typeof makeOpfsFs>): EmscriptenNodeOps {
+function makeNodeOps(opfsFs: ReturnType<typeof makeOpfsFs>) {
   return {
     getattr(node) {
       const isDir = !!(node.mode & 16384);
@@ -78,10 +78,10 @@ function makeNodeOps(opfsFs: ReturnType<typeof makeOpfsFs>): EmscriptenNodeOps {
     mknod(parent, name, mode) {
       return opfsFs.createFileNode(parent, name, mode);
     }
-  };
+  } satisfies EmscriptenNodeOps;
 }
 
-function makeStreamOps(): EmscriptenStreamOps {
+function makeStreamOps() {
   return {
     write(stream, buffer, offset, length, position) {
       const { node } = stream;
@@ -123,7 +123,7 @@ function makeStreamOps(): EmscriptenStreamOps {
 
       return position;
     }
-  };
+  } satisfies EmscriptenStreamOps;
 }
 
 function makeOpfsFs(fs: FS, syncHandle: FileSystemSyncAccessHandle) {
@@ -133,7 +133,7 @@ function makeOpfsFs(fs: FS, syncHandle: FileSystemSyncAccessHandle) {
   const streamOps = makeStreamOps();
 
   const opfsFs = {
-    createFileNode(parent: EmscriptenFsNode, name: string, mode: number): EmscriptenFsNode {
+    createFileNode(parent: EmscriptenFsNode, name: string, mode: number) {
       const node = fs.createNode(parent, name, mode, 0);
       node.node_ops = nodeOpsRef.current;
       node.stream_ops = streamOps;

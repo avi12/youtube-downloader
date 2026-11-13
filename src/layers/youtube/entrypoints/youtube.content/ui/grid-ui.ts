@@ -23,7 +23,7 @@ function tryMountWithRetries({ context, elCard, attempts = MOUNT_RETRY_MAX }: {
   context: InstanceType<typeof ContentScriptContext>;
   elCard: Element;
   attempts?: number;
-}): void {
+}) {
   const didMount = mountGridButton({
     context,
     elCard

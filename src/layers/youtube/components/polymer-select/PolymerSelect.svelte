@@ -47,11 +47,11 @@
   let elPopover: HTMLElement | null = null;
   let elMenu: HTMLElement | null = null;
 
-  function focusTrigger(): void {
+  function focusTrigger() {
     elTrigger?.focus();
   }
 
-  function attachTrigger(elTarget: Element): (() => void) | void {
+  function attachTrigger(elTarget: Element) {
     const isHtmlElement = elTarget instanceof HTMLElement;
     if (!isHtmlElement) {
       return;
@@ -59,11 +59,11 @@
 
     elTrigger = elTarget;
 
-    function handleClick(e: Event): void {
+    function handleClick(e: Event) {
       e.stopPropagation();
     }
 
-    function handleKeydown(e: Event): void {
+    function handleKeydown(e: Event) {
       const isKeyboardEvent = e instanceof KeyboardEvent;
       const isArrowDown = isKeyboardEvent && e.key === "ArrowDown";
       if (!isArrowDown) {
@@ -82,7 +82,7 @@
     };
   }
 
-  function attachPopover(elTarget: Element): (() => void) | void {
+  function attachPopover(elTarget: Element) {
     const isHtmlElement = elTarget instanceof HTMLElement;
     if (!isHtmlElement) {
       return;
@@ -93,7 +93,7 @@
     type IronDropdownElement = HTMLElement & { noCancelOnEscKey?: boolean };
     const elIronDropdown = elTarget.closest<IronDropdownElement>(POLYMER_IRON_DROPDOWN_SELECTOR);
 
-    function openPopup(): void {
+    function openPopup() {
       if (elTrigger) {
         const { bottom } = elTrigger.getBoundingClientRect();
         const availableHeight = innerHeight - bottom - POPUP_MARGIN_TOP - POPUP_BOTTOM_GAP;
@@ -107,7 +107,7 @@
       requestAnimationFrame(() => elMenu?.focus());
     }
 
-    function closePopup(): void {
+    function closePopup() {
       if (elIronDropdown) {
         elIronDropdown.noCancelOnEscKey = false;
       }
@@ -115,7 +115,7 @@
       focusTrigger();
     }
 
-    function handleToggle(e: Event): void {
+    function handleToggle(e: Event) {
       if (!(e instanceof ToggleEvent)) {
         return;
       }
@@ -134,7 +134,7 @@
     return () => elTarget.removeEventListener("toggle", handleToggle);
   }
 
-  function attachMenu(elTarget: Element): (() => void) | void {
+  function attachMenu(elTarget: Element) {
     const isHtmlElement = elTarget instanceof HTMLElement;
     if (!isHtmlElement) {
       return;
@@ -147,11 +147,11 @@
     });
     itemsObserver.observe(elTarget, { childList: true });
 
-    function handleMousedown(e: Event): void {
+    function handleMousedown(e: Event) {
       e.preventDefault();
     }
 
-    function selectItem(elItem: Element): void {
+    function selectItem(elItem: Element) {
       if (elItem.getAttribute("aria-disabled") === "true") {
         return;
       }
@@ -168,7 +168,7 @@
       elPopover?.hidePopover();
     }
 
-    function handleClick(e: Event): void {
+    function handleClick(e: Event) {
       if (!(e.target instanceof Element)) {
         return;
       }
@@ -181,7 +181,7 @@
       selectItem(elItem);
     }
 
-    function handleConfirmKey(e: KeyboardEvent): void {
+    function handleConfirmKey(e: KeyboardEvent) {
       const elActive = document.activeElement;
       if (!(elActive instanceof HTMLElement) || !elActive.matches(POLYMER_PAPER_ITEM)) {
         return;
@@ -191,16 +191,16 @@
       selectItem(elActive);
     }
 
-    function handleEscapeKey(e: KeyboardEvent): void {
+    function handleEscapeKey(e: KeyboardEvent) {
       e.stopPropagation();
     }
 
-    function handleTabKey(e: KeyboardEvent): void {
+    function handleTabKey(e: KeyboardEvent) {
       e.preventDefault();
       elPopover?.hidePopover();
     }
 
-    function handleKeydown(e: Event): void {
+    function handleKeydown(e: Event) {
       if (!(e instanceof KeyboardEvent)) {
         return;
       }

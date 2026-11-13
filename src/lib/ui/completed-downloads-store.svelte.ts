@@ -32,7 +32,7 @@ export function initCompletedDownloadsStore() {
 }
 
 export const completedDownloadsStore = {
-  get(videoId: string): CompletedDownload | undefined {
+  get(videoId: string) {
     return completedByVideoId[videoId];
   },
   subscribe(listener: Listener) {

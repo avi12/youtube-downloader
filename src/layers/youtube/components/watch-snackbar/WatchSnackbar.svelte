@@ -28,7 +28,7 @@
   let dismissTimer: ReturnType<typeof setTimeout> | null = null;
   let closeTimer: ReturnType<typeof setTimeout> | null = null;
 
-  function dismiss(): void {
+  function dismiss() {
     clearTimeout(dismissTimer ?? undefined);
     dismissTimer = null;
     isOpened = false;
@@ -39,12 +39,12 @@
     }, CLOSE_ANIMATION_MS);
   }
 
-  function scheduleDismiss(): void {
+  function scheduleDismiss() {
     clearTimeout(dismissTimer ?? undefined);
     dismissTimer = setTimeout(dismiss, SNACKBAR_DURATION_MS);
   }
 
-  function cancelDismiss(): void {
+  function cancelDismiss() {
     clearTimeout(dismissTimer ?? undefined);
     dismissTimer = null;
   }
@@ -72,7 +72,7 @@
     }
   }));
 
-  function attachToSnackbar(elNode: HTMLElement): () => void {
+  function attachToSnackbar(elNode: HTMLElement) {
     document.querySelector(SNACKBAR_CONTAINER_SELECTOR)?.append(elNode);
     return () => elNode.remove();
   }

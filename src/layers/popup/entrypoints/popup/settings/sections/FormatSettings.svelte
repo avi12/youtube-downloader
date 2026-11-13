@@ -36,12 +36,12 @@
     subtitle?: string;
     icon: string;
     choices: Choice<Options[Key]>[];
-  }): FormatSettingRow {
+  }) {
     return {
       ...row,
       choices,
       value: options[key],
-      select(value) {
+      select(value: string) {
         const choice = findChoice(choices, value);
         if (choice) {
           void setOption({
@@ -58,12 +58,12 @@
     label: string;
     subtitle?: string;
     icon: string;
-  }): FormatSettingRow {
+  }) {
     return {
       ...row,
       choices: listContainerChoices(kind),
       value: options.ext[kind],
-      select(value) {
+      select(value: string) {
         void setOption({
           key: "ext",
           value: {

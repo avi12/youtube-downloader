@@ -40,7 +40,7 @@ async function initToBodyBase64(init: RequestInit | undefined, input: RequestInf
   return "";
 }
 
-function initHeadersToRecord(init: RequestInit | undefined): Record<string, string> | undefined {
+function initHeadersToRecord(init: RequestInit | undefined) {
   const raw = init?.headers;
   if (!raw) {
     return undefined;
@@ -68,8 +68,8 @@ function initHeadersToRecord(init: RequestInit | undefined): Record<string, stri
   };
 }
 
-export function createPageProxyFetch(tabId: number): PageProxyFetch {
-  return async (input, init) => {
+export function createPageProxyFetch(tabId: number) {
+  return async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = inputToUrl(input);
     const method = (init?.method ?? (input instanceof Request ? input.method : "GET")).toUpperCase();
     const bodyBase64 = await initToBodyBase64(init, input);

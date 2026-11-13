@@ -10,7 +10,7 @@ type CreatePopupPanelHostParams = Prettify<{
   sourceUrl: string;
   onRequested: () => void;
 }>;
-export function createPopupPanelHost({ tabId, sourceUrl, onRequested }: CreatePopupPanelHostParams): PanelHost {
+export function createPopupPanelHost({ tabId, sourceUrl, onRequested }: CreatePopupPanelHostParams) {
   return {
     requestDownload(request) {
       onRequested();
@@ -21,5 +21,5 @@ export function createPopupPanelHost({ tabId, sourceUrl, onRequested }: CreatePo
         request
       }).catch(error => log.warn("Starting the download failed:", error));
     }
-  };
+  } satisfies PanelHost;
 }

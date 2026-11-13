@@ -317,7 +317,7 @@ export async function sendMessageToTab<TType extends keyof ProtocolMap>(
   type: TType,
   data: GetDataType<ProtocolMap[TType]>,
   tabId: number
-): Promise<GetReturnType<ProtocolMap[TType]> | undefined> {
+) {
   if (tabId < 0) {
     return undefined;
   }

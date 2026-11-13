@@ -14,10 +14,7 @@ export function applyDownloadTypeChange({
   selectedAudioFormat: AdaptiveFormatItem | null;
   videoData: VideoData;
   codecPreferences: CodecPreferences;
-}): {
-  downloadType: DownloadType;
-  extension: string;
-} {
+}) {
   const options = CONTENT_OPTIONS;
   const extensionPreference = newType === DownloadType.Audio ? options.ext.audio : options.ext.video;
   const format = newType === DownloadType.Audio ? selectedAudioFormat : selectedVideoFormat;

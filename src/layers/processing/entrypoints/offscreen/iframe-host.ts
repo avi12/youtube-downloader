@@ -37,7 +37,7 @@ export function removeDownloadIframe(videoId: string) {
   downloadIframes.delete(videoId);
 }
 
-export function createWorkerIframe(videoId: string): HTMLIFrameElement {
+export function createWorkerIframe(videoId: string) {
   removeWorkerIframe(videoId);
 
   const elIframe = document.createElement("iframe");

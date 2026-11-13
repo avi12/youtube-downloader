@@ -147,7 +147,7 @@ type BuildStreamEndParams = Prettify<{
 }>;
 function buildStreamEnd({
   request, tabId, enrichedMetadata, additionalAudioTrackLabels, additionalAudioLanguageCodes
-}: BuildStreamEndParams): ProcessStreamEndData {
+}: BuildStreamEndParams) {
   const {
     videoId, type, filenameOutput, videoFormat, audioFormat,
     primaryAudioLabel, primaryAudioLanguageCode,

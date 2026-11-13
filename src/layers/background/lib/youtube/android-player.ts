@@ -59,7 +59,7 @@ type FetchAndroidPlayerResponseParams = Prettify<{
 // response is `LOGIN_REQUIRED: "Sign in to confirm you're not a bot"`.
 async function fetchAndroidPlayerResponse({
   videoId, customFetch
-}: FetchAndroidPlayerResponseParams): Promise<AndroidPlayerResponse> {
+}: FetchAndroidPlayerResponseParams) {
   const body = {
     context: {
       client: {
@@ -126,7 +126,7 @@ type ResolveAndroidUrlsParams = Prettify<{
 
 export async function resolveAndroidUrls({
   videoId, videoItag, audioItag, extraAudioItags, customFetch
-}: ResolveAndroidUrlsParams): Promise<ResolvedAndroidUrls> {
+}: ResolveAndroidUrlsParams) {
   const response = await fetchAndroidPlayerResponse({
     videoId,
     customFetch

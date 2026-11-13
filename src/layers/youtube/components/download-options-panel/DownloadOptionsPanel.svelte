@@ -26,7 +26,7 @@
   const panel = createPanelState(() => props.videoData, PAGE_PANEL_HOST);
   const focusManager = createFocusManager();
 
-  function closePanel(): void {
+  function closePanel() {
     focusManager.release();
     sendPanelClosed();
   }

@@ -30,7 +30,7 @@
     }
   }));
 
-  function attachTracksHeaderButton(elButton: Element): void {
+  function attachTracksHeaderButton(elButton: Element) {
     attachTracksHeaderButtonUtil({
       elButton,
       getIsOpen: () => isOpen,

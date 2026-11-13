@@ -36,21 +36,21 @@
   let elTrigger = $state<HTMLElement | null>(null);
   let elList = $state<HTMLElement | null>(null);
 
-  function focusTrigger(): void {
+  function focusTrigger() {
     elTrigger?.focus();
   }
 
-  function focusFirstItem(): void {
+  function focusFirstItem() {
     elList?.querySelector<HTMLElement>("[role=\"option\"]")?.focus();
   }
 
-  function navigateItems(direction: 1 | -1): void {
+  function navigateItems(direction: 1 | -1) {
     const dropDownItems = [...(elList?.querySelectorAll<HTMLElement>("[role=\"option\"]") ?? [])];
     const iCurrent = dropDownItems.findIndex(item => item === document.activeElement);
     dropDownItems[(iCurrent + direction + dropDownItems.length) % dropDownItems.length]?.focus();
   }
 
-  function handleTab(e: KeyboardEvent): void {
+  function handleTab(e: KeyboardEvent) {
     isOpen = false;
     const focusable = [
       ...document.querySelectorAll<HTMLElement>(
@@ -66,7 +66,7 @@
     }
   }
 
-  function handleListKeydown(e: KeyboardEvent): void {
+  function handleListKeydown(e: KeyboardEvent) {
     const arrowDirections: Partial<Record<string, 1 | -1>> = {
       ArrowDown: 1,
       ArrowUp: -1
@@ -89,7 +89,7 @@
     }
   }
 
-  function handleDocumentPointerDown(e: PointerEvent): void {
+  function handleDocumentPointerDown(e: PointerEvent) {
     if (!(e.target instanceof Node)) {
       return;
     }
@@ -101,7 +101,7 @@
     isOpen = false;
   }
 
-  function preventOuterScroll(e: Event): void {
+  function preventOuterScroll(e: Event) {
     if (!(e.target instanceof Node) || elList?.contains(e.target)) {
       return;
     }
@@ -114,7 +114,7 @@
   // but sizes the fixed list differently), so a single deterministic calculation keeps both
   // browsers identical: open below the trigger, or flip above when there's more room there,
   // and cap the height so the list scrolls instead of overflowing the popup.
-  function positionList(): void {
+  function positionList() {
     if (!elTrigger || !elList) {
       return;
     }

@@ -32,13 +32,13 @@ function readVisitorData() {
   return typeof value === "string" ? value : "";
 }
 
-function copyToArrayBuffer(view: Uint8Array): ArrayBuffer {
+function copyToArrayBuffer(view: Uint8Array) {
   const buffer = new ArrayBuffer(view.byteLength);
   new Uint8Array(buffer).set(view);
   return buffer;
 }
 
-function substituteBodyTokens(bodyBytes: Uint8Array): ArrayBuffer {
+function substituteBodyTokens(bodyBytes: Uint8Array) {
   const text = new TextDecoder().decode(bodyBytes);
   if (!text.includes(VISITOR_DATA_TOKEN)) {
     return copyToArrayBuffer(bodyBytes);
@@ -49,7 +49,7 @@ function substituteBodyTokens(bodyBytes: Uint8Array): ArrayBuffer {
   return copyToArrayBuffer(new TextEncoder().encode(replaced));
 }
 
-function getPristineFetch(): typeof fetch {
+function getPristineFetch() {
   const elExisting = document.querySelector<HTMLIFrameElement>(`iframe[${PRISTINE_IFRAME_ATTR}]`);
   if (elExisting?.contentWindow?.fetch) {
     return elExisting.contentWindow.fetch.bind(elExisting.contentWindow);

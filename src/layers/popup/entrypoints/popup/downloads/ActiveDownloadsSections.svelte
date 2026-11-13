@@ -64,7 +64,7 @@
     ...videoOnlyList
   ]);
 
-  function isActiveInThisTab(videoId: string): boolean {
+  function isActiveInThisTab(videoId: string) {
     return isActiveFromCurrentTab({
       videoId,
       detail: videoDetails[videoId]
@@ -74,14 +74,14 @@
     });
   }
 
-  function isRecentInThisTab(entry: RecentDownloadEntry): boolean {
+  function isRecentInThisTab(entry: RecentDownloadEntry) {
     return isRecentFromCurrentTab(entry, {
       currentTabId,
       currentSourceUrl
     });
   }
 
-  function partitionActive(videoIds: string[], recent: RecentDownloadEntry[]): Partition {
+  function partitionActive(videoIds: string[], recent: RecentDownloadEntry[]) {
     const zipGroups = new SvelteMap<string, ZipGroup>();
     const individualIds: string[] = [];
 
@@ -125,7 +125,7 @@
   const thisTabCount = $derived(thisTab.individualIds.length + thisTab.zipGroups.length + thisTab.recent.length);
   const otherTabsCount = $derived(otherTabs.individualIds.length + otherTabs.zipGroups.length);
 
-  function videoStatusLabel(videoId: string): string | null {
+  function videoStatusLabel(videoId: string) {
     const i = videoDownloadIndex.get(videoId);
     if (i === undefined) {
       return null;

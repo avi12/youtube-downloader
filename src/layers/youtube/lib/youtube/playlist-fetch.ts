@@ -45,7 +45,7 @@ type ParsedEntries = Prettify<{
   continuationToken: string | null;
 }>;
 
-function parseEntries(entries: readonly unknown[]): ParsedEntries {
+function parseEntries(entries: readonly unknown[]) {
   const videoIds: string[] = [];
   let continuationToken: string | null = null;
   for (const entry of entries) {
@@ -88,7 +88,7 @@ function extractInitialPlaylistEntries(data: YtInitialDataPlaylist) {
   return [];
 }
 
-function extractInnertubeMeta(html: string): InnertubeMeta {
+function extractInnertubeMeta(html: string) {
   const [, clientVersion = "2.20240101.00.00"] = html.match(CLIENT_VERSION_PATTERN) ?? [];
   const [, clientName = "1"] = html.match(CLIENT_NAME_PATTERN) ?? [];
   const [, visitorData = ""] = html.match(VISITOR_DATA_PATTERN) ?? [];
@@ -143,7 +143,7 @@ async function fetchContinuationPage({ token, meta }: {
   return parseEntries(continuationItems);
 }
 
-export async function fetchPlaylistContents(playlistId: string): Promise<PlaylistContents | null> {
+export async function fetchPlaylistContents(playlistId: string) {
   const response = await fetch(buildPlaylistUrl(playlistId), { credentials: "include" });
   if (!response.ok) {
     return null;

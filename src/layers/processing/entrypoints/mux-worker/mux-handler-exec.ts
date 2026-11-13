@@ -6,7 +6,7 @@ import type { Prettify } from "@/types";
 
 type CheckOutput = (filename: string) => boolean;
 
-export function tryCheckOutput(filename: string): boolean {
+export function tryCheckOutput(filename: string) {
   try {
     const stat = state.ffmpeg!.FS.stat(filename);
     return stat.size > 0;
@@ -19,7 +19,7 @@ type ExecuteMuxPhasesParams = Prettify<{
   params: MuxFfmpegParams;
   checkOutput: CheckOutput;
 }>;
-export function executeMuxPhases({ params, checkOutput }: ExecuteMuxPhasesParams): boolean {
+export function executeMuxPhases({ params, checkOutput }: ExecuteMuxPhasesParams) {
   const { useIntermediateMkv, muxFilename, outputFilename, targetExtension, audioMimeType } = params;
 
   const phase1Code = state.ffmpeg!.exec(...buildMuxFfmpegArgs(params));

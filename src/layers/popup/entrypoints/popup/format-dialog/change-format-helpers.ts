@@ -30,11 +30,11 @@ export function isAudioSourceEntry(entry: RecentDownloadEntry) {
 type BuildAvailableTargetGroupsParams = Prettify<{
   entry: RecentDownloadEntry;
 }>;
-function isVideoTargetWithMime(target: string, entry: RecentDownloadEntry, isAudioSource: boolean): boolean {
+function isVideoTargetWithMime(target: string, entry: RecentDownloadEntry, isAudioSource: boolean) {
   return !isAudioSource && videoContainers.includes(target) && Boolean(entry.videoMimeType);
 }
 
-function canReencodeTarget(target: string, videoMimeType: string): boolean {
+function canReencodeTarget(target: string, videoMimeType: string) {
   return !requiresVideoReencode({
     videoMimeType,
     targetExtension: target
@@ -42,7 +42,7 @@ function canReencodeTarget(target: string, videoMimeType: string): boolean {
     || Boolean(getVideoFallbackCodec(target));
 }
 
-function isTargetAllowed(target: string, entry: RecentDownloadEntry, isAudioSource: boolean): boolean {
+function isTargetAllowed(target: string, entry: RecentDownloadEntry, isAudioSource: boolean) {
   if (!isVideoTargetWithMime(target, entry, isAudioSource)) {
     return true;
   }
@@ -50,7 +50,7 @@ function isTargetAllowed(target: string, entry: RecentDownloadEntry, isAudioSour
   return canReencodeTarget(target, entry.videoMimeType!);
 }
 
-function classifyVideoTargetSpeed(target: string, videoMimeType: string): TranscodeSpeed {
+function classifyVideoTargetSpeed(target: string, videoMimeType: string) {
   const needsReencode = requiresVideoReencode({
     videoMimeType,
     targetExtension: target
@@ -84,7 +84,7 @@ function classifyTargetSpeed(target: string, entry: RecentDownloadEntry, isVideo
   return isOnlyAudioReencoded ? TranscodeSpeed.ReEncodes : videoSpeed;
 }
 
-export function buildAvailableTargetGroups({ entry }: BuildAvailableTargetGroupsParams): FormatGroup[] {
+export function buildAvailableTargetGroups({ entry }: BuildAvailableTargetGroupsParams) {
   const isAudioSource = isAudioSourceEntry(entry);
   const baseAllowed = isAudioSource ? audioContainers : [...videoContainers, ...audioContainers];
   const allowedExtensions = baseAllowed.filter(target => isTargetAllowed(target, entry, isAudioSource));

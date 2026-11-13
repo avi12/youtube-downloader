@@ -27,7 +27,7 @@
     };
   }
 
-  function updateIndicator(tabId: T): void {
+  function updateIndicator(tabId: T) {
     const elTabButton = tabButtonElements[tabId];
     if (!elTabButton || !tabListEl) {
       return;
@@ -50,11 +50,11 @@
     }
   });
 
-  export function focusTab(tabId: T): void {
+  export function focusTab(tabId: T) {
     tabButtonElements[tabId]?.focus();
   }
 
-  function handleTabKeydown(e: KeyboardEvent): void {
+  function handleTabKeydown(e: KeyboardEvent) {
     const keyDirections: Partial<Record<string, 1 | -1>> = {
       ArrowRight: 1,
       ArrowDown: 1,

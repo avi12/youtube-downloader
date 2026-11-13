@@ -6,7 +6,7 @@ import {
 } from "@/lib/messaging/messaging";
 import { sabrFetchBridge } from "@/lib/messaging/sabr-fetch-bridge";
 
-async function handlePageSabrFetch({ data }: { data: PageSabrFetchRequest }): Promise<PageSabrFetchResponse> {
+async function handlePageSabrFetch({ data }: { data: PageSabrFetchRequest }) {
   return sabrFetchBridge.sendMessage("pageSabrFetch", data);
 }
 

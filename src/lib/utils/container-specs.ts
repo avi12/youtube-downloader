@@ -52,7 +52,7 @@ const PREFER_DOLBY = new Set([CODEC_AC3, CODEC_EC3]);
 export const MULTI_TRACK_UNSUPPORTED_EXTENSIONS = new Set(["avi", "3gp", "m4b"]);
 
 type AudioOnlySpec = Prettify<Pick<ContainerSpec, "audioCodecs" | "fallbackAudioCodec">>;
-function audioOnly({ audioCodecs, fallbackAudioCodec }: AudioOnlySpec): ContainerSpec {
+function audioOnly({ audioCodecs, fallbackAudioCodec }: AudioOnlySpec) {
   return {
     audioCodecs,
     fallbackAudioCodec

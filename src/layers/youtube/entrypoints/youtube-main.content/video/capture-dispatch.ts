@@ -217,7 +217,7 @@ const PollOutcome = {
 
 type PollOutcome = (typeof PollOutcome)[keyof typeof PollOutcome];
 
-async function tryDispatchOnce(isDownloadIframe: boolean): Promise<PollOutcome> {
+async function tryDispatchOnce(isDownloadIframe: boolean) {
   const playerResponse = window.ytInitialPlayerResponse ?? null;
   const hasVideoId = !!playerResponse?.videoDetails?.videoId;
   if (!hasVideoId) {

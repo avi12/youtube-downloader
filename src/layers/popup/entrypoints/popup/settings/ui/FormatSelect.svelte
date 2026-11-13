@@ -12,7 +12,7 @@
   const { label, items, value, onchange }: Props = $props();
   const id = $props.id();
 
-  function formatLabel(item: Pick<FormatItem, "extension" | "description">): string {
+  function formatLabel(item: Pick<FormatItem, "extension" | "description">) {
     if (item.extension === AUTO_EXTENSION) {
       return AUTO_EXTENSION_LABEL;
     }

@@ -29,10 +29,7 @@ type ChunkRangeFetchParams = Prettify<{
 
 async function fetchAndroidVrRange({
   url, byteOffset, rangeEnd, bgFetch, pageProxyFetch, isUsingBgDirect, label
-}: ChunkRangeFetchParams): Promise<{
-  response: Response;
-  usedBgDirect: boolean;
-}> {
+}: ChunkRangeFetchParams) {
   const init: RequestInit = {
     credentials: "include",
     headers: {
@@ -131,7 +128,7 @@ type ResolveAndroidUrlsForRequestParams = Prettify<{
 
 async function resolveAndroidUrlsForRequest({
   videoId, videoItag, audioItag, wantsVideo, wantsAudio, pageProxyFetch
-}: ResolveAndroidUrlsForRequestParams): Promise<ResolvedAndroidUrls> {
+}: ResolveAndroidUrlsForRequestParams) {
   try {
     return await resolveAndroidUrls({
       videoId,

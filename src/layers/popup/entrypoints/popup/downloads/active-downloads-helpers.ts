@@ -60,7 +60,7 @@ export function getQuality({ videoId, videoDetails }: VideoIdDetailsParams) {
   return videoDetails[videoId]?.quality ?? "";
 }
 
-function getDetail({ videoId, videoDetails }: VideoIdDetailsParams): VideoDetail | undefined {
+function getDetail({ videoId, videoDetails }: VideoIdDetailsParams) {
   return videoDetails[videoId];
 }
 
@@ -70,7 +70,7 @@ type GetProgressEntryParams = Prettify<{
 }>;
 function getProgressEntry(
   { videoId, statusProgress }: GetProgressEntryParams
-): DownloadProgressEntry | undefined {
+) {
   return statusProgress[videoId];
 }
 

@@ -69,16 +69,16 @@
     panel.isFilenameValid = output.isFilenameValid;
   });
 
-  function selectAudioFormat(format: AdaptiveFormatItem): void {
+  function selectAudioFormat(format: AdaptiveFormatItem) {
     panel.selectedAudioFormat = format;
   }
 
   // The popup is too short for the whole form, so bring its top into view once the formats load
-  function revealForm(elForm: Element): void {
+  function revealForm(elForm: Element) {
     elForm.scrollIntoView({ block: "nearest" });
   }
 
-  function changeQuality(valueString: string, isAudio: boolean): void {
+  function changeQuality(valueString: string, isAudio: boolean) {
     handleQualityChange({
       valueString,
       isAudio,

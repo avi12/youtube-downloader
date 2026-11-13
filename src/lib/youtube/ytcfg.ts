@@ -26,6 +26,6 @@ declare const ytcfg: {
   get: <K extends YtcfgKey>(key: K) => YtcfgValueByKey[K] | undefined;
 } | undefined;
 
-export function getYtcfg<K extends YtcfgKey>(key: K): YtcfgValueByKey[K] | undefined {
+export function getYtcfg<K extends YtcfgKey>(key: K) {
   return ytcfg?.get(key);
 }

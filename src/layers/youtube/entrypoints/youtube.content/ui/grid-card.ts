@@ -73,7 +73,7 @@ function extractContentIdFromClass(elCard: Element) {
   return contentId ?? null;
 }
 
-export function extractCardContent(elCard: Element): CardContent | null {
+export function extractCardContent(elCard: Element) {
   if (isAdCard(elCard)) {
     return null;
   }

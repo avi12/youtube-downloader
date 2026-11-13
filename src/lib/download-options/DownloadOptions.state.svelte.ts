@@ -133,7 +133,7 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
     )
   );
 
-  function hasManualCounterpart(track: CaptionTrack): boolean {
+  function hasManualCounterpart(track: CaptionTrack) {
     return track.kind === CAPTION_KIND_ASR &&
       manualCaptionLanguageCodes.has(normalizeLanguageCode(track.languageCode));
   }

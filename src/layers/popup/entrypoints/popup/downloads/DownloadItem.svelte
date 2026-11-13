@@ -70,7 +70,7 @@
   const canShowTabAction = $derived(showTabActions && Boolean(sourceUrl || videoId));
   const hasByline = $derived(Boolean(channel) || canShowTabAction);
 
-  function stripExtension(name: string): string {
+  function stripExtension(name: string) {
     const iDot = name.lastIndexOf(".");
     if (iDot <= 0) {
       return name;
@@ -79,7 +79,7 @@
     return name.slice(0, iDot);
   }
 
-  function deriveContainer(name: string): string {
+  function deriveContainer(name: string) {
     const iDot = name.lastIndexOf(".");
     if (iDot <= 0 || iDot === name.length - 1) {
       return "";
@@ -88,7 +88,7 @@
     return name.slice(iDot + 1).toUpperCase();
   }
 
-  function formatBytes(bytes: number, maximumFractionDigits: number): string {
+  function formatBytes(bytes: number, maximumFractionDigits: number) {
     const formatter = new Intl.NumberFormat(undefined, {
       minimumFractionDigits: maximumFractionDigits === 2 ? 2 : 0,
       maximumFractionDigits
@@ -116,7 +116,7 @@
     maximumFractionDigits: 0
   });
 
-  function formatSpeed(bytesPerSec: number): string {
+  function formatSpeed(bytesPerSec: number) {
     if (bytesPerSec < 1) {
       return "";
     }
@@ -154,7 +154,7 @@
     return parts;
   });
 
-  async function focusSourceTab(): Promise<void> {
+  async function focusSourceTab() {
     if (!videoId) {
       return;
     }

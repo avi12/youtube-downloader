@@ -12,7 +12,7 @@ const HEADER_CONTENT_TYPE = "Content-Type";
 const HEADER_GOOG_VISITOR_ID = "X-Goog-Visitor-Id";
 const CONTENT_TYPE_JSON = "application/json";
 
-function buildPlayerRequest(videoId: string): InnertubePlayerRequest {
+function buildPlayerRequest(videoId: string) {
   const { clientVersion, clientName } = readYtcfg();
   const signatureTimestamp = getYtcfg(YtcfgKey.Sts);
   const isDefaultWebClient = clientName === 1;

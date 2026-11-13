@@ -19,14 +19,14 @@
     props.onvalidationchange(output.isFilenameValid);
   });
 
-  function applyPolymerTheme(elTarget: Element): void {
+  function applyPolymerTheme(elTarget: Element) {
     const elInput = elTarget.querySelector("input");
     if (elInput) {
       elInput.dir = "auto";
     }
   }
 
-  function handleInput(e: Event): void {
+  function handleInput(e: Event) {
     const isInputElement = e.target instanceof HTMLInputElement;
     if (!isInputElement) {
       return;

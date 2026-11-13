@@ -179,7 +179,7 @@ function buildPlaylistGridRequest({
   playlistTotalCount,
   isZipBundle,
   playlistDownloadType
-}: BuildPlaylistGridRequestParams): DownloadRequest {
+}: BuildPlaylistGridRequestParams) {
   const downloadType = resolvePerVideoDownloadType(data, playlistDownloadType);
 
   const videoFormat = selectVideoFormatForOptions({
@@ -280,7 +280,7 @@ export function createPlaylistGridItemState({ playlistId, gridTitle }: CreatePla
     return PrimaryButtonState.Idle;
   });
 
-  function buildOptions(): Options {
+  function buildOptions() {
     return {
       ...CONTENT_OPTIONS,
       defaultDownloadType: DownloadType.Auto,

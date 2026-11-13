@@ -80,7 +80,7 @@
 
   let tabNav = $state<{ focusTab: (tabId: PopupPanel) => void }>();
 
-  function handleTabChange(id: PopupPanel): void {
+  function handleTabChange(id: PopupPanel) {
     const iPrevious = PANEL_ORDER.indexOf(appState.activePanel);
     const iNext = PANEL_ORDER.indexOf(id);
     slideDirection = iNext > iPrevious ? 1 : -1;

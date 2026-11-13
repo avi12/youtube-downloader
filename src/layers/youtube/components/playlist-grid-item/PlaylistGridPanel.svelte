@@ -22,7 +22,7 @@
 
   const focusManager = createFocusManager();
 
-  function closePanel(): void {
+  function closePanel() {
     focusManager.release();
     sendPanelClosed();
   }

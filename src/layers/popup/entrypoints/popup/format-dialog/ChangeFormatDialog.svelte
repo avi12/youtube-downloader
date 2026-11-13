@@ -46,7 +46,7 @@
   let mode = $state<DialogMode>(DialogMode.Video);
   let hasSwitchedMode = $state(false);
 
-  function switchMode(nextMode: DialogMode): void {
+  function switchMode(nextMode: DialogMode) {
     hasSwitchedMode = true;
 
     if (!document.startViewTransition) {
@@ -76,15 +76,15 @@
     elDialog?.show();
   });
 
-  function findGroup(groups: FormatGroup[], heading: string): FormatGroup | undefined {
+  function findGroup(groups: FormatGroup[], heading: string) {
     return groups.find(group => group.heading === heading);
   }
 
-  function startClose(): void {
+  function startClose() {
     isClosing = true;
   }
 
-  async function handleSelect(item: FormatItem): Promise<void> {
+  async function handleSelect(item: FormatItem) {
     if (item.isCurrent || item.isExcluded || isSubmitting) {
       return;
     }

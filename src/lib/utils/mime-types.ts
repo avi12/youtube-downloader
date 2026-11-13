@@ -132,7 +132,7 @@ const AUTO_EXTENSION_DESCRIPTIONS: Record<MediaKind, string> = {
   audio: "Follows the audio codec: .opus for Opus, M4A otherwise"
 };
 
-export function listContainerChoices(kind: MediaKind): Choice[] {
+export function listContainerChoices(kind: MediaKind) {
   return supportedExtensions[kind].map(extension => extension === AUTO_EXTENSION
     ? {
       value: extension,

@@ -141,12 +141,12 @@
     }
   });
 
-  function handleOptionsRequested(): void {
+  function handleOptionsRequested() {
     isOptionsOpen = false;
     isStartingWatchDownload = true;
   }
 
-  async function handleStartWatchDownload(): Promise<void> {
+  async function handleStartWatchDownload() {
     if (currentTabId === undefined || currentSourceUrl === undefined || watchVideoId === null) {
       return;
     }
@@ -165,12 +165,12 @@
     }
   }
 
-  async function handleRemove(entry: RecentDownloadEntry): Promise<void> {
+  async function handleRemove(entry: RecentDownloadEntry) {
     await deleteRecentDownload(entry.id);
     onRecentChanged();
   }
 
-  function handleShowInFolder(entry: RecentDownloadEntry): void {
+  function handleShowInFolder(entry: RecentDownloadEntry) {
     try {
       browser.downloads.show(entry.downloadId);
     } catch (error) {

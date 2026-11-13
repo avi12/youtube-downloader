@@ -52,7 +52,7 @@
     selectedCaptionTrack
   }));
 
-  function handleExtensionChange(newExtension: string): void {
+  function handleExtensionChange(newExtension: string) {
     derived.guardExtrasForExtension(newExtension);
     onextensionchange(newExtension);
   }
