@@ -85,7 +85,7 @@
     });
   }
 
-  function partitionActive(videoIds: string[], recent: RecentDownloadEntry[]) {
+  function partitionActive({ videoIds, recent }: { videoIds: string[]; recent: RecentDownloadEntry[] }) {
     const zipGroups = new SvelteMap<string, ZipGroup>();
     const individualIds: string[] = [];
 
@@ -123,8 +123,14 @@
 
   const thisTabRecent = $derived(recentDownloads.filter(isRecentInThisTab));
 
-  const thisTab = $derived(partitionActive(thisTabIds, thisTabRecent));
-  const otherTabs = $derived(partitionActive(otherIds, []));
+  const thisTab = $derived(partitionActive({
+     videoIds: thisTabIds,
+     recent: thisTabRecent 
+  }));
+  const otherTabs = $derived(partitionActive({
+     videoIds: otherIds,
+     recent: [] 
+  }));
 
   const thisTabCount = $derived(thisTab.individualIds.length + thisTab.zipGroups.length + thisTab.recent.length);
   const otherTabsCount = $derived(otherTabs.individualIds.length + otherTabs.zipGroups.length);

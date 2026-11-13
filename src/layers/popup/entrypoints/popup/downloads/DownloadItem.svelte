@@ -88,7 +88,7 @@
     return name.slice(iDot + 1).toUpperCase();
   }
 
-  function formatBytes(bytes: number, maximumFractionDigits: number) {
+  function formatBytes({ bytes, maximumFractionDigits }: { bytes: number; maximumFractionDigits: number }) {
     const formatter = new Intl.NumberFormat(undefined, {
       minimumFractionDigits: maximumFractionDigits === 2 ? 2 : 0,
       maximumFractionDigits
@@ -135,10 +135,16 @@
   const byteReadoutParts = $derived.by(() => {
     const parts: string[] = [];
     if (downloadedBytes !== undefined && downloadedBytes > 0) {
-      const downloadedStr = formatBytes(downloadedBytes, 0);
+      const downloadedStr = formatBytes({
+         bytes: downloadedBytes,
+         maximumFractionDigits: 0 
+      });
       const hasValidTotal = totalBytes !== undefined && totalBytes >= downloadedBytes;
       if (hasValidTotal) {
-        parts.push(`${downloadedStr} / ${formatBytes(totalBytes, 2)}`);
+        parts.push(`${downloadedStr} / ${formatBytes({
+           bytes: totalBytes,
+           maximumFractionDigits: 2 
+        })}`);
       } else {
         parts.push(downloadedStr);
       }

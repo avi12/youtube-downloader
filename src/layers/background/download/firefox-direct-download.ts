@@ -298,9 +298,7 @@ export async function runFirefoxDirectDownload(
     audioExpectedBytes: resolved.audioContentLength
   });
 
-  function bgFetch(input: RequestInfo | URL, init?: RequestInit) {
-    return fetch(input, init);
-  }
+  const bgFetch: ChunkFetchFn = (...args) => fetch(...args);
 
   let videoChunkCount = 0;
   let audioChunkCount = 0;

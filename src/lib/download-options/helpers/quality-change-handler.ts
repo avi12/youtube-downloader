@@ -66,10 +66,10 @@ type VideoOptionsParams = Prettify<{
   codecPreferences: CodecPreferences;
 }>;
 
-type FormatCondition<Params> = (format: AdaptiveFormatItem, params: Params) => boolean;
+type FormatCondition<Params> = (args: { format: AdaptiveFormatItem; params: Params }) => boolean;
 
 // The container holds the stream as-is instead of the download switching to MKV
-function isVideoHeldByContainer(format: AdaptiveFormatItem, { targetExtension }: VideoOptionsParams) {
+function isVideoHeldByContainer({ format, params: { targetExtension } }: { format: AdaptiveFormatItem; params: VideoOptionsParams }) {
   return isVideoAllowedInContainer({
     videoMimeType: format.mimeType,
     targetExtension
@@ -77,7 +77,7 @@ function isVideoHeldByContainer(format: AdaptiveFormatItem, { targetExtension }:
 }
 
 // The plan downloads exactly this variant once it's picked by hand
-function isVideoKeptByPlan(format: AdaptiveFormatItem, params: VideoOptionsParams) {
+function isVideoKeptByPlan({ format, params }: { format: AdaptiveFormatItem; params: VideoOptionsParams }) {
   return alignVideoFormatToExtension({
     ...params,
     currentFormat: format,
@@ -95,7 +95,10 @@ const VIDEO_FORMAT_CONDITIONS: FormatCondition<VideoOptionsParams>[] = [isVideoH
 
 function listOfferedVideoFormats(params: VideoOptionsParams) {
   return params.videoFormatVariants.filter(format =>
-    VIDEO_FORMAT_CONDITIONS.every(isConditionMet => isConditionMet(format, params)));
+    VIDEO_FORMAT_CONDITIONS.every(isConditionMet => isConditionMet({
+       format,
+       params 
+    })));
 }
 
 // One row per resolution; each row's value is the variant the current codec choice downloads.
@@ -134,14 +137,14 @@ type AudioOptionsParams = Prettify<{
   codecPreferences: CodecPreferences;
 }>;
 
-function isAudioHeldByContainer(format: AdaptiveFormatItem, { targetExtension }: AudioOptionsParams) {
+function isAudioHeldByContainer({ format, params: { targetExtension } }: { format: AdaptiveFormatItem; params: AudioOptionsParams }) {
   return isAudioMimeNativeForContainer({
     audioMimeType: format.mimeType,
     targetExtension
   });
 }
 
-function isAudioKeptByPlan(format: AdaptiveFormatItem, params: AudioOptionsParams) {
+function isAudioKeptByPlan({ format, params }: { format: AdaptiveFormatItem; params: AudioOptionsParams }) {
   return alignAudioFormatToExtension({
     ...params,
     currentFormat: format,
@@ -168,7 +171,10 @@ export function buildMuxedAudioOptions({
     selectedAudioTrackId,
     uniqueAudioLanguagesCount
   })
-    .filter(format => AUDIO_FORMAT_CONDITIONS.every(isConditionMet => isConditionMet(format, params)))
+    .filter(format => AUDIO_FORMAT_CONDITIONS.every(isConditionMet => isConditionMet({
+       format,
+       params 
+    })))
     .map(toAudioChoice);
   return groupChoices(options);
 }

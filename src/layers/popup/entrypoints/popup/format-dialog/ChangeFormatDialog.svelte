@@ -35,10 +35,16 @@
   );
   const targetGroups = $derived(buildAvailableTargetGroups({ entry }));
   const videoItems = $derived(
-    findGroup(targetGroups, FORMAT_GROUP_VIDEO)?.items ?? []
+    findGroup({
+       groups: targetGroups,
+       heading: FORMAT_GROUP_VIDEO 
+    })?.items ?? []
   );
   const audioItems = $derived(
-    findGroup(targetGroups, FORMAT_GROUP_AUDIO)?.items ?? []
+    findGroup({
+       groups: targetGroups,
+       heading: FORMAT_GROUP_AUDIO 
+    })?.items ?? []
   );
   const hasVideoMode = $derived(!isAudioSource && videoItems.length > 0);
   const hasAudioMode = $derived(audioItems.length > 0);
@@ -76,7 +82,7 @@
     elDialog?.show();
   });
 
-  function findGroup(groups: FormatGroup[], heading: string) {
+  function findGroup({ groups, heading }: { groups: FormatGroup[]; heading: string }) {
     return groups.find(group => group.heading === heading);
   }
 

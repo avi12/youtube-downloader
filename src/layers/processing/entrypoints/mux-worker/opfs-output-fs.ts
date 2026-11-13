@@ -127,7 +127,7 @@ function makeStreamOps() {
   } satisfies EmscriptenStreamOps;
 }
 
-function makeOpfsFs(fs: FS, syncHandle: FileSystemSyncAccessHandle) {
+function makeOpfsFs({ fs, syncHandle }: { fs: FS; syncHandle: FileSystemSyncAccessHandle }) {
   const nodeOpsRef: { current: EmscriptenNodeOps } = {
     current: {}
   };
@@ -175,7 +175,10 @@ type CreateOpfsOutputFsParams = Prettify<{
   outputFilename: string;
 }>;
 export function createOpfsOutputFs({ fs, syncHandle, outputFilename }: CreateOpfsOutputFsParams) {
-  const driver = makeOpfsFs(fs, syncHandle);
+  const driver = makeOpfsFs({
+     fs,
+     syncHandle 
+  });
 
   return {
     mount(mount: {

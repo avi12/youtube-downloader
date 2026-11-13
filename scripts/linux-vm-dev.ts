@@ -20,7 +20,7 @@ const VNC_PORT = 5900;
 const VM_WORK_DIR = "/home/ubuntu/youtube-downloader";
 const VNC_EXE = String.raw`C:\Program Files\RealVNC\VNC Viewer\vncviewer.exe`;
 
-function capture(cmd: string, args: string[]) {
+function capture({ cmd, args }: { cmd: string; args: string[] }) {
   const result = spawnSync(cmd, args, {
     encoding: "utf8",
     stdio: ["ignore", "pipe", "ignore"]
@@ -28,7 +28,7 @@ function capture(cmd: string, args: string[]) {
   return (result.stdout ?? "").trim();
 }
 
-function run(cmd: string, args: string[]) {
+function run({ cmd, args }: { cmd: string; args: string[] }) {
   const result = spawnSync(cmd, args, { stdio: "inherit" });
   if ((result.status ?? 1) !== 0) {
     console.error(`\nFailed: ${cmd} ${args.join(" ")}`);
@@ -42,7 +42,10 @@ if (multipassCheck.error) {
   process.exit(1);
 }
 
-const infoRaw = capture("multipass", ["info", VM_NAME, "--format", "json"]);
+const infoRaw = capture({
+   cmd: "multipass",
+   args: ["info", VM_NAME, "--format", "json"] 
+});
 if (!infoRaw) {
   console.error(`VM '${VM_NAME}' not found. Run: pnpm setup:linux-vm`);
   process.exit(1);
@@ -51,14 +54,23 @@ if (!infoRaw) {
 let info = JSON.parse(infoRaw);
 if (info.info[VM_NAME].state !== "Running") {
   console.log(`Starting VM '${VM_NAME}'...`);
-  run("multipass", ["start", VM_NAME]);
-  info = JSON.parse(capture("multipass", ["info", VM_NAME, "--format", "json"]));
+  run({
+     cmd: "multipass",
+     args: ["start", VM_NAME] 
+  });
+  info = JSON.parse(capture({
+     cmd: "multipass",
+     args: ["info", VM_NAME, "--format", "json"] 
+  }));
 }
 
 const vmIp: string = info.info[VM_NAME].ipv4[0];
 console.log(`VM IP: ${vmIp}`);
 
-const currentProxy = capture("netsh", ["interface", "portproxy", "show", "v4tov4"]);
+const currentProxy = capture({
+   cmd: "netsh",
+   args: ["interface", "portproxy", "show", "v4tov4"] 
+});
 const needCdpProxy = !new RegExp(`${vmIp}\\s+${VM_SOCAT_PORT}`).test(currentProxy);
 const needVncProxy = !new RegExp(`${vmIp}\\s+${VNC_PORT}`).test(currentProxy);
 if (needCdpProxy || needVncProxy) {
@@ -110,7 +122,10 @@ function startVncPoller() {
 }
 startVncPoller();
 
-const branch = capture("git", ["-C", resolve(import.meta.dirname, ".."), "rev-parse", "--abbrev-ref", "HEAD"]);
+const branch = capture({
+   cmd: "git",
+   args: ["-C", resolve(import.meta.dirname, ".."), "rev-parse", "--abbrev-ref", "HEAD"] 
+});
 console.log(`Syncing branch '${branch}' from host -> VM working tree...`);
 
 // String.raw preserves backslashes so \K \S in grep patterns reach bash intact.

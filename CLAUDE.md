@@ -63,3 +63,4 @@ After each modification, lint with oxlint, ESLint, Stylelint, svelte-check, and 
 
 # Lint exceptions
 - Lint runs through `avi12-lint` (shared presets from `avi12/lint-config`); an exemption goes in `.oxlintrc.json` or `eslint.config.js` with its reason, never at the line
+- `house/positional-parameters` is off for `format-filters.ts` (`byQualityDesc`) and `audio-language-helpers.ts` (`byLabel`), which are `Array.sort` comparators, and for `movie-player.ts` (`captureApply`), a `Proxy` `apply` trap; the signatures are fixed by the platform

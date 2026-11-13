@@ -38,5 +38,17 @@
     ".claude/**",
     "user-profiles/**",
     ".verify-output/**"
+  ],
+  "overrides": [
+    {
+      "files": [
+        "src/lib/youtube/format-filters.ts",
+        "src/lib/download-options/helpers/audio-language-helpers.ts",
+        "src/lib/youtube/movie-player.ts"
+      ],
+      "rules": {
+        "house/positional-parameters": "off"
+      }
+    }
   ]
 }

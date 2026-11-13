@@ -144,7 +144,7 @@ function hostPatternSource(host: string) {
 
 // A manifest match pattern as a test on a URL, for picking CDP page targets (the extension's own
 // tabs.query matches natively)
-export function matchesUrlPattern(url: string, pattern: string) {
+export function matchesUrlPattern({ url, pattern }: { url: string; pattern: string }) {
   const match = pattern.match(/^(\*|https?|wss?|file|ftp):\/\/([^/]*)(\/.*)$/);
   if (!match) {
     return pattern === "<all_urls>";

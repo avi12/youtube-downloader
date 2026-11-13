@@ -81,7 +81,7 @@
     elForm.scrollIntoView({ block: "nearest" });
   }
 
-  function changeQuality(valueString: string, isAudio: boolean) {
+  function changeQuality({ valueString, isAudio }: { valueString: string; isAudio: boolean }) {
     handleQualityChange({
       valueString,
       isAudio,
@@ -104,14 +104,14 @@
     <OptionSelect
       choices={options.qualityOptions}
       label="Quality"
-      onchange={valueString => changeQuality(valueString, options.isAudio)}
+      onchange={valueString => changeQuality({ valueString, isAudio: options.isAudio })}
       value={options.qualityValue}
     />
     {#if options.videoCodecOptions.length > 0}
       <OptionSelect
         choices={options.videoCodecOptions}
         label="Video codec"
-        onchange={valueString => changeQuality(valueString, false)}
+        onchange={valueString => changeQuality({ valueString, isAudio: false })}
         value={options.videoCodecValue}
       />
     {/if}

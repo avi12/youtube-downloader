@@ -263,7 +263,10 @@ export function createChromeReloadTarget({ cdpPort, extensionName, reloadExtensi
     const pages = (await listTargets(cdpPort)).filter(target =>
       target.type === CdpTargetType.Page &&
       target.webSocketDebuggerUrl &&
-      patterns.some(pattern => matchesUrlPattern(target.url ?? "", pattern)));
+      patterns.some(pattern => matchesUrlPattern({
+         url: target.url ?? "",
+         pattern 
+      })));
     await Promise.all(
             pages.map(page => neutralizeOrphanedWorldsInPage({
       page,

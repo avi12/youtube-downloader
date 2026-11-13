@@ -44,10 +44,16 @@ const amoSecret = requiredEnv("AMO_JWT_SECRET");
 buildAndPackageChrome();
 packChromeCrx(chromePemPath);
 buildFirefox();
-signFirefoxXpi(amoIssuer, amoSecret);
+signFirefoxXpi({
+   issuer: amoIssuer,
+   secret: amoSecret 
+});
 
 mkdirSync(DOCS_DIR, { recursive: true });
-writeFileSync(resolve(DOCS_DIR, "updates.json"), renderFirefoxUpdatesJson(version, firefoxXpiUrl));
+writeFileSync(resolve(DOCS_DIR, "updates.json"), renderFirefoxUpdatesJson({
+   appVersion: version,
+   xpiUrl: firefoxXpiUrl 
+}));
 console.log(`Wrote docs/updates.json (Firefox addon=${FIREFOX_GECKO_ID}, version=${version})`);
 console.log("Release artifacts:");
 console.log(`  ${chromeCrxPath}`);
@@ -67,7 +73,10 @@ function requiredEnv(name: string) {
 function buildAndPackageChrome() {
   runPnpm(["build"]);
   runPnpm(["run", "pack"]);
-  assertArtifact(chromeZipPath, "Chrome zip");
+  assertArtifact({
+     path: chromeZipPath,
+     description: "Chrome zip" 
+  });
 }
 
 function buildFirefox() {
@@ -84,7 +93,7 @@ function runPnpm(args: string[]) {
   }
 }
 
-function renderFirefoxUpdatesJson(appVersion: string, xpiUrl: string) {
+function renderFirefoxUpdatesJson({ appVersion, xpiUrl }: { appVersion: string; xpiUrl: string }) {
   return `${JSON.stringify({
     addons: {
       [FIREFOX_GECKO_ID]: {
@@ -131,9 +140,15 @@ function packChromeCrx(pemPath: string) {
   }
 
   const packedCrxPath = `${sourceDir}.crx`;
-  assertArtifact(packedCrxPath, "packed Chrome CRX");
+  assertArtifact({
+     path: packedCrxPath,
+     description: "packed Chrome CRX" 
+  });
   copyFileSync(packedCrxPath, chromeCrxPath);
-  assertArtifact(chromeCrxPath, "Chrome CRX");
+  assertArtifact({
+     path: chromeCrxPath,
+     description: "Chrome CRX" 
+  });
 }
 
 function findChromeBinary() {
@@ -161,7 +176,7 @@ function chromeCandidatesFor(platform: NodeJS.Platform) {
   return ["/usr/bin/google-chrome", "/usr/bin/google-chrome-stable", "/usr/bin/chromium"];
 }
 
-function signFirefoxXpi(issuer: string, secret: string) {
+function signFirefoxXpi({ issuer, secret }: { issuer: string; secret: string }) {
   if (existsSync(firefoxXpiPath)) {
     console.log(`Signed Firefox XPI already exists at ${firefoxXpiPath}; reusing it`);
     return;
@@ -185,7 +200,10 @@ function signFirefoxXpi(issuer: string, secret: string) {
   ]);
   const signedXpiPath = findLatestSignedXpi();
   copyFileSync(signedXpiPath, firefoxXpiPath);
-  assertArtifact(firefoxXpiPath, "Firefox XPI");
+  assertArtifact({
+     path: firefoxXpiPath,
+     description: "Firefox XPI" 
+  });
 }
 
 function findLatestSignedXpi() {
@@ -201,7 +219,7 @@ function findLatestSignedXpi() {
   return signedXpis[0];
 }
 
-function assertArtifact(path: string, description: string) {
+function assertArtifact({ path, description }: { path: string; description: string }) {
   if (!existsSync(path)) {
     console.error(`${description} was not created at ${path}`);
     process.exit(1);

@@ -21,7 +21,7 @@ const SHORTS_CHEVRON_SHAPE = {
   buttonSize: ButtonSize.Small
 } as const;
 
-export function buildDownloadData(state: ButtonViewState, layout: WatchButtonLayout) {
+export function buildDownloadData({ state, layout }: { state: ButtonViewState; layout: WatchButtonLayout }) {
   const { isDone, isDownloading, isError, isDownloadable } = state;
 
   let iconName: IconName = IconName.Download;
@@ -53,7 +53,7 @@ export function buildDownloadData(state: ButtonViewState, layout: WatchButtonLay
   return data;
 }
 
-export function buildChevronData(state: ButtonViewState, layout: WatchButtonLayout) {
+export function buildChevronData({ state, layout }: { state: ButtonViewState; layout: WatchButtonLayout }) {
   const { isDownloadable, isPanelBelow, isPanelOpen } = state;
   const isDisabled = !isDownloadable;
   const isPanelOpenAbove = isPanelOpen && !isPanelBelow;

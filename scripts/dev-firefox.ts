@@ -174,7 +174,7 @@ function createRdpClient(port: number) {
     socket.write(bytes);
   }
 
-  function waitFor(predicate: (packet: RdpPacket) => boolean, timeoutMs = RDP_REPLY_TIMEOUT_MS) {
+  function waitFor({ predicate, timeoutMs = RDP_REPLY_TIMEOUT_MS }: { predicate: (packet: RdpPacket) => boolean; timeoutMs?: number }) {
     return new Promise<RdpPacket>((resolve, reject) => {
       if (closeError) {
         reject(closeError);
@@ -213,7 +213,7 @@ function createRdpClient(port: number) {
     extra?: Record<string, unknown>;
     predicate?: (packet: RdpPacket) => boolean;
   }) {
-    const response = waitFor(packet => packet.from === to && predicate(packet));
+    const response = waitFor({ predicate: packet => packet.from === to && predicate(packet) });
     send({
       to,
       type,
@@ -283,9 +283,12 @@ function waitForBackgroundFrameConsole({ client, backgroundPageUrl, timeoutMs }:
   timeoutMs: number;
 }) {
   return client
-    .waitFor(packet =>
+    .waitFor({
+      predicate: packet =>
       packet.type === "target-available-form" &&
-      packet.target?.url === backgroundPageUrl, timeoutMs)
+      packet.target?.url === backgroundPageUrl,
+      timeoutMs
+    })
     .then(packet => packet.target?.consoleActor)
     .catch(() => undefined);
 }
@@ -395,7 +398,10 @@ async function evaluateInBackground<TValue>({ profileDir, extensionId, source }:
 
   const client = createRdpClient(port);
   try {
-    await client.waitFor(packet => packet.from === "root", RDP_CONNECT_TIMEOUT_MS);
+    await client.waitFor({
+       predicate: packet => packet.from === "root",
+       timeoutMs: RDP_CONNECT_TIMEOUT_MS 
+    });
     const consoleActor = await findBackgroundConsole({
       client,
       extensionId

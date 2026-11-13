@@ -37,13 +37,13 @@
     }, [])
   );
   const description = $derived(
-                        describeChoice(
-                                 findChoice({
-    choices: [...choices],
-    value 
-  })
-                               )
-                      );
+    describeChoice(
+      findChoice({
+        choices: [...choices],
+        value 
+      })
+    )
+  );
 </script>
 
 {#snippet optionList(sectionChoices: OptionChoice[])}
