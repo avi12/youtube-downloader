@@ -11,10 +11,10 @@ export function byLabel(optionA: { label: string }, optionB: { label: string }) 
 }
 
 export function buildUniqueAudioLanguages({
-  audioFormats, includeAutoDubbing = false, preservedAutoDubbedLangCode = null
+  audioFormats, shouldIncludeAutoDubbing = false, preservedAutoDubbedLangCode = null
 }: {
   audioFormats: AdaptiveFormatItem[];
-  includeAutoDubbing?: boolean;
+  shouldIncludeAutoDubbing?: boolean;
   preservedAutoDubbedLangCode?: string | null;
 }) {
   const seen = new Set<string>();
@@ -28,7 +28,7 @@ export function buildUniqueAudioLanguages({
       item: format,
       isAuto: candidate => !!candidate.audioTrack?.id.endsWith(AUTO_DUB_TRACK_SUFFIX),
       matchesPlayer: candidate => normalizeLanguageCode(required(candidate.audioTrack).id) === preservedAutoDubbedLangCode,
-      globalIncludes: includeAutoDubbing
+      globalIncludes: shouldIncludeAutoDubbing
     });
     if (!isKept) {
       continue;

@@ -17,9 +17,9 @@
   let elMenu = $state<HTMLDivElement | null>(null);
   let elTrigger = $state<HTMLButtonElement | null>(null);
 
-  function setMenuOpen(value: boolean) {
-    isMenuOpen = value;
-    onMenuOpenChange?.(value);
+  function setMenuOpen(isOpen: boolean) {
+    isMenuOpen = isOpen;
+    onMenuOpenChange?.(isOpen);
   }
 
   function closeMenu() {

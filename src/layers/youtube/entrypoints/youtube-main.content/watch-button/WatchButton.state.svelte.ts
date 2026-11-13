@@ -81,14 +81,18 @@ export function createWatchButtonState(params: {
     isDownloadable: params.videoData.isDownloadable
   });
 
-  const downloadData = $derived(buildDownloadData({
+  const downloadData = $derived(
+                         buildDownloadData({
      state: viewState,
      layout: params.layout 
-  }));
-  const chevronData = $derived(buildChevronData({
+  })
+                       );
+  const chevronData = $derived(
+                        buildChevronData({
      state: viewState,
      layout: params.layout 
-  }));
+  })
+                      );
 
   const downloadState = $derived.by(() => {
     if (isDone) {

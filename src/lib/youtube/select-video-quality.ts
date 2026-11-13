@@ -52,7 +52,7 @@ function listQualityCandidates({ videoData, options }: {
 }) {
   const candidates = filterVideoFormatsByEnhancedBitrate({
      formats: videoData.videoFormats,
-     enhancedBitrate: options.enhancedBitrate 
+     isEnhancedBitrate: options.enhancedBitrate 
   });
   const { cap } = FRAME_RATE_LIMITS[options.maxFrameRate];
   const isOverCap = candidates.some(format => (format.fps ?? 0) > cap);
@@ -62,7 +62,7 @@ function listQualityCandidates({ videoData, options }: {
 
   const variants = filterVideoFormatsByEnhancedBitrate({
      formats: resolveVideoFormatVariants(videoData),
-     enhancedBitrate: options.enhancedBitrate 
+     isEnhancedBitrate: options.enhancedBitrate 
   });
   const cappedFormats = variants.filter(format => (format.fps ?? 0) <= cap);
   return cappedFormats.length ? cappedFormats : candidates;

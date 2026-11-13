@@ -8,8 +8,8 @@ export function isPremiumFormat(format: Pick<AdaptiveFormatItem, "qualityLabel">
   return (format.qualityLabel ?? "").includes(QUALITY_LABEL_PREMIUM);
 }
 
-export function filterVideoFormatsByEnhancedBitrate({ formats, enhancedBitrate }: { formats: AdaptiveFormatItem[]; enhancedBitrate: boolean }) {
-  return enhancedBitrate ? formats : formats.filter(format => !isPremiumFormat(format));
+export function filterVideoFormatsByEnhancedBitrate({ formats, isEnhancedBitrate }: { formats: AdaptiveFormatItem[]; isEnhancedBitrate: boolean }) {
+  return isEnhancedBitrate ? formats : formats.filter(format => !isPremiumFormat(format));
 }
 
 export function formatVideoQualityLabel(format: Pick<AdaptiveFormatItem, "height" | "fps" | "qualityLabel">) {

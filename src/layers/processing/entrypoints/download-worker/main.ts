@@ -54,7 +54,7 @@ async function trySabrWithStallTimer({ request, tabId }: TrySabrWithStallTimerPa
   const stallTimer = createSabrStallTimer(signal);
 
   const isAudioOnly = request.type === DownloadType.Audio;
-  const useStreaming = !isAudioOnly;
+  const isStreaming = !isAudioOnly;
 
   try {
     return await downloadViaSabr({
@@ -62,7 +62,7 @@ async function trySabrWithStallTimer({ request, tabId }: TrySabrWithStallTimerPa
       signal: stallTimer.signal,
       tabId,
       onProgress: stallTimer.onProgress,
-      ...(useStreaming && {
+      ...(isStreaming && {
         onVideoChunk: sendChunkToParent({
           videoId: request.videoId,
           streamType: StreamType.Video,
@@ -219,7 +219,7 @@ async function runDownload({ request, tabId, enrichedMetadata }: RunDownloadPara
     const shouldUseCdn = needsCdn && isCdnUrlsPresent;
     if (shouldUseCdn) {
       const partialAudioData = sabrResult?.isPartialAudio ? (sabrResult.audioData ?? undefined) : undefined;
-      const useStreaming = !isAudioOnly && !partialAudioData;
+      const isStreaming = !isAudioOnly && !partialAudioData;
 
       cdnResult = await downloadViaCdn({
         request,
@@ -227,7 +227,7 @@ async function runDownload({ request, tabId, enrichedMetadata }: RunDownloadPara
         videoId,
         tabId,
         partialAudioData,
-        ...(useStreaming && {
+        ...(isStreaming && {
           onVideoChunk: sendChunkToParent({
             videoId,
             streamType: StreamType.Video,

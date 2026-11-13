@@ -31,7 +31,7 @@ export function triggerDownload({ videoData, videoId, gridTitle, setLocallyDone 
 
   const videoCandidates = filterVideoFormatsByEnhancedBitrate({
      formats: videoData.videoFormats,
-     enhancedBitrate: options.enhancedBitrate 
+     isEnhancedBitrate: options.enhancedBitrate 
   });
 
   setLocallyDone(false);

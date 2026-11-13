@@ -20,8 +20,8 @@ function resolveCredentials() {
   const poToken = storeCredentials?.poToken || domCredentials.poToken || capturedPoToken;
   const sabrUrl = storeCredentials?.url || domCredentials.url || capturedSabrUrl;
 
-  const haveCredentialsChanged = poToken !== capturedPoToken || sabrUrl !== capturedSabrUrl;
-  if (haveCredentialsChanged) {
+  const hasCredentialsChanged = poToken !== capturedPoToken || sabrUrl !== capturedSabrUrl;
+  if (hasCredentialsChanged) {
     setPoTokenCredentials({
       poToken,
       sabrUrl

@@ -58,30 +58,32 @@ if (info.info[VM_NAME].state !== "Running") {
      cmd: "multipass",
      args: ["start", VM_NAME] 
   });
-  info = JSON.parse(capture({
+  info = JSON.parse(
+           capture({
      cmd: "multipass",
      args: ["info", VM_NAME, "--format", "json"] 
-  }));
+  })
+         );
 }
 
-const vmIp: string = info.info[VM_NAME].ipv4[0];
-console.log(`VM IP: ${vmIp}`);
+const VM_IP: string = info.info[VM_NAME].ipv4[0];
+console.log(`VM IP: ${VM_IP}`);
 
 const currentProxy = capture({
    cmd: "netsh",
    args: ["interface", "portproxy", "show", "v4tov4"] 
 });
-const needCdpProxy = !new RegExp(`${vmIp}\\s+${VM_SOCAT_PORT}`).test(currentProxy);
-const needVncProxy = !new RegExp(`${vmIp}\\s+${VNC_PORT}`).test(currentProxy);
-if (needCdpProxy || needVncProxy) {
-  console.log(`Refreshing portproxy (CDP 127.0.0.1:${HOST_CDP_PORT} -> ${vmIp}:${VM_SOCAT_PORT}, VNC 127.0.0.1:${VNC_PORT} -> ${vmIp}:${VNC_PORT})...`);
+const SHOULD_PROXY_CDP = !new RegExp(`${VM_IP}\\s+${VM_SOCAT_PORT}`).test(currentProxy);
+const SHOULD_PROXY_VNC = !new RegExp(`${VM_IP}\\s+${VNC_PORT}`).test(currentProxy);
+if (SHOULD_PROXY_CDP || SHOULD_PROXY_VNC) {
+  console.log(`Refreshing portproxy (CDP 127.0.0.1:${HOST_CDP_PORT} -> ${VM_IP}:${VM_SOCAT_PORT}, VNC 127.0.0.1:${VNC_PORT} -> ${VM_IP}:${VNC_PORT})...`);
   const ps1 = join(tmpdir(), "portproxy-setup.ps1");
   writeFileSync(
     ps1, [
     `netsh interface portproxy delete v4tov4 listenport=${HOST_CDP_PORT} listenaddress=127.0.0.1`,
     `netsh interface portproxy delete v4tov4 listenport=${VNC_PORT} listenaddress=127.0.0.1`,
-    `netsh interface portproxy add v4tov4 listenport=${HOST_CDP_PORT} listenaddress=127.0.0.1 connectport=${VM_SOCAT_PORT} connectaddress=${vmIp}`,
-    `netsh interface portproxy add v4tov4 listenport=${VNC_PORT} listenaddress=127.0.0.1 connectport=${VNC_PORT} connectaddress=${vmIp}`,
+    `netsh interface portproxy add v4tov4 listenport=${HOST_CDP_PORT} listenaddress=127.0.0.1 connectport=${VM_SOCAT_PORT} connectaddress=${VM_IP}`,
+    `netsh interface portproxy add v4tov4 listenport=${VNC_PORT} listenaddress=127.0.0.1 connectport=${VNC_PORT} connectaddress=${VM_IP}`,
   ].join("\r\n")
   );
   spawnSync("powershell", [

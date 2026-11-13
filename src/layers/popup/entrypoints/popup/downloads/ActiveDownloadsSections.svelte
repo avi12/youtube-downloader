@@ -123,14 +123,18 @@
 
   const thisTabRecent = $derived(recentDownloads.filter(isRecentInThisTab));
 
-  const thisTab = $derived(partitionActive({
-     videoIds: thisTabIds,
-     recent: thisTabRecent 
-  }));
-  const otherTabs = $derived(partitionActive({
-     videoIds: otherIds,
-     recent: [] 
-  }));
+  const thisTab = $derived(
+    partitionActive({
+      videoIds: thisTabIds,
+      recent: thisTabRecent 
+    })
+  );
+  const otherTabs = $derived(
+    partitionActive({
+      videoIds: otherIds,
+      recent: [] 
+    })
+  );
 
   const thisTabCount = $derived(thisTab.individualIds.length + thisTab.zipGroups.length + thisTab.recent.length);
   const otherTabsCount = $derived(otherTabs.individualIds.length + otherTabs.zipGroups.length);

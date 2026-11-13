@@ -36,8 +36,8 @@
 
     return String(++selectInstanceCounter);
   });
-  const anchorName = `${ANCHOR_NAME_PREFIX}${suffix}`;
-  const popoverId = `${POPOVER_ID_PREFIX}${suffix}`;
+  const ANCHOR_NAME = `${ANCHOR_NAME_PREFIX}${suffix}`;
+  const POPOVER_ID = `${POPOVER_ID_PREFIX}${suffix}`;
 
   const selectedOption = $derived(options.find(option => option.value === value));
   const selectedLabel = $derived(selectedOption ? formatChoiceLabel(selectedOption) : "");
@@ -230,7 +230,7 @@
   <label class="ytdl-select-label" for={id}>{label}</label>
   <button
     {id}
-    style:anchor-name={anchorName}
+    style:anchor-name={ANCHOR_NAME}
     class="ytdl-select-trigger"
     class:open={isOpen}
     {@attach attachTrigger}
@@ -238,7 +238,7 @@
     aria-haspopup="listbox"
     aria-label={label}
     disabled={disabled || undefined}
-    popovertarget={popoverId}
+    popovertarget={POPOVER_ID}
     popovertargetaction="toggle"
     type="button"
   >
@@ -247,8 +247,8 @@
   </button>
 
   <div
-    id={popoverId}
-    style:position-anchor={anchorName}
+    id={POPOVER_ID}
+    style:position-anchor={ANCHOR_NAME}
     class="ytdl-select-popup"
     {@attach attachPopover}
     popover="auto"

@@ -45,7 +45,7 @@ export function resolveInitialExtension({ options, videoData, downloadType }: Op
 
   const candidates = filterVideoFormatsByEnhancedBitrate({
      formats: videoData.videoFormats,
-     enhancedBitrate: options.enhancedBitrate 
+     isEnhancedBitrate: options.enhancedBitrate 
   });
   return resolveAutoContainer({
     extension: options.ext.video,

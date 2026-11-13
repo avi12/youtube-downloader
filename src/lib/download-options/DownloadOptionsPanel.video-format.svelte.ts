@@ -25,7 +25,7 @@ export function createVideoFormatTracker({
     const videoData = getVideoData();
     const candidates = filterVideoFormatsByEnhancedBitrate({
        formats: videoData.videoFormats,
-       enhancedBitrate: CONTENT_OPTIONS.enhancedBitrate 
+       isEnhancedBitrate: CONTENT_OPTIONS.enhancedBitrate 
     });
     try {
       const elVideo = await waitForVideoElement(signal);

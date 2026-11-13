@@ -141,7 +141,7 @@ export function createPanelState({ getVideoData, host }: { getVideoData: () => V
       selectedAudioFormat,
       extension,
       getVideoData,
-      downloadExtras: PANEL_OPTIONS.downloadExtras,
+      hasDownloadExtras: PANEL_OPTIONS.downloadExtras,
       codecPreferences
     })
   );
@@ -507,8 +507,8 @@ export function createPanelState({ getVideoData, host }: { getVideoData: () => V
     get isFilenameValid() {
       return isFilenameValid;
     },
-    set isFilenameValid(value: boolean) {
-      isFilenameValid = value;
+    set isFilenameValid(isValid: boolean) {
+      isFilenameValid = isValid;
     },
     get downloadId() {
       return downloadId;

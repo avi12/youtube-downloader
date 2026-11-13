@@ -71,26 +71,26 @@ export const PANEL_OPTIONS = {
   get includeAiCaptions() {
     return includeAiCaptionsLocal ?? CONTENT_OPTIONS.includeAiCaptions;
   },
-  set includeAiCaptions(value: boolean) {
-    includeAiCaptionsLocal = value;
+  set includeAiCaptions(isEnabled: boolean) {
+    includeAiCaptionsLocal = isEnabled;
   },
   get includeAutoDubbing() {
     return includeAutoDubbingLocal ?? CONTENT_OPTIONS.includeAutoDubbing;
   },
-  set includeAutoDubbing(value: boolean) {
-    includeAutoDubbingLocal = value;
+  set includeAutoDubbing(isEnabled: boolean) {
+    includeAutoDubbingLocal = isEnabled;
   },
   get downloadExtras() {
     return downloadExtrasLocal ?? CONTENT_OPTIONS.downloadExtras;
   },
-  set downloadExtras(value: boolean) {
-    downloadExtrasLocal = value;
+  set downloadExtras(isEnabled: boolean) {
+    downloadExtrasLocal = isEnabled;
   },
   get downloadExtraCaptions() {
     return downloadExtraCaptionsLocal;
   },
-  set downloadExtraCaptions(value: boolean) {
-    downloadExtraCaptionsLocal = value;
+  set downloadExtraCaptions(isEnabled: boolean) {
+    downloadExtraCaptionsLocal = isEnabled;
   }
 };
 
@@ -121,7 +121,7 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
   const uniqueAudioLanguages = $derived(
     buildUniqueAudioLanguages({
       audioFormats: props().audioFormats,
-      includeAutoDubbing: PANEL_OPTIONS.includeAutoDubbing
+      shouldIncludeAutoDubbing: PANEL_OPTIONS.includeAutoDubbing
     })
   );
 
@@ -311,12 +311,12 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
   });
   const selectedCaptionVssId = $derived(props().selectedCaptionTrack?.vssId ?? "");
 
-  function setDownloadExtras(value: boolean) {
-    PANEL_OPTIONS.downloadExtras = value;
+  function setDownloadExtras(isEnabled: boolean) {
+    PANEL_OPTIONS.downloadExtras = isEnabled;
   }
 
-  function setDownloadExtraCaptions(value: boolean) {
-    PANEL_OPTIONS.downloadExtraCaptions = value;
+  function setDownloadExtraCaptions(isEnabled: boolean) {
+    PANEL_OPTIONS.downloadExtraCaptions = isEnabled;
   }
 
   function findCaptionTrack(vssId: string) {

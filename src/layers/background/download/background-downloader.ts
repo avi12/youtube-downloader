@@ -81,7 +81,7 @@ async function fetchAndroidVrChunked({
 }: FetchAndroidVrChunkedParams) {
   let byteOffset = 0;
   let iChunk = 0;
-  let useBgDirect = true;
+  let isUsingBgDirect = true;
   while (byteOffset < contentLength) {
     if (signal.aborted) {
       return iChunk;
@@ -98,7 +98,7 @@ async function fetchAndroidVrChunked({
 
     let response: Response;
     try {
-      const performFetch = useBgDirect ? bgFetch : required(pageProxyFetch);
+      const performFetch = isUsingBgDirect ? bgFetch : required(pageProxyFetch);
       response = await performFetch(url, init);
 
       const isAcceptableStatus = response.status === HTTP_STATUS_PARTIAL_CONTENT || response.status === HTTP_STATUS_OK;
@@ -110,14 +110,14 @@ async function fetchAndroidVrChunked({
         return iChunk;
       }
 
-      const canFallback = useBgDirect && pageProxyFetch;
+      const canFallback = isUsingBgDirect && pageProxyFetch;
       if (!canFallback) {
         throw new Error(`${label} chunk fetch failed at offset ${byteOffset}: ${String(err)}`, {
           cause: err
         });
       }
 
-      useBgDirect = false;
+      isUsingBgDirect = false;
       response = await required(pageProxyFetch)(url, init);
 
       const isAcceptableStatus = response.status === HTTP_STATUS_PARTIAL_CONTENT || response.status === HTTP_STATUS_OK;
@@ -178,16 +178,16 @@ async function runFirefoxDirectDownload({ request, tabId, enrichedMetadata }: Ru
   const pageProxyFetch = tabId >= 0 ? createPageProxyFetch(tabId) : null;
   const isAudioOnly = type === DownloadType.Audio;
   const isVideoOnly = type === DownloadType.Video;
-  const wantsVideo = !isAudioOnly;
-  const wantsAudio = !isVideoOnly;
+  const isVideoWanted = !isAudioOnly;
+  const isAudioWanted = !isVideoOnly;
 
   let resolved;
   try {
     resolved = await resolveAndroidUrls({
       videoId,
-      videoItag: wantsVideo ? videoItag : undefined,
-      audioItag: wantsAudio ? audioItag : undefined,
-      extraAudioItags: wantsAudio ? extraAudioItags : undefined
+      videoItag: isVideoWanted ? videoItag : undefined,
+      audioItag: isAudioWanted ? audioItag : undefined,
+      extraAudioItags: isAudioWanted ? extraAudioItags : undefined
     });
   } catch (bgErr) {
     if (!pageProxyFetch) {
@@ -196,18 +196,18 @@ async function runFirefoxDirectDownload({ request, tabId, enrichedMetadata }: Ru
 
     resolved = await resolveAndroidUrls({
       videoId,
-      videoItag: wantsVideo ? videoItag : undefined,
-      audioItag: wantsAudio ? audioItag : undefined,
-      extraAudioItags: wantsAudio ? extraAudioItags : undefined,
+      videoItag: isVideoWanted ? videoItag : undefined,
+      audioItag: isAudioWanted ? audioItag : undefined,
+      extraAudioItags: isAudioWanted ? extraAudioItags : undefined,
       customFetch: pageProxyFetch
     });
   }
 
-  if (wantsVideo && !resolved.videoUrl) {
+  if (isVideoWanted && !resolved.videoUrl) {
     throw new Error(`ANDROID_VR did not return URL for video itag ${videoItag}`);
   }
 
-  if (wantsAudio && !resolved.audioUrl) {
+  if (isAudioWanted && !resolved.audioUrl) {
     throw new Error(`ANDROID_VR did not return URL for audio itag ${audioItag}`);
   }
 
@@ -218,7 +218,7 @@ async function runFirefoxDirectDownload({ request, tabId, enrichedMetadata }: Ru
     label: string;
   }
   const streams: StreamDescriptor[] = [];
-  if (wantsVideo && resolved.videoUrl) {
+  if (isVideoWanted && resolved.videoUrl) {
     streams.push({
       url: resolved.videoUrl,
       contentLength: resolved.videoContentLength,
@@ -227,7 +227,7 @@ async function runFirefoxDirectDownload({ request, tabId, enrichedMetadata }: Ru
     });
   }
 
-  if (wantsAudio && resolved.audioUrl) {
+  if (isAudioWanted && resolved.audioUrl) {
     streams.push({
       url: resolved.audioUrl,
       contentLength: resolved.audioContentLength,
@@ -250,13 +250,13 @@ async function runFirefoxDirectDownload({ request, tabId, enrichedMetadata }: Ru
   const totalExpectedBytes = streams.reduce((total, stream) => total + stream.contentLength, 0);
   let totalReceivedBytes = 0;
   let lastProgressReport = 0;
-  function reportDownloadProgress(force = false) {
+  function reportDownloadProgress(shouldForce = false) {
     if (totalExpectedBytes === 0) {
       return;
     }
 
     const now = Date.now();
-    if (!force && now - lastProgressReport < PROGRESS_THROTTLE_MS) {
+    if (!shouldForce && now - lastProgressReport < PROGRESS_THROTTLE_MS) {
       return;
     }
 

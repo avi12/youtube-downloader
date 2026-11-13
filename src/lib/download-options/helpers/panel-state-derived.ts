@@ -12,7 +12,7 @@ export function resolveActualExtension({
   selectedAudioFormat,
   extension,
   getVideoData,
-  downloadExtras,
+  hasDownloadExtras,
   codecPreferences
 }: {
   downloadType: DownloadType;
@@ -20,7 +20,7 @@ export function resolveActualExtension({
   selectedAudioFormat: AdaptiveFormatItem | null;
   extension: string;
   getVideoData: () => VideoData;
-  downloadExtras: boolean;
+  hasDownloadExtras: boolean;
   codecPreferences: CodecPreferences;
 }) {
   const isAudioOrMissingFormat = downloadType === DownloadType.Audio || !selectedVideoFormat || !selectedAudioFormat;
@@ -37,7 +37,7 @@ export function resolveActualExtension({
   });
 
   const selectedTrackId = selectedAudioFormat.audioTrack?.id;
-  const isTrackWithExtras = selectedTrackId && downloadExtras;
+  const isTrackWithExtras = selectedTrackId && hasDownloadExtras;
   if (isTrackWithExtras) {
     const isSelectedAutoDubbed = selectedTrackId.endsWith(AUTO_DUB_TRACK_SUFFIX);
     const isAutoDubbingBlockedForSelected = !CONTENT_OPTIONS.includeAutoDubbing && isSelectedAutoDubbed;

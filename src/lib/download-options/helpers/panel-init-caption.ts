@@ -134,8 +134,8 @@ export function resolveInitialCaptionTrack({
     return null;
   }
 
-  const allTracksAreAsr = videoData.captionTracks.every(track => track.kind === CAPTION_KIND_ASR);
-  const candidateTracks = options.includeAiCaptions || allTracksAreAsr
+  const isEveryTrackAsr = videoData.captionTracks.every(track => track.kind === CAPTION_KIND_ASR);
+  const candidateTracks = options.includeAiCaptions || isEveryTrackAsr
     ? videoData.captionTracks
     : videoData.captionTracks.filter(track => track.kind !== CAPTION_KIND_ASR);
   const isCustomMode = captionMode === PanelTrackMode.Custom;

@@ -122,19 +122,19 @@ type ResolveAndroidUrlsForRequestParams = Prettify<{
   videoId: string;
   videoItag: number;
   audioItag: number;
-  wantsVideo: boolean;
-  wantsAudio: boolean;
+  isVideoWanted: boolean;
+  isAudioWanted: boolean;
   pageProxyFetch: ChunkFetchFn | null;
 }>;
 
 async function resolveAndroidUrlsForRequest({
-  videoId, videoItag, audioItag, wantsVideo, wantsAudio, pageProxyFetch
+  videoId, videoItag, audioItag, isVideoWanted, isAudioWanted, pageProxyFetch
 }: ResolveAndroidUrlsForRequestParams) {
   try {
     return await resolveAndroidUrls({
       videoId,
-      videoItag: wantsVideo ? videoItag : undefined,
-      audioItag: wantsAudio ? audioItag : undefined
+      videoItag: isVideoWanted ? videoItag : undefined,
+      audioItag: isAudioWanted ? audioItag : undefined
     });
   } catch (error) {
     if (!pageProxyFetch) {
@@ -143,8 +143,8 @@ async function resolveAndroidUrlsForRequest({
 
     return await resolveAndroidUrls({
       videoId,
-      videoItag: wantsVideo ? videoItag : undefined,
-      audioItag: wantsAudio ? audioItag : undefined,
+      videoItag: isVideoWanted ? videoItag : undefined,
+      audioItag: isAudioWanted ? audioItag : undefined,
       customFetch: pageProxyFetch
     });
   }
@@ -154,24 +154,24 @@ type ProgressReporterParams = Prettify<{
   videoId: string;
   tabId: number;
   captionCount: number;
-  wantsVideo: boolean;
-  wantsAudio: boolean;
+  isVideoWanted: boolean;
+  isAudioWanted: boolean;
   videoExpectedBytes: number;
   audioExpectedBytes: number;
 }>;
 
 function createProgressReporter({
-  videoId, tabId, captionCount, wantsVideo, wantsAudio, videoExpectedBytes, audioExpectedBytes
+  videoId, tabId, captionCount, isVideoWanted, isAudioWanted, videoExpectedBytes, audioExpectedBytes
 }: ProgressReporterParams) {
   let videoReceivedBytes = 0;
   let audioReceivedBytes = 0;
 
   function emit() {
     const progress = computeWeightedProgress({
-      hasVideoStage: wantsVideo,
+      hasVideoStage: isVideoWanted,
       videoReceivedBytes,
       videoExpectedBytes,
-      hasAudioStage: wantsAudio,
+      hasAudioStage: isAudioWanted,
       audioReceivedBytes,
       audioExpectedBytes,
       extraReceivedBytesArray: [],
@@ -269,22 +269,22 @@ export async function runFirefoxDirectDownload(
   // 403-ing BG-context InnerTube on Firefox, the page-proxy hop is skipped.
   const isValidTabId = tabId >= 0;
   const pageProxyFetch = isValidTabId ? createPageProxyFetch(tabId) : null;
-  const wantsVideo = type !== DownloadType.Audio;
-  const wantsAudio = type !== DownloadType.Video;
+  const isVideoWanted = type !== DownloadType.Audio;
+  const isAudioWanted = type !== DownloadType.Video;
 
   const resolved = await resolveAndroidUrlsForRequest({
     videoId,
     videoItag,
     audioItag,
-    wantsVideo,
-    wantsAudio,
+    isVideoWanted,
+    isAudioWanted,
     pageProxyFetch
   });
-  if (wantsVideo && !resolved.videoUrl) {
+  if (isVideoWanted && !resolved.videoUrl) {
     throw new Error(`ANDROID_VR did not return URL for video itag ${videoItag}`);
   }
 
-  if (wantsAudio && !resolved.audioUrl) {
+  if (isAudioWanted && !resolved.audioUrl) {
     throw new Error(`ANDROID_VR did not return URL for audio itag ${audioItag}`);
   }
 
@@ -292,8 +292,8 @@ export async function runFirefoxDirectDownload(
     videoId,
     tabId,
     captionCount: request.captionTracks?.length ?? 0,
-    wantsVideo,
-    wantsAudio,
+    isVideoWanted,
+    isAudioWanted,
     videoExpectedBytes: resolved.videoContentLength,
     audioExpectedBytes: resolved.audioContentLength
   });
@@ -302,8 +302,8 @@ export async function runFirefoxDirectDownload(
 
   let videoChunkCount = 0;
   let audioChunkCount = 0;
-  const shouldFetchVideo = wantsVideo && resolved.videoUrl;
-  const shouldFetchAudio = wantsAudio && resolved.audioUrl;
+  const shouldFetchVideo = isVideoWanted && resolved.videoUrl;
+  const shouldFetchAudio = isAudioWanted && resolved.audioUrl;
   await Promise.all([
     shouldFetchVideo ? fetchAndroidVrChunked({
       url: required(resolved.videoUrl),
@@ -345,7 +345,7 @@ export async function runFirefoxDirectDownload(
 
   progress.emit();
 
-  if (wantsVideo) {
+  if (isVideoWanted) {
     sendStreamFinishedMarker({
       videoId,
       streamType: StreamType.Video,
@@ -354,7 +354,7 @@ export async function runFirefoxDirectDownload(
     });
   }
 
-  if (wantsAudio) {
+  if (isAudioWanted) {
     sendStreamFinishedMarker({
       videoId,
       streamType: StreamType.Audio,

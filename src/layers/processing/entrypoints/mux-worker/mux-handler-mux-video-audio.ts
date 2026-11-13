@@ -77,9 +77,9 @@ export async function handleMuxVideoAudio(job: MuxVideoAudioJob) {
   required(state.ffmpeg).FS.mount(outputDriver, {}, opfsOutDir);
   const opfsOutputFilename = `${opfsOutDir}/${outputFilename}`;
 
-  let success: boolean | undefined;
+  let isSuccess: boolean | undefined;
   try {
-    success = executeMuxPhases({
+    isSuccess = executeMuxPhases({
       params: {
         videoFilename,
         audioFilenames,
@@ -117,7 +117,7 @@ export async function handleMuxVideoAudio(job: MuxVideoAudioJob) {
     }
   }
 
-  if (success) {
+  if (isSuccess) {
     const file = await outputHandle.getFile();
     postFileResult(file);
   } else {

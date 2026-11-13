@@ -77,14 +77,14 @@ export function extractPoTokenFromBody(body: number[]) {
       continue;
     }
 
-    const is64Bit = wireType === WIRE_TYPE_64_BIT;
-    if (is64Bit) {
+    const isX64 = wireType === WIRE_TYPE_64_BIT;
+    if (isX64) {
       offset += WIRE_64_BIT_BYTE_SIZE;
       continue;
     }
 
-    const is32Bit = wireType === WIRE_TYPE_32_BIT;
-    if (is32Bit) {
+    const isX86 = wireType === WIRE_TYPE_32_BIT;
+    if (isX86) {
       offset += WIRE_32_BIT_BYTE_SIZE;
       continue;
     }

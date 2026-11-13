@@ -27,8 +27,8 @@
   const { label, subtitle, displayValue, currentValue, items, slideDuration, onSelect, icon }: Props = $props();
 
   const uniqueId = crypto.randomUUID().replaceAll("-", "");
-  const listboxId = `dd-listbox-${uniqueId}`;
-  const headerId = `dd-header-${uniqueId}`;
+  const LISTBOX_ID = `dd-listbox-${uniqueId}`;
+  const HEADER_ID = `dd-header-${uniqueId}`;
 
   const VIEWPORT_MARGIN = 16;
   const TRIGGER_GAP = 6;
@@ -169,7 +169,7 @@
 <button
   bind:this={elTrigger}
   class="set-item set-picker-btn"
-  aria-controls={listboxId}
+  aria-controls={LISTBOX_ID}
   aria-expanded={isOpen}
   aria-haspopup="listbox"
   onclick={e => {
@@ -198,15 +198,15 @@
   <section
     bind:this={elList}
     class="dropdown-list"
-    aria-labelledby={headerId}
+    aria-labelledby={HEADER_ID}
     transition:scale={{
       duration: slideDuration,
       start: 0.96,
       opacity: 0
     }}
   >
-    <h2 id={headerId} class="dropdown-header">{label}</h2>
-    <ul id={listboxId} class="dropdown-options" aria-labelledby={headerId} onkeydown={handleListKeydown} role="listbox">
+    <h2 id={HEADER_ID} class="dropdown-header">{label}</h2>
+    <ul id={LISTBOX_ID} class="dropdown-options" aria-labelledby={HEADER_ID} onkeydown={handleListKeydown} role="listbox">
       {#each items as item (item.value)}
         <li
           class="dropdown-item"

@@ -136,15 +136,17 @@
     const parts: string[] = [];
     if (downloadedBytes !== undefined && downloadedBytes > 0) {
       const downloadedStr = formatBytes({
-         bytes: downloadedBytes,
-         maximumFractionDigits: 0 
+        bytes: downloadedBytes,
+        maximumFractionDigits: 0 
       });
       const hasValidTotal = totalBytes !== undefined && totalBytes >= downloadedBytes;
       if (hasValidTotal) {
-        parts.push(`${downloadedStr} / ${formatBytes({
-           bytes: totalBytes,
-           maximumFractionDigits: 2 
-        })}`);
+        parts.push(
+          `${downloadedStr} / ${formatBytes({
+            bytes: totalBytes,
+            maximumFractionDigits: 2 
+          })}`
+        );
       } else {
         parts.push(downloadedStr);
       }

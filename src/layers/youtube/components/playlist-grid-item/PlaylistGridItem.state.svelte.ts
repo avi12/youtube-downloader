@@ -94,8 +94,8 @@ function filterCaptionTracks(captionTracks: CaptionTrack[]) {
     return captionTracks;
   }
 
-  const allTracksAreAsr = captionTracks.length > 0 && captionTracks.every(track => track.kind === CAPTION_KIND_ASR);
-  if (allTracksAreAsr) {
+  const isEveryTrackAsr = captionTracks.length > 0 && captionTracks.every(track => track.kind === CAPTION_KIND_ASR);
+  if (isEveryTrackAsr) {
     return captionTracks;
   }
 
@@ -510,9 +510,9 @@ export function createPlaylistGridItemState({ playlistId, gridTitle }: CreatePla
 
   $effect.root(() => {
     $effect(() => {
-      const allDone = loadedVideos.length > 0
+      const isAllDone = loadedVideos.length > 0
         && loadedVideos.every(video => statusProgressSignal.value[video.videoId]?.isDone);
-      if (!allDone) {
+      if (!isAllDone) {
         return;
       }
 

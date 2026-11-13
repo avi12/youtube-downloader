@@ -528,14 +528,14 @@ export function getOutputExtension({ videoMimeType, audioMimeType, userExtension
   }
 
   const audioCodec = extractBaseCodec(audioMimeType);
-  const videoOk = isVideoAllowedInContainer({
+  const isVideoOk = isVideoAllowedInContainer({
     videoMimeType,
     targetExtension: userExtension
   });
   const isAudioNative = containerSpec.audioCodecs.has(audioCodec);
   const isFallbackAudioPresent = containerSpec.fallbackAudioCodec !== undefined;
   const audioOk = isAudioNative || isFallbackAudioPresent;
-  const isCompatible = videoOk && audioOk;
+  const isCompatible = isVideoOk && audioOk;
 
   return isCompatible ? userExtension : "mkv";
 }

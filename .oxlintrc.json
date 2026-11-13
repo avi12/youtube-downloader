@@ -12,6 +12,16 @@
           "webextension-manifest",
           "webextension-messages",
           "hook-names"
+        ],
+        "allowedNames": [
+          {
+            "reason": "Marker flags the extension sets on the YouTube player object; the double underscore keeps them out of YouTube own names",
+            "names": [
+              "__ytdlAudioWatched",
+              "__ytdlCaptionWatched",
+              "__ytdlCapture"
+            ]
+          }
         ]
       }
     ]

@@ -31,11 +31,11 @@ const RELEASES_BASE = `https://github.com/${GITHUB_USER}/${GITHUB_REPO}/releases
 
 const packageJson: PackageJson = JSON.parse(readFileSync(PACKAGE_JSON_PATH, "utf-8"));
 const { version } = packageJson;
-const tag = `v${version}`;
+const TAG = `v${version}`;
 const chromeZipPath = resolve(ARTIFACTS_DIR, `youtube-downloader-${version}-chrome.zip`);
 const chromeCrxPath = resolve(ARTIFACTS_DIR, `youtube-downloader-${version}-chrome.crx`);
 const firefoxXpiPath = resolve(ARTIFACTS_DIR, `youtube-downloader-${version}-firefox.xpi`);
-const firefoxXpiUrl = `${RELEASES_BASE}/${tag}/${basename(firefoxXpiPath)}`;
+const FIREFOX_XPI_URL = `${RELEASES_BASE}/${TAG}/${basename(firefoxXpiPath)}`;
 
 const chromePemPath = requiredEnv("CHROME_CRX_PRIVATE_KEY_PATH");
 const amoIssuer = requiredEnv("AMO_JWT_ISSUER");
@@ -50,10 +50,12 @@ signFirefoxXpi({
 });
 
 mkdirSync(DOCS_DIR, { recursive: true });
-writeFileSync(resolve(DOCS_DIR, "updates.json"), renderFirefoxUpdatesJson({
+writeFileSync(
+  resolve(DOCS_DIR, "updates.json"), renderFirefoxUpdatesJson({
    appVersion: version,
-   xpiUrl: firefoxXpiUrl 
-}));
+   xpiUrl: FIREFOX_XPI_URL 
+})
+);
 console.log(`Wrote docs/updates.json (Firefox addon=${FIREFOX_GECKO_ID}, version=${version})`);
 console.log("Release artifacts:");
 console.log(`  ${chromeCrxPath}`);

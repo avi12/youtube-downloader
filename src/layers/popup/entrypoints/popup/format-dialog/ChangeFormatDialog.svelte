@@ -36,14 +36,14 @@
   const targetGroups = $derived(buildAvailableTargetGroups({ entry }));
   const videoItems = $derived(
     findGroup({
-       groups: targetGroups,
-       heading: FORMAT_GROUP_VIDEO 
+      groups: targetGroups,
+      heading: FORMAT_GROUP_VIDEO 
     })?.items ?? []
   );
   const audioItems = $derived(
     findGroup({
-       groups: targetGroups,
-       heading: FORMAT_GROUP_AUDIO 
+      groups: targetGroups,
+      heading: FORMAT_GROUP_AUDIO 
     })?.items ?? []
   );
   const hasVideoMode = $derived(!isAudioSource && videoItems.length > 0);

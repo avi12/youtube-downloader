@@ -55,8 +55,8 @@ export function createButtonElementEffects({
   $effect(() => {
     const elDownloadButton = getElDownloadButton();
     const elChevronButton = getElChevronButton();
-    const areBothButtonsMissing = !elDownloadButton || !elChevronButton;
-    if (areBothButtonsMissing) {
+    const isEveryButtonMissing = !elDownloadButton || !elChevronButton;
+    if (isEveryButtonMissing) {
       return;
     }
 

@@ -17,7 +17,7 @@ export async function dispatchSequentially({ items, tabId, signal }: DispatchPar
       break;
     }
 
-    let triggered = false;
+    let isTriggered = false;
     try {
       await sendMessageToTab({
          type: MessageType.ExecuteDownloadItem,
@@ -31,7 +31,7 @@ export async function dispatchSequentially({ items, tabId, signal }: DispatchPar
       },
          tabId 
       });
-      triggered = true;
+      isTriggered = true;
     } catch (error) {
       log.error("ExecuteDownloadItem failed:", item.videoId, error);
       await reportDownloadFailed({
@@ -40,7 +40,7 @@ export async function dispatchSequentially({ items, tabId, signal }: DispatchPar
       });
     }
 
-    if (triggered) {
+    if (isTriggered) {
       await awaitVideoComplete(item.videoId);
     }
   }

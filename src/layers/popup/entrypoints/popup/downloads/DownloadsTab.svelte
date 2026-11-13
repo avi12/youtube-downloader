@@ -109,10 +109,10 @@
   });
 
   // Machines too slow for the SIMD FFmpeg build are the ones browsing the lighter mobile site
-  const isMobileSiteSupported = resolveFFmpegCoreBuild() === FFmpegCoreBuild.NoSimd;
+  const IS_MOBILE_SITE_SUPPORTED = resolveFFmpegCoreBuild() === FFmpegCoreBuild.NoSimd;
   const isPopupOnlyWatchTab = $derived(
     currentSourceUrl !== undefined
-    && (isMusicWatchPageUrl(currentSourceUrl) || (isMobileSiteSupported && isMobileWatchPageUrl(currentSourceUrl)))
+    && (isMusicWatchPageUrl(currentSourceUrl) || (IS_MOBILE_SITE_SUPPORTED && isMobileWatchPageUrl(currentSourceUrl)))
   );
   const watchVideoId = $derived(
     currentTabId !== undefined && currentSourceUrl !== undefined
