@@ -13,7 +13,8 @@ import {
   initIframeReadyListener,
   registerPopupDownloadHandler
 } from "@/layers/background/download/iframe-downloader";
-import { clearIframeAutoRetry, handleIframeFallback } from "@/layers/background/download/sabr-attempt";
+import { clearIframeAutoRetry } from "@/layers/background/download/iframe-auto-retries";
+import { handleIframeFallback } from "@/layers/background/download/sabr-attempt";
 import { enqueueToPopupList, removeFromPopupList } from "@/layers/background/queue/popup-list";
 import { signalVideoComplete } from "@/layers/background/queue/sequential-queue";
 import { cancelDownloads, getTabIdsForVideo, trackVideoForTab } from "@/layers/background/queue/tab-tracker";

@@ -9,6 +9,13 @@
   }
 
   const { playlist, actionButtons }: Props = $props();
+  const videoNoun = $derived.by(() => {
+    if (playlist.downloadableVideos.length === 1) {
+      return "video";
+    }
+
+    return "videos";
+  });
 
   const isSomeSelected = $derived(playlist.selectedDownloadableVideos.length > 0);
   const isIndeterminate = $derived(isSomeSelected && !playlist.isAllSelected);
@@ -68,7 +75,7 @@
 
 <span class="ytdl-selection-count" aria-live="polite">
   {playlist.selectedDownloadableVideos.length} of {playlist.downloadableVideos.length}
-  video{playlist.downloadableVideos.length === 1 ? "" : "s"} selected
+  {videoNoun} selected
 </span>
 
 <yt-button-view-model {@attach actionButtons.attachDownload}></yt-button-view-model>

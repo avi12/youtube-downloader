@@ -1,11 +1,7 @@
 import { required } from "@/lib/required";
-import {
-  buildRecentContext,
-  FFMPEG_PROGRESS_CAP,
-  reportProgress,
-  toUint8Array,
-  triggerDownload
-} from ".";
+import { buildRecentContext, FFMPEG_PROGRESS_CAP, toUint8Array } from "./pipeline-helpers";
+import { reportProgress } from "./progress-reporter";
+import { triggerDownload } from "./blob-download";
 import { addToPlaylistBundle } from "./playlist-bundle";
 import { applyAudioFfmpeg } from "./process-single-media-ffmpeg";
 import { getFileExtension } from "@/lib/utils/containers";

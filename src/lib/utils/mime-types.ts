@@ -1,6 +1,6 @@
 import { required } from "@/lib/required";
 import { extractBaseCodec, isAudioMimeNativeForContainer } from "./container-specs";
-import { getFileExtension } from "./filename";
+import { getFileExtension } from "./file-extension";
 
 const MIME_AUDIO_AIFF = "audio/aiff";
 const MIME_VIDEO_AVI = "video/x-msvideo";

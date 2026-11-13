@@ -4,7 +4,8 @@ import { buildEnrichedRequest, fetchCaptionWebVttData } from "./download-request
 import { getPageRoute, getRouteVideoId, PageRoute } from "./page-route";
 import { generatePoTokenIfNeeded, videoDataCache } from "./video-data";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
-import { getCompatibleFilename, getFileExtension, splitFilenameAndExtension } from "@/lib/utils/filename";
+import { getFileExtension, splitFilenameAndExtension } from "@/lib/utils/file-extension";
+import { getCompatibleFilename } from "@/lib/utils/filename";
 import { createLogger, LogScope } from "@/lib/utils/logger";
 import { resolveDownloadPlan } from "@/lib/youtube/download-plan";
 import { CAPTION_ESTIMATED_BYTES } from "@/lib/youtube/download-progress";

@@ -1,5 +1,5 @@
 import { CAPTION_KIND_ASR } from "./audio-language-helpers";
-import { IS_WATCH_PAGE } from "./panel-init-audio";
+import { IS_WATCH_PAGE } from "./watch-page";
 import { ACTIVE_CAPTION_ATTR } from "@/lib/youtube/movie-player";
 import type { MoviePlayerElement } from "@/lib/youtube/movie-player";
 import { playerCaptionTrackDataSchema } from "@/lib/youtube/schemas";

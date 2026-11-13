@@ -14,7 +14,6 @@ import { generatePoToken } from "#youtube/lib/youtube/po-token-generator";
 
 const log = createLogger(LogScope.Main);
 
-export { buildAndDispatchVideoData } from "./capture-dispatch";
 
 export const videoDataCache = new Map<string, VideoData>();
 
@@ -112,4 +111,3 @@ export async function generatePoTokenIfNeeded(videoData: VideoData) {
   }
 }
 
-export { extractAndDispatchVideoData } from "./capture-dispatch";

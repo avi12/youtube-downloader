@@ -1,11 +1,7 @@
 import { required } from "@/lib/required";
-import {
-  buildRecentContext,
-  reportProgress,
-  toOwnedArrayBuffer,
-  toUint8Array,
-  triggerDownload
-} from ".";
+import { buildRecentContext, toOwnedArrayBuffer, toUint8Array } from "./pipeline-helpers";
+import { reportProgress } from "./progress-reporter";
+import { triggerDownload } from "./blob-download";
 import type { AudioTrack } from "./mux-worker-types";
 import { resolveMultiTrackExtension } from "@/lib/utils/containers";
 import { ProgressType } from "@/types";

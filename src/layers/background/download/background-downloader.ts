@@ -15,7 +15,7 @@ import {
   scheduleAutoRetry
 } from "./network-retry";
 import { createPageProxyFetch } from "./page-proxy-fetch";
-import { clearIframeAutoRetry } from "./sabr-attempt";
+import { clearIframeAutoRetry } from "./iframe-auto-retries";
 import { buildEffectiveSabrConfig } from "./sabr-utils";
 import { sendNetworkChunkToOffscreen, sendStreamFinishedMarker } from "./stream-chunk-transfer";
 import { buildSubtitleTracks } from "./subtitle-track-builder";

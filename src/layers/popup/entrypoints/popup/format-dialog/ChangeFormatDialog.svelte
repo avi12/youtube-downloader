@@ -194,7 +194,7 @@
       <p class="dialog-description">
         {#if mode === DialogMode.Video}
           <strong>Instant</strong> just repackages the file.
-          Others re-encode the video — <strong>Slower</strong>
+          Others re-encode the video - <strong>Slower</strong>
           targets use a legacy codec and take noticeably longer
         {:else}
           <strong>Instant</strong> just repackages the file. Others re-encode the audio

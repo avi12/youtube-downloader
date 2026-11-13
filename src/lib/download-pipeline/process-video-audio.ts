@@ -1,5 +1,6 @@
 import { required } from "@/lib/required";
-import { buildRecentContext, reportProgress, toOwnedArrayBuffer, toUint8Array } from ".";
+import { buildRecentContext, toOwnedArrayBuffer, toUint8Array } from "./pipeline-helpers";
+import { reportProgress } from "./progress-reporter";
 import { triggerDownloadFromFile } from "./blob-download";
 import {
   buildAdditionalAudioTracks,

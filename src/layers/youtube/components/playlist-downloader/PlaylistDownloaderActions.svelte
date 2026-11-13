@@ -10,6 +10,13 @@
   }
 
   const { playlist, actionButtons }: Props = $props();
+  const videoNoun = $derived.by(() => {
+    if (playlist.nonDownloadableCount === 1) {
+      return "video";
+    }
+
+    return "videos";
+  });
 
   function attachProgressBar(elProgress: Element) {
     applyPolymerCustomStyles({
@@ -81,7 +88,7 @@
 {#if playlist.nonDownloadableCount > 0}
   <p class="ytdl-restriction-notice" role="status">
     <span class="ytdl-restriction-icon" aria-hidden="true">i</span>
-    {playlist.nonDownloadableCount} video{playlist.nonDownloadableCount === 1 ? "" : "s"} not downloadable
+    {playlist.nonDownloadableCount} {videoNoun} not downloadable
     (private or restricted)
   </p>
 {/if}

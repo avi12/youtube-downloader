@@ -1,4 +1,4 @@
-import { triggerDownload } from ".";
+import { triggerDownload } from "./blob-download";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { getCompatibleFilename } from "@/lib/utils/containers";
 import type { Prettify } from "@/types";

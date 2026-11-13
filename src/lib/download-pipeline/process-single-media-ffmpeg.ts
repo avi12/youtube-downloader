@@ -1,4 +1,5 @@
-import { reportProgress, toOwnedArrayBuffer } from ".";
+import { reportProgress } from "./progress-reporter";
+import { toOwnedArrayBuffer } from "./pipeline-helpers";
 import { runEmbedMetadata, runTranscodeAudio } from "./ffmpeg-instance";
 import { ProgressType } from "@/types";
 import type { Prettify, VideoMetadata } from "@/types";

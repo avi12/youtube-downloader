@@ -1,3 +1,16 @@
 {
-  "extends": ["stylelint-config-avi12"]
+  "extends": [
+    "stylelint-config-avi12"
+  ],
+  "overrides": [
+    {
+      "files": [
+        "src/layers/popup/entrypoints/popup/App.svelte",
+        "src/layers/youtube/components/**/*.svelte"
+      ],
+      "rules": {
+        "declaration-no-important": null
+      }
+    }
+  ]
 }

@@ -1,4 +1,5 @@
 import { findAudioFormatForPlayerTrack } from "./panel-audio-actions";
+import { IS_WATCH_PAGE } from "./watch-page";
 import { PLAYER_ACTIVE_AUDIO } from "./player-active-tracks.svelte";
 import {
   normalizeLanguageCode,
@@ -14,7 +15,6 @@ import {
   type VideoData
 } from "@/types";
 
-const IS_WATCH_PAGE = location.pathname === "/watch";
 
 export { IS_WATCH_PAGE };
 

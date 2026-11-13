@@ -1,4 +1,4 @@
-import { triggerDownload } from ".";
+import { triggerDownload } from "./blob-download";
 import { runTranscodeFile } from "./ffmpeg-instance";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { getAllRecentDownloads, getRecentDownloadBlob } from "@/lib/storage/recent-downloads-db";
