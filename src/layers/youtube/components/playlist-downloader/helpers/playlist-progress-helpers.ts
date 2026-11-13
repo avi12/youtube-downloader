@@ -2,6 +2,8 @@ import type { DownloadProgressState } from "@/lib/ui/synced-stores.svelte";
 import { calculateWeightedProgress } from "@/lib/youtube/video-helpers";
 import { type DownloadRequest, ProgressType, type VideoData } from "@/types";
 
+const FULL_PROGRESS_PERCENT = 100;
+
 export const ZIP_PROGRESS_KEY_PREFIX = "zip:";
 
 export function calculateBatchProgress({
@@ -30,7 +32,7 @@ export function calculateBatchProgress({
       const entry = getProgressEntry(request.videoId);
       const isActiveDownload = !!entry && entry.isDownloading;
       if (!isActiveDownload) {
-        sum += 100;
+        sum += FULL_PROGRESS_PERCENT;
         continue;
       }
 
@@ -44,7 +46,7 @@ export function calculateBatchProgress({
     const isZipBundle = currentZipBundleId;
     if (isZipBundle) {
       const zipEntry = getProgressEntry(`${ZIP_PROGRESS_KEY_PREFIX}${currentZipBundleId}`);
-      sum += zipEntry?.isDone ? 100 : 0;
+      sum += zipEntry?.isDone ? FULL_PROGRESS_PERCENT : 0;
       return sum / (totalCount + 1);
     }
 

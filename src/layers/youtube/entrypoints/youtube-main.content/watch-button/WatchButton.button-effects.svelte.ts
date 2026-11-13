@@ -1,5 +1,6 @@
 import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
-import type { YtButtonViewModelElement } from "@/types";
+import type { TpYtIronDropdownElement, YtButtonViewModelElement } from "@/types";
+import type { buildChevronData, buildDownloadData } from "./watch-button-view-model";
 
 const SEGMENTED_START_CLASS = "ytSpecButtonShapeNextSegmentedStart";
 const SEGMENTED_END_CLASS = "ytSpecButtonShapeNextSegmentedEnd";
@@ -14,9 +15,9 @@ export function createButtonElementEffects({
 }: {
   getElDownloadButton: () => YtButtonViewModelElement | null;
   getElChevronButton: () => YtButtonViewModelElement | null;
-  getDownloadData: () => ReturnType<typeof import("./watch-button-view-model").buildDownloadData>;
-  getChevronData: () => ReturnType<typeof import("./watch-button-view-model").buildChevronData>;
-  getElDropdown: () => import("@/types").TpYtIronDropdownElement;
+  getDownloadData: () => ReturnType<typeof buildDownloadData>;
+  getChevronData: () => ReturnType<typeof buildChevronData>;
+  getElDropdown: () => TpYtIronDropdownElement;
   isSegmented: boolean;
 }) {
   function applySegmentedClasses() {

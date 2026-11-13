@@ -1,3 +1,4 @@
+import { sumOf } from "@/lib/utils/sum";
 import { required } from "@/lib/required";
 import { sendProgressUpdate } from "./progress-fetch";
 import { computeWeightedProgress } from "./progress-stages";
@@ -54,8 +55,8 @@ export function createProgressAccumulator({
       captionCount
     });
     onProgress?.();
-    const extraReceived = extraReceivedBytesArray.reduce((acc, bytes) => acc + bytes, 0);
-    const extraExpected = extraExpectedBytesArray.reduce((acc, bytes) => acc + bytes, 0);
+    const extraReceived = sumOf(extraReceivedBytesArray);
+    const extraExpected = sumOf(extraExpectedBytesArray);
     const downloadedBytes = videoReceivedBytes + audioReceivedBytes + extraReceived;
     const expectedBytes = videoExpectedBytes + audioExpectedBytes + extraExpected;
     sendProgressUpdate({

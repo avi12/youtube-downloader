@@ -2,7 +2,7 @@ import { findShortsActionsContainer } from "./watch-button-container";
 import watchButtonStyles from "./watch-button.css?inline";
 import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
 import { readElementIconName } from "@/lib/youtube/schemas";
-import { type Prettify, type TpYtIronDropdownElement } from "@/types";
+import { type Prettify, type TpYtIronDropdownElement, type YtButtonViewModelElement } from "@/types";
 
 const WATCH_STYLES_ELEMENT_ID = "ytdl-watch-styles";
 const PANEL_CONTENT_ID_PREFIX = "ytdl-panel-content-";
@@ -33,7 +33,7 @@ export function injectWatchButtonStyles() {
 }
 
 function findNativeDownloadButton(elActionsContainer: HTMLElement) {
-  const elButtons = elActionsContainer.querySelectorAll<import("@/types").YtButtonViewModelElement>(YT_BUTTON_VIEW_MODEL_TAG);
+  const elButtons = elActionsContainer.querySelectorAll<YtButtonViewModelElement>(YT_BUTTON_VIEW_MODEL_TAG);
   for (const elButton of elButtons) {
     const isDownloadIconPresent = elButton.data?.iconName?.includes(NATIVE_DOWNLOAD_ICON_KEYWORD);
     const isDownloadAriaLabelPresent = (elButton.querySelector(INNER_BUTTON_TAG)?.getAttribute(ATTR_ARIA_LABEL) ?? "").toLowerCase().includes(NATIVE_DOWNLOAD_ARIA_KEYWORD);

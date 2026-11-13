@@ -5,6 +5,8 @@ import { buildRemuxArgs } from "./mux-ffmpeg-args";
 import { postError, state } from "./mux-state";
 import type { Prettify } from "@/types";
 
+const HALF_PROGRESS = 0.5;
+
 type CheckOutput = (filename: string) => boolean;
 
 export function tryCheckOutput(filename: string) {
@@ -35,8 +37,8 @@ export function executeMuxPhases({ params, checkOutput }: ExecuteMuxPhasesParams
   }
 
   if (useIntermediateMkv) {
-    state.progressOffset = 0.5;
-    state.progressScale = 0.5;
+    state.progressOffset = HALF_PROGRESS;
+    state.progressScale = HALF_PROGRESS;
     const phase2Code = required(state.ffmpeg).exec(
       ...buildRemuxArgs({
         inputFilename: muxFilename,

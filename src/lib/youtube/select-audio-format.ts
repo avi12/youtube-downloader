@@ -106,10 +106,14 @@ export function selectPreferredAudioFormat({
 }
 
 export function pickBestByBitrate(formats: AdaptiveFormatItem[]) {
-  return formats.reduce<AdaptiveFormatItem | null>(
-    (best, format) => !best || format.bitrate > best.bitrate ? format : best,
-    null
-  );
+  let best: AdaptiveFormatItem | null = null;
+  for (const format of formats) {
+    if (!best || format.bitrate > best.bitrate) {
+      best = format;
+    }
+  }
+
+  return best;
 }
 
 type AlignAudioFormatToExtensionParams = Prettify<{

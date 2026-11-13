@@ -1,3 +1,5 @@
+import { pickBestByBitrate } from "@/lib/youtube/select-audio-format";
+import { required } from "@/lib/required";
 import { findAudioFormatForPlayerTrack, findMatchVideoAudioFormat } from "./helpers/panel-audio-actions";
 import { IS_WATCH_PAGE } from "./helpers/panel-init-audio";
 import { PLAYER_ACTIVE_AUDIO } from "./helpers/player-active-tracks.svelte";
@@ -30,7 +32,7 @@ export function createAudioTrackState({
       format => format.audioTrack && normalizeLanguageCode(format.audioTrack.id) === langCode
     );
     if (matching.length) {
-      setSelectedAudioFormat(matching.reduce((best, format) => format.bitrate > best.bitrate ? format : best));
+      setSelectedAudioFormat(required(pickBestByBitrate(matching)));
     }
   }
 

@@ -16,7 +16,8 @@ import {
   closeTarget,
   evaluateOnTarget,
   fetchTargets,
-  openCdpSession
+  openCdpSession,
+  requireDebuggerUrl
 } from "./cdp-utils.ts";
 import { matchesUrlPattern } from "./dev-output-changes.ts";
 import {
@@ -185,7 +186,7 @@ async function neutralizeOrphanedWorldsInPage({ page, worldName }: {
   page: CdpTarget;
   worldName: string;
 }) {
-  const session = await openCdpSession(page.webSocketDebuggerUrl!);
+  const session = await openCdpSession(requireDebuggerUrl(page));
   try {
     const contexts: ExecutionContext[] = [];
     session.on("Runtime.executionContextCreated", rawMessage => {
@@ -230,7 +231,7 @@ export function createChromeReloadTarget({ cdpPort, extensionName, reloadExtensi
       return extensionIdOf(target) === extensionId;
     }
 
-    const name = await evaluateOnTarget<string>(target.webSocketDebuggerUrl!, "chrome.runtime.getManifest().name")
+    const name = await evaluateOnTarget<string>(requireDebuggerUrl(target), "chrome.runtime.getManifest().name")
       .catch(() => undefined);
     if (name !== extensionName) {
       return false;
@@ -283,7 +284,7 @@ export function createChromeReloadTarget({ cdpPort, extensionName, reloadExtensi
     await reloadExtensionOverPipe();
     const serviceWorker = await findServiceWorker(staleServiceWorker?.id);
     await neutralizeOrphanedContentScripts(plan);
-    const result = await evaluateOnTarget<TabUpdateResult>(serviceWorker.webSocketDebuggerUrl!, buildTabUpdateSource(plan));
+    const result = await evaluateOnTarget<TabUpdateResult>(requireDebuggerUrl(serviceWorker), buildTabUpdateSource(plan));
     if (!result) {
       throw new Error("the service worker returned no tab update result");
     }
@@ -320,7 +321,7 @@ export function createChromeReloadTarget({ cdpPort, extensionName, reloadExtensi
       return undefined;
     }
 
-    const session = await openCdpSession(target.webSocketDebuggerUrl!);
+    const session = await openCdpSession(requireDebuggerUrl(target));
     await session.send("Page.reload").finally(() => session.close());
     return PageAction.Reloaded;
   }

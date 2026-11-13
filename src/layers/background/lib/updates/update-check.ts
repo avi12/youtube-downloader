@@ -39,13 +39,18 @@ async function fetchLatestVersion() {
   const versions = releases.data
     .filter(release => !release.draft && !release.prerelease)
     .flatMap(release => EXTENSION_TAG_PATTERN.exec(release.tag_name)?.[1] ?? []);
-  return versions.reduce<string | null>(
-    (latest, version) => (!latest || isNewerVersion({
+  let latest: string | null = null;
+  for (const version of versions) {
+    const isNewer = !latest || isNewerVersion({
        candidate: version,
        current: latest 
-    }) ? version : latest),
-    null
-  );
+    });
+    if (isNewer) {
+      latest = version;
+    }
+  }
+
+  return latest;
 }
 
 async function applyAvailableUpdate(availableVersion: string | null) {

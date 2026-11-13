@@ -1,6 +1,8 @@
 import { resolve } from "node:path";
 import { defineConfig } from "wxt";
 
+const MANIFEST_VERSION = 3;
+
 const copiedAssets = [
   {
     src: "node_modules/@ffmpeg/core/dist/umd/ffmpeg-core.wasm",
@@ -54,7 +56,7 @@ export default defineConfig({
   layers: {
     sources: ["src/layers/background", "src/layers/popup", "src/layers/processing", "src/layers/youtube"]
   },
-  manifestVersion: 3,
+  manifestVersion: MANIFEST_VERSION,
   manifest: ({ browser }) => ({
     name: "YouTube Downloader",
     description: "Download YouTube videos and audio directly from the page",

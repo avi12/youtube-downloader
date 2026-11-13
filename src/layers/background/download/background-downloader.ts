@@ -278,7 +278,9 @@ async function runFirefoxDirectDownload({ request, tabId, enrichedMetadata }: Ru
   }
 
   const chunkCounts = new Map<string, number>();
-  const bgFetch: ChunkFetchFn = (...args) => fetch(...args);
+  function bgFetch(...args: Parameters<ChunkFetchFn>) {
+    return fetch(...args);
+  }
 
   try {
     await Promise.all(

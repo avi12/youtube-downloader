@@ -55,6 +55,9 @@ import webExtRun from "web-ext-run";
 import { consoleStream as webExtConsoleStream } from "web-ext-run/util/logger";
 import { build } from "wxt";
 
+const MILLISECONDS_PER_SECOND = 1000;
+const REQUEST_TIMEOUT_MS = 5000;
+
 const { values: cliOptions } = parseArgs({
   options: {
     firefox: {
@@ -159,7 +162,7 @@ function logEvent(message: string) {
 const SECONDS_FORMAT = new Intl.NumberFormat("en", { maximumFractionDigits: 1 });
 
 function formatElapsed(startedAt: number) {
-  return `${SECONDS_FORMAT.format((performance.now() - startedAt) / 1000)}s`;
+  return `${SECONDS_FORMAT.format((performance.now() - startedAt) / MILLISECONDS_PER_SECOND)}s`;
 }
 
 // ── Chrome profile setup ────────────────────────────────────────────────────
@@ -299,7 +302,7 @@ Get-CimInstance Win32_Process -Filter "name='firefox.exe'" |
   spawnSync("powershell", ["-NoProfile", "-NonInteractive", "-Command", "-"], {
     input: script,
     stdio: ["pipe", "ignore", "ignore"],
-    timeout: 5000
+    timeout: REQUEST_TIMEOUT_MS
   });
 }
 

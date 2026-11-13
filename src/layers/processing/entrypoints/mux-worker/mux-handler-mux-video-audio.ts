@@ -11,6 +11,8 @@ import {
   resolveMultiTrackExtension
 } from "@/lib/utils/containers";
 
+const HALF_PROGRESS = 0.5;
+
 const WORKERFS_MOUNT_SUFFIX = "-opfs-in";
 const OPFS_OUT_SUFFIX = "-opfs-out";
 const MKV_EXTENSION = "mkv";
@@ -53,7 +55,7 @@ export async function handleMuxVideoAudio(job: MuxVideoAudioJob) {
   }
 
   state.progressOffset = 0;
-  state.progressScale = useIntermediateMkv ? 0.5 : 1;
+  state.progressScale = useIntermediateMkv ? HALF_PROGRESS : 1;
 
   const { audioFilenames, subtitleFilenames } = writeMuxInputFiles({
     videoId,

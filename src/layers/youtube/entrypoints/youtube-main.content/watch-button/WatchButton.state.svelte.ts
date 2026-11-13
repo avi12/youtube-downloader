@@ -8,14 +8,14 @@ import { createPanelEffects } from "./WatchButton.panel-effects.svelte";
 import { PrimaryButtonState } from "@/lib/ui/primary-button.svelte";
 import { interruptedDownloadStore, statusProgressSignal } from "@/lib/ui/synced-stores.svelte";
 import { calculateWeightedProgress } from "@/lib/youtube/video-helpers";
-import { type CodecPreferences, type DownloadType, type VideoData, type YtButtonViewModelElement } from "@/types";
+import { type CodecPreferences, type DownloadType, type TpYtIronDropdownElement, type VideoData, type YtButtonViewModelElement } from "@/types";
 import { untrack } from "svelte";
 
 const PERCENT_COMPLETE = 100;
 
 export function createWatchButtonState(params: {
   readonly videoData: VideoData;
-  readonly elDropdown: import("@/types").TpYtIronDropdownElement;
+  readonly elDropdown: TpYtIronDropdownElement;
   readonly layout: WatchButtonLayout;
 }) {
   const initial = untrack(() => buildInitialDownloadState(params.videoData));

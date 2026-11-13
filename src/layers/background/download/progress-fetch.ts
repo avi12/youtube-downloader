@@ -3,6 +3,7 @@ import { isVideoCancelled } from "@/layers/background/handlers/cancelled-videos"
 import { MessageType, sendMessage, sendMessageToTab } from "@/lib/messaging/messaging";
 import { ProgressType } from "@/types";
 import type { Prettify } from "@/types";
+import { MILLISECONDS_PER_SECOND } from "@/lib/utils/time-units";
 
 // On Chrome MV3, only the background service worker can call
 // `browser.tabs.sendMessage`; the offscreen page and download-worker iframe
@@ -102,7 +103,7 @@ function computeBytesPerSecond({ videoId, downloadedBytes }: {
   }
 
   const deltaBytes = downloadedBytes - oldest.bytes;
-  return Math.max(0, (deltaBytes / elapsedMs) * 1000);
+  return Math.max(0, (deltaBytes / elapsedMs) * MILLISECONDS_PER_SECOND);
 }
 
 async function dispatchProgressUpdate({

@@ -19,7 +19,7 @@ import type { Prettify, RecentDownloadEntry } from "@/types";
 
 export function isAudioSourceEntry(entry: RecentDownloadEntry) {
   // Audio-only downloads have no video mime type recorded, regardless of
-  // container — e.g. an Opus stream in a .webm container is audio-only.
+  // container - e.g. an Opus stream in a .webm container is audio-only.
   if (!entry.videoMimeType) {
     return true;
   }

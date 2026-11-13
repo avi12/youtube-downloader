@@ -12,6 +12,10 @@ import { rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
+const MAX_POLL_ATTEMPTS = 30;
+const POLL_INTERVAL_MS = 2000;
+const FIRST_POLL_DELAY_MS = 15_000;
+
 const VM_NAME = "ytdl-linux";
 const HOST_CDP_PORT = 9234;
 const VM_CHROME_PORT = 9233;
@@ -102,7 +106,7 @@ spawnSync("multipass", ["exec", VM_NAME, "--", "bash", "-c",
 function startVncPoller() {
   let attempts = 0;
   function poll() {
-    if (attempts++ > 30) {return;}
+    if (attempts++ > MAX_POLL_ATTEMPTS) {return;}
 
     const socket = createConnection({
        host: "127.0.0.1",
@@ -117,10 +121,10 @@ function startVncPoller() {
     });
     socket.once("error", () => {
       socket.destroy();
-      setTimeout(poll, 2000);
+      setTimeout(poll, POLL_INTERVAL_MS);
     });
   }
-  setTimeout(poll, 15_000);
+  setTimeout(poll, FIRST_POLL_DELAY_MS);
 }
 startVncPoller();
 

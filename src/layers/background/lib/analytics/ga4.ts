@@ -1,4 +1,5 @@
 import { getOrCreateClientId } from "@/lib/storage/storage";
+import { MINUTES_PER_DAY } from "@/lib/utils/time-units";
 
 const GA4_MEASUREMENT_ID: string | undefined = import.meta.env.WXT_GA4_MEASUREMENT_ID;
 const GA4_API_SECRET: string | undefined = import.meta.env.WXT_GA4_API_SECRET;
@@ -224,7 +225,7 @@ async function ensureDailyHeartbeatAlarm() {
     return;
   }
 
-  await browser.alarms.create(DAILY_HEARTBEAT_ALARM, { periodInMinutes: 24 * 60 });
+  await browser.alarms.create(DAILY_HEARTBEAT_ALARM, { periodInMinutes: MINUTES_PER_DAY });
 }
 
 export function registerDailyHeartbeat() {

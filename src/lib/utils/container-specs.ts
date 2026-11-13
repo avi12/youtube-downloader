@@ -329,20 +329,20 @@ export function getVideoFallbackCodec(targetExtension: string) {
 // quality is materially worse than modern alternatives.
 //
 // Pathologically slow (encoder throughput):
-// - libaom-av1: "currently the slowest of the popular AV1 encoders" —
+// - libaom-av1: "currently the slowest of the popular AV1 encoders" -
 //   https://trac.ffmpeg.org/wiki/Encode/AV1. Bitmovin's published
 //   benchmarks (https://bitmovin.com/blog/av1-svt-encoding/) clock the
 //   libaom reference encoder at sub-1 fps on 1080p single-thread.
-// - libx265: ~5-10x slower than libx264 at comparable quality —
+// - libx265: ~5-10x slower than libx264 at comparable quality -
 //   https://trac.ffmpeg.org/wiki/Encode/H.265 ("HEVC is noticeably slower
 //   than H.264 to encode").
 //
 // Legacy quality (not necessarily slow, but produces inferior output):
 // - mpeg4 (used by .avi fallback): the MPEG-4 Part 2 codec predates H.264
-//   and lacks modern coding tools — see
+//   and lacks modern coding tools - see
 //   https://trac.ffmpeg.org/wiki/Encode/MPEG-4 for the codec context.
 //
-// libvpx-vp9 is intentionally NOT in this set — it's slower than libx264
+// libvpx-vp9 is intentionally NOT in this set - it's slower than libx264
 // (https://trac.ffmpeg.org/wiki/Encode/VP9) but produces modern,
 // web-native output, so it's classified as "Re-encodes" rather than
 // "Slower". Underlying perf reference: FFmpeg-wasm runs ~5-30x slower
@@ -360,7 +360,7 @@ export function isSlowVideoEncoder(encoder: string | undefined) {
 
 // Source codecs whose wasm decode path is itself the bottleneck.
 // AV1 in software (dav1d / libaom-av1 decode) is the only YouTube-served
-// codec that's pathologically slow to decode — Mozilla's dav1d performance
+// codec that's pathologically slow to decode - Mozilla's dav1d performance
 // notes (https://hacks.mozilla.org/2018/03/dav1d-1-0-faster-av1-decoder/)
 // describe AV1 decode as ~4x slower than VP9 and ~10x slower than H.264
 // even with dav1d's SIMD paths. VP9/H.264/HEVC decode is fast enough that

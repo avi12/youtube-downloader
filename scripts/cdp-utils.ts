@@ -216,3 +216,11 @@ export function fetchTargets(port: number) {
     }).on("error", reject);
   });
 }
+
+export function requireDebuggerUrl({ webSocketDebuggerUrl }: { webSocketDebuggerUrl?: string | undefined }) {
+  if (!webSocketDebuggerUrl) {
+    throw new Error("The target has no WebSocket debugger URL");
+  }
+
+  return webSocketDebuggerUrl;
+}

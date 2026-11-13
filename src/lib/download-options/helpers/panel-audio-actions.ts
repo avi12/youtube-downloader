@@ -1,3 +1,5 @@
+import { pickBestByBitrate } from "@/lib/youtube/select-audio-format";
+import { required } from "@/lib/required";
 import { normalizeLanguageCode } from "@/lib/youtube/video-helpers";
 import type { AdaptiveFormatItem, Prettify } from "@/types";
 
@@ -29,5 +31,5 @@ export function findAudioFormatForPlayerTrack({
     return null;
   }
 
-  return matches.reduce((best, format) => format.bitrate > best.bitrate ? format : best);
+  return required(pickBestByBitrate(matches));
 }

@@ -5,6 +5,8 @@ import { OPFS_MUX_OUTPUT_SUFFIX } from "@/lib/download-pipeline/opfs-constants";
 import type { Prettify } from "@/types";
 import type { FS } from "@ffmpeg/types";
 
+const BLOCK_SIZE_BYTES = 4096;
+
 const DIR_MODE = 16384 | 511;  // directory, rwxrwxrwx
 const FILE_MODE = 32768 | 511; // regular file, rwxrwxrwx
 
@@ -42,11 +44,11 @@ function makeNodeOps(opfsFs: ReturnType<typeof makeOpfsFs>) {
         uid: 0,
         gid: 0,
         rdev: 0,
-        size: isDir ? 4096 : (node.fileSize ?? 0),
+        size: isDir ? BLOCK_SIZE_BYTES : (node.fileSize ?? 0),
         atime: new Date(node.timestamp),
         mtime: new Date(node.timestamp),
         ctime: new Date(node.timestamp),
-        blksize: 4096,
+        blksize: BLOCK_SIZE_BYTES,
         blocks: 0
       };
     },

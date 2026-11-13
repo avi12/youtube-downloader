@@ -14,6 +14,8 @@ import {
 } from "@/types";
 import { SvelteSet } from "svelte/reactivity";
 
+const FULL_PROGRESS_PERCENT = 100;
+
 export const batchDownloadStatus = $state({
   isRunning: false,
   isZipBatch: false
@@ -77,7 +79,7 @@ export function createBatchDownloadState({
       currentZipBundleId = null;
     }
 
-    completedBatchProgress = 100;
+    completedBatchProgress = FULL_PROGRESS_PERCENT;
     isDownloading = false;
     batchDownloadStatus.isRunning = false;
     batchDownloadStatus.isZipBatch = false;

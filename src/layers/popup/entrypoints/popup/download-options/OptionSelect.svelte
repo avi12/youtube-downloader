@@ -17,25 +17,27 @@
   const { label, value, choices, isDisabled = false, onchange }: Props = $props();
 
   // Consecutive choices sharing a group render under one <optgroup>, the way the page's picker lists them
-  const sections = $derived(
-    choices.reduce<{
-      group?: Choice["group"];
-      choices: OptionChoice[];
-    }[]>((sectionList, choice) => {
+  const sections = $derived.by(() => {
+    const sectionList: {
+       group?: Choice["group"];
+       choices: OptionChoice[] 
+    }[] = [];
+    for (const choice of choices) {
       const lastSection = sectionList.at(-1);
       const isSameGroup = lastSection && lastSection.group?.label === choice.group?.label;
       if (isSameGroup) {
         lastSection.choices.push(choice);
-        return sectionList;
+        continue;
       }
 
       sectionList.push({
         group: choice.group,
         choices: [choice]
       });
-      return sectionList;
-    }, [])
-  );
+    }
+
+    return sectionList;
+  });
   const description = $derived(
     describeChoice(
       findChoice({

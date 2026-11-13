@@ -5,6 +5,9 @@ import type { WorkerPortReceiver } from "@/lib/download-pipeline/worker-port-rec
 import { ProgressType } from "@/types";
 import type { Prettify } from "@/types";
 import type { FFmpegCoreModule } from "@ffmpeg/types";
+import { SECONDS_PER_HOUR, SECONDS_PER_MINUTE } from "@/lib/utils/time-units";
+
+const MAX_PROGRESS_BEFORE_DONE = 0.99;
 
 export type FFmpegFactory = (options: { wasmBinary: ArrayBuffer }) => Promise<FFmpegCoreModule>;
 
@@ -55,7 +58,7 @@ export function tryRmdir(path: string) {
 function reportFFmpegProgress(value: number) {
   state.portReceiver?.send(WorkerMessageType.Progress, {
     videoId: state.currentVideoId,
-    progress: Math.max(0, Math.min(value, 0.99)),
+    progress: Math.max(0, Math.min(value, MAX_PROGRESS_BEFORE_DONE)),
     progressType: ProgressType.FFmpeg,
     tabId: state.currentTabId
   });
@@ -70,7 +73,7 @@ let lastReportedProgress = -1;
 
 function parseTimecodeSeconds(timecode: string) {
   const [hours, minutes, seconds] = timecode.split(":");
-  return Number(hours) * 3600 + Number(minutes) * 60 + Number(seconds);
+  return Number(hours) * SECONDS_PER_HOUR + Number(minutes) * SECONDS_PER_MINUTE + Number(seconds);
 }
 
 function updateMuxDuration(message: string) {

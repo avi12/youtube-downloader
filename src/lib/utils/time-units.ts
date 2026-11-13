@@ -1,0 +1,4 @@
+export const MILLISECONDS_PER_SECOND = 1000;
+export const SECONDS_PER_MINUTE = 60;
+export const SECONDS_PER_HOUR = 3600;
+export const MINUTES_PER_DAY = 24 * SECONDS_PER_MINUTE;
