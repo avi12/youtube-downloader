@@ -9,7 +9,7 @@ const MOVIE_PLAYER_SELECTOR = "#movie_player";
 const MAIN_WORLD = "MAIN";
 
 declare const ytcfg: {
-  get: (key: string) => unknown;
+  get: (key: string) => string | number | undefined;
 } | undefined;
 
 type PlayerSnapshotParams = Prettify<{

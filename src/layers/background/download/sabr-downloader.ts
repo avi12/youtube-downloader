@@ -52,7 +52,7 @@ export async function downloadViaSabr({
   const additionalFormats = additionalAudioFormats ?? [];
   const resolvedPoToken = poToken ?? "";
 
-  const { onVideoBytes, onAudioBytes, onExtraTrackBytes } = createProgressAccumulator({
+  const progress = createProgressAccumulator({
     videoId,
     tabId,
     captionCount,
@@ -73,7 +73,7 @@ export async function downloadViaSabr({
         // Count parsed media bytes (after googlevideo strips UMP framing
         // and dedupes re-deliveries). Raw network bytes overcount by 10-100x
         // because of UMP envelopes + SABR session retries.
-        onAudioBytes(chunk.byteLength);
+        progress.onAudioBytes(chunk.byteLength);
         sendNetworkChunkToOffscreen({
           videoId,
           streamType: StreamType.Audio,
@@ -112,11 +112,11 @@ export async function downloadViaSabr({
     poToken: resolvedPoToken,
     signal,
     onVideoChunk(chunk) {
-      onVideoBytes(chunk.byteLength);
+      progress.onVideoBytes(chunk.byteLength);
       callerOnVideoChunk?.(chunk, iVideoChunk++);
     },
     onAudioChunk(chunk) {
-      onAudioBytes(chunk.byteLength);
+      progress.onAudioBytes(chunk.byteLength);
       callerOnAudioChunk?.(chunk, iAudioChunk++);
     }
   });
@@ -130,7 +130,7 @@ export async function downloadViaSabr({
     formats: additionalFormats,
     poToken: resolvedPoToken,
     signal,
-    onTrackChunk: ({ trackIndex, chunk }) => onExtraTrackBytes({
+    onTrackChunk: ({ trackIndex, chunk }) => progress.onExtraTrackBytes({
       trackIndex,
       bytes: chunk.byteLength
     })

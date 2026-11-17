@@ -52,6 +52,16 @@
   "overrides": [
     {
       "files": [
+        "src/layers/youtube/entrypoints/iframe-mute.content.ts",
+        "src/layers/youtube/entrypoints/sourcebuffer-capture/sourcebuffer-capture-patches.ts",
+        "src/lib/youtube/movie-player.ts"
+      ],
+      "rules": {
+        "typescript/unbound-method": "off"
+      }
+    },
+    {
+      "files": [
         "src/lib/youtube/format-filters.ts",
         "src/lib/download-options/helpers/audio-language-helpers.ts",
         "src/lib/youtube/movie-player.ts"

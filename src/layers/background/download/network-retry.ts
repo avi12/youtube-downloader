@@ -73,8 +73,22 @@ const RECOVERABLE_PATTERNS = [
   /chunk fetch HTTP 5/i,
   /stall/i
 ];
+function describeError(error: unknown) {
+  if (!(error instanceof Error)) {
+    return String(error);
+  }
+
+  const { cause } = error;
+  if (cause instanceof Error) {
+    return `${error.message} ${cause.message}`;
+  }
+
+  const causeText = typeof cause === "string" ? cause : "";
+  return `${error.message} ${causeText}`;
+}
+
 export function isRecoverableError(error: unknown) {
-  const message = error instanceof Error ? `${error.message} ${error.cause ?? ""}` : String(error);
+  const message = describeError(error);
   return RECOVERABLE_PATTERNS.some(pattern => pattern.test(message));
 }
 
@@ -86,7 +100,7 @@ const UNAVAILABLE_PATTERNS = [
   /not playable:\s*ERROR/i
 ];
 export function isVideoUnavailableError(error: unknown) {
-  const message = error instanceof Error ? `${error.message} ${error.cause ?? ""}` : String(error);
+  const message = describeError(error);
   return UNAVAILABLE_PATTERNS.some(pattern => pattern.test(message));
 }
 

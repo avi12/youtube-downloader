@@ -85,7 +85,7 @@ export async function downloadViaCdn({
     isVideoPresent ? fetchStream({
       url: resolvedVideoUrl,
       signal,
-      onBytes: tracker.onVideoBytes,
+      onBytes: bytes => tracker.onVideoBytes(bytes),
       initialData: partialVideoData,
       onChunk: isStreamingMode ? chunk => {
         if (onVideoChunk) {
@@ -104,7 +104,7 @@ export async function downloadViaCdn({
     isAudioPresent ? fetchStream({
       url: resolvedAudioUrl,
       signal,
-      onBytes: tracker.onAudioBytes,
+      onBytes: bytes => tracker.onAudioBytes(bytes),
       initialData: partialAudioData,
       onChunk: isStreamingMode ? chunk => {
         if (onAudioChunk) {
@@ -170,7 +170,7 @@ export async function downloadViaCdn({
     };
   }
 
-  const [videoData = null, audioData = null] = cdnResults;
+  const [videoData, audioData] = cdnResults;
   return {
     videoData,
     audioData,
