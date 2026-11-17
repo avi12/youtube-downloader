@@ -21,3 +21,4 @@ keys/
 
 .verify/
 .eslintcache
+.svelte-check/
