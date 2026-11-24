@@ -23,6 +23,7 @@ const EVENT_SCROLL = "scroll";
 let currentPlaylistUi: ReturnType<typeof mount> | null = null;
 let headerMountAbort: AbortController | null = null;
 let headerReinjectObserver: MutationObserver | null = null;
+let headerHiddenObserver: ResizeObserver | null = null;
 
 function findPlaylistHeaderMount() {
   for (const elFlex of document.querySelectorAll<HTMLElement>(SELECTOR_FLEXIBLE_ACTIONS)) {
@@ -78,6 +79,9 @@ export function cleanupPlaylistUi() {
 
   headerReinjectObserver?.disconnect();
   headerReinjectObserver = null;
+
+  headerHiddenObserver?.disconnect();
+  headerHiddenObserver = null;
 
   if (currentPlaylistUi) {
     unmount(currentPlaylistUi).catch(() => {});
@@ -183,4 +187,14 @@ export async function injectPlaylistDownloaderUi(
   });
 
   headerReinjectObserver.observe(document.body, CHILD_LIST_SUBTREE);
+
+  headerHiddenObserver = new ResizeObserver(() => {
+    const isHeaderShown = elHeader.getBoundingClientRect().height > 0;
+    if (isHeaderShown) {
+      return;
+    }
+
+    injectPlaylistDownloaderUi(context).catch(() => {});
+  });
+  headerHiddenObserver.observe(elHeader);
 }

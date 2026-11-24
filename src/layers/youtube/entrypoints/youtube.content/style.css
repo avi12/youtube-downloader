@@ -71,6 +71,10 @@ ytd-menu-renderer.ytd-playlist-video-renderer:has([data-ytdl-item]) {
   align-items: center;
 }
 
+.ytLockupMetadataViewModelHost > [data-ytdl-item] {
+  margin-inline: auto 12px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   [data-ytdl-grid-item],
   .ytLockupMetadataViewModelHost {
