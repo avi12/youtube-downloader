@@ -1,0 +1,1 @@
+if ! pgrep -fx 'socat TCP-LISTEN:{{BRIDGE_PORT}},reuseaddr,fork,bind=0.0.0.0 TCP:127.0.0.1:{{CHROME_PORT}}' >/dev/null; then pgrep -x socat | xargs -r kill 2>/dev/null; nohup socat TCP-LISTEN:{{BRIDGE_PORT}},reuseaddr,fork,bind=0.0.0.0 TCP:127.0.0.1:{{CHROME_PORT}} >/tmp/socat.log 2>&1 </dev/null & disown; fi
