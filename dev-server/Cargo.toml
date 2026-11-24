@@ -1,0 +1,113 @@
+[package]
+name = "ytdl-dev-hot"
+version = "0.1.0"
+description = "Hot loop of the YouTube Downloader extension dev server: file watching, reload decisions, HMR push channel and browser reload drivers"
+authors = ["Avi"]
+edition = "2021"
+publish = false
+license = "Apache-2.0"
+
+[lib]
+name = "ytdl_dev_hot"
+path = "src/lib.rs"
+
+[[bin]]
+name = "ytdl-dev-hot"
+path = "src/main.rs"
+
+[dependencies]
+# Async runtime: select! main loop, timers (pausable in tests), stdio, TCP, spawn_blocking for fs and hashing
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "io-util", "io-std", "net", "sync", "time"] }
+# CancellationToken: one shutdown signal every task selects on, so tasks join gracefully
+tokio-util = { version = "0.7", default-features = false }
+# Wire types of the bridge protocol and the sidecar config
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# Typed errors for the library; the binary only prints them
+thiserror = "2"
+# File watching; the polling backend is used so reads (builds, TS server) never register as edits
+notify = "8"
+# Content hashes that decide which outputs a build effectively changed
+sha2 = "0.11"
+# The HMR push server (accept + WebSocket handshake) and the CDP client over the same protocol
+tokio-tungstenite = "0.30"
+# Structured logs; a layer turns them into bridge `log` lines instead of stdout noise
+tracing = { version = "0.1", default-features = false, features = ["std"] }
+tracing-subscriber = { version = "0.3", default-features = false, features = ["registry"] }
+futures-util = { version = "0.3.34", default-features = false, features = ["sink", "std"] }
+
+[dev-dependencies]
+# Paused clocks for deterministic timer tests
+tokio = { version = "1", features = ["test-util", "process"] }
+# TypeScript declarations of the wire types, generated and drift-checked by `cargo test` only, so
+# the release binary never carries it
+ts-rs = { version = "12.0.1", features = ["serde-json-impl", "no-serde-warnings"] }
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+strip = true
+
+# avi12-lint:begin rust-config (generated from rust-config-avi12; edit avi12-rust.local.toml)
+[lints.rust]
+# warnings-are-errors, no-suppression, naming-case, no-unused, no-dead-code
+unsafe_code = "forbid"
+unsafe_op_in_unsafe_fn = "deny"
+unused_qualifications = "warn"
+unused_mut = "deny"
+unused_imports = "deny"
+unused_variables = "deny"
+unused_must_use = "deny"
+dead_code = "deny"
+non_camel_case_types = "deny"
+non_snake_case = "deny"
+non_upper_case_globals = "deny"
+# narrowest-visibility
+unreachable_pub = "deny"
+# public-api-docs
+missing_docs = "deny"
+[lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+# Documentation of Result and panics is public-API prose; missing_docs covers the rest
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+module_name_repetitions = "allow"
+# A pedantic hint that every pure function carry #[must_use]; rustc unused_must_use covers real results
+must_use_candidate = "allow"
+# no-unchecked-unwrap
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+indexing_slicing = "deny"
+# no-unchecked-cast
+as_conversions = "deny"
+cast_possible_truncation = "deny"
+undocumented_unsafe_blocks = "deny"
+# no-suppression
+allow_attributes = "deny"
+allow_attributes_without_reason = "deny"
+# todo-needs-owner
+todo = "deny"
+unimplemented = "deny"
+dbg_macro = "deny"
+# identifier-length (the idioms are in clippy.toml)
+min_ident_chars = "deny"
+# early-return
+needless_return = "deny"
+redundant_else = "deny"
+collapsible_else_if = "deny"
+# size-limits, max-nesting (thresholds in clippy.toml)
+cognitive_complexity = "deny"
+too_many_lines = "deny"
+too_many_arguments = "deny"
+# no-floating-result
+let_underscore_future = "deny"
+# banned-apis (the list is in clippy.toml)
+disallowed_methods = "deny"
+disallowed_types = "deny"
+disallowed_macros = "deny"
+# PendingState mirrors the TypeScript pending latches of scheduleRebuild, one boolean per latch
+struct_excessive_bools = "allow"
+# avi12-lint:end

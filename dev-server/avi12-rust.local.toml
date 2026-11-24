@@ -1,0 +1,5 @@
+# Exemptions of this crate from the house lint levels (rust-config-avi12), each with its reason
+
+[clippy]
+# PendingState mirrors the TypeScript pending latches of scheduleRebuild, one boolean per latch
+struct_excessive_bools = "allow"
