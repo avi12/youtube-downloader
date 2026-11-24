@@ -49,15 +49,15 @@ Firefox keeps the extension up to date on its own.
 
 ## Architecture
 
-How it works — system diagram, codemap, invariants, the Chrome 4-layer fallback chain, the Firefox `ANDROID_VR` bypass, and cross-world progress propagation — lives in [ARCHITECTURE.md](ARCHITECTURE.md).
+How it works - system diagram, codemap, invariants, the Chrome 4-layer fallback chain, the Firefox `ANDROID_VR` bypass, and cross-world progress propagation - lives in [ARCHITECTURE.md](ARCHITECTURE.md).
 
-The Firefox bypass (routing player requests through the `ANDROID_VR` InnerTube client to get direct CDN URLs) was reverse-engineered by reading [yt-dlp](https://github.com/yt-dlp/yt-dlp)'s YouTube extractor — credit to that project for documenting the InnerTube client matrix.
+The Firefox bypass (routing player requests through the `ANDROID_VR` InnerTube client to get direct CDN URLs) was reverse-engineered by reading [yt-dlp](https://github.com/yt-dlp/yt-dlp)'s YouTube extractor - credit to that project for documenting the InnerTube client matrix.
 
 ## Contribute
 
 ```sh
 pnpm install
-pnpm dev            # Chrome — auto-rebuilds and reloads on every change
+pnpm dev            # Chrome - auto-rebuilds and reloads on every change
 pnpm dev:firefox    # Firefox
 ```
 

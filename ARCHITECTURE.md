@@ -1,8 +1,8 @@
 # Architecture
 
-A guide for contributors. The README explains *what* this extension does and how to install it. This document explains *how* it's put together and which constraints shape the design — enough to find your way around the code without reading every file.
+A guide for contributors. The README explains *what* this extension does and how to install it. This document explains *how* it's put together and which constraints shape the design - enough to find your way around the code without reading every file.
 
-The central constraint shaping everything: MV3 fragments execution across isolated runtimes that can't share memory, and the YouTube stream protocol that actually delivers bytes (SABR) is gated by a cryptographic challenge that only the page's own JavaScript can solve. So the architecture is a relay race — page context resolves auth and URLs, the background orchestrates, the offscreen document holds the heavy runtimes (FFmpeg WASM, sandboxed download iframes), and a small handful of typed buses move state between them.
+The central constraint shaping everything: MV3 fragments execution across isolated runtimes that can't share memory, and the YouTube stream protocol that actually delivers bytes (SABR) is gated by a cryptographic challenge that only the page's own JavaScript can solve. So the architecture is a relay race - page context resolves auth and URLs, the background orchestrates, the offscreen document holds the heavy runtimes (FFmpeg WASM, sandboxed download iframes), and a small handful of typed buses move state between them.
 
 ## System diagram
 
@@ -104,7 +104,7 @@ Chrome and Firefox diverge only at `isFirefoxRuntime?`. Everything that runs in 
 
 ## Codemap
 
-The code is organised as WXT layers under `src/layers/` — `src/layers/background` (service-worker logic + its private lib), `src/layers/popup` (popup UI), `src/layers/processing` (offscreen document + workers), `src/layers/youtube` (content scripts + Svelte components + page-context lib) — on top of a shared core sitting alongside them under `src/` (`src/lib/`, `src/types/`, `src/public/`, plus the thin background stub entrypoint at `src/entrypoints/background.ts`). Layers import shared code via the `@/` alias and their own files via `#<layer>/`. Each directory below owns one leg of the relay.
+The code is organised as WXT layers under `src/layers/` - `src/layers/background` (service-worker logic + its private lib), `src/layers/popup` (popup UI), `src/layers/processing` (offscreen document + workers), `src/layers/youtube` (content scripts + Svelte components + page-context lib) - on top of a shared core sitting alongside them under `src/` (`src/lib/`, `src/types/`, `src/public/`, plus the thin background stub entrypoint at `src/entrypoints/background.ts`). Layers import shared code via the `@/` alias and their own files via `#<layer>/`. Each directory below owns one leg of the relay.
 
 | Path | Role |
 | --- | --- |
@@ -136,14 +136,14 @@ These are the rules the rest of the code relies on. Many are "absence of somethi
 
 - **MAIN world resolves, background fetches.** Every piece of YouTube state (itags, SABR config, PO token, fresh caption URLs, dubbing tracks) is gathered in the MAIN-world content script and packed into a single [`DownloadRequest`](src/types/domain-types.ts) *before* any cross-context message is sent (see [`buildEnrichedRequest`](src/layers/youtube/entrypoints/youtube-main.content/video/download-request-builder.ts)). The background never reads page state.
 - **The background SW never touches stream bytes on Chrome.** All network I/O for streams happens inside the [download-worker iframe](src/layers/processing/entrypoints/download-worker/main.ts) or the [scrub-capture iframe](src/layers/youtube/entrypoints/sourcebuffer-capture/sourcebuffer-capture-patches.ts). The SW only orchestrates.
-- **One [`DownloadProgressEntry`](src/types/domain-types.ts) shape across every surface.** Watch button (MAIN), in-tab UI (ISOLATED), and popup (separate document) all read the same `chrome.storage.local` item, [`statusProgressItem`](src/lib/storage/storage.ts) — the popup directly, the two in-tab worlds through [`statusProgressSignal`](src/lib/ui/synced-stores.svelte.ts), its cross-world `CustomEvent` mirror.
+- **One [`DownloadProgressEntry`](src/types/domain-types.ts) shape across every surface.** Watch button (MAIN), in-tab UI (ISOLATED), and popup (separate document) all read the same `chrome.storage.local` item, [`statusProgressItem`](src/lib/storage/storage.ts) - the popup directly, the two in-tab worlds through [`statusProgressSignal`](src/lib/ui/synced-stores.svelte.ts), its cross-world `CustomEvent` mirror.
 - **One browser-discriminator function, used everywhere.** [`isFirefoxRuntime()`](src/layers/background/download/background-downloader.ts) probes `typeof browser.offscreen === "undefined"`. There are no per-feature browser checks.
 - **The offscreen "document" is the same page on both browsers.** Chrome uses `chrome.offscreen.createDocument()`; Firefox appends a hidden iframe with the same URL into the BG event-page's own document. Both paths fan in through [`ensureProcessor`](src/layers/background/handlers/processor.ts); everything downstream is shared code.
 - **`Origin: youtube.com` comes back via the network layer, not via code.** A DNR session rule registered at SW startup ([`cdn-origin-rule.ts`](src/layers/background/lib/youtube/sabr/cdn-origin-rule.ts)) rewrites `Origin`/`Referer`/`Sec-Fetch` on outbound `googlevideo.com` requests. No callsite has to remember to set them. The rule is scoped to `tabIds: [TAB_ID_NONE]` so it reaches only the extension's own contexts (service worker, offscreen document, and the player iframe it hosts). It must never apply to a real tab: rewriting `Origin` on a page's own media request makes the CDN echo an `Access-Control-Allow-Origin` that page cannot accept, which silently breaks playback on every YouTube host except `www` (issue #17).
 - **The Firefox InnerTube call must originate from the page.** The `visitorData` blob YouTube validates only exists in `ytcfg`; pulling it from extension context fails the anti-bot gate. The [page-proxy bridge](src/layers/youtube/entrypoints/youtube.content/handlers/page-sabr-fetch-bridge.ts) (`registerPageSabrFetchBridge`) runs the fetch from a [MAIN-world iframe](src/layers/youtube/entrypoints/page-sabr-fetch.content.ts) (`substituteBodyTokens`) so the request appears same-origin.
 - **403 is terminal; 5xx and 429 are transient.** Auto-retry fires only for the transient set ([`isRecoverableError`](src/layers/background/download/network-retry.ts)). Retrying a 403 just wastes the retry budget.
-- **Manual cancels propagate to every level atomically.** [`performCancelDownload`](src/lib/ui/cancel-download.ts) drives worker iframe abort, offscreen accumulator drop, mux queue cancel marker, and persisted-retry deletion — all keyed off the same `videoId`. A cancelled download is never resurrected by a stale retry.
-- **The Retry button is for unrecoverable errors only.** Auto-retry handles 5xx / 429 / network reset / stall silently (5 s / 20 s / 60 s backoff, 3 attempts) via [`scheduleAutoRetry`](src/layers/background/download/network-retry.ts). If the user sees Retry, the failure is a class that a fresh attempt can't fix on its own — FFmpeg mux failure, codec parse error, attestation wall, OPFS write error.
+- **Manual cancels propagate to every level atomically.** [`performCancelDownload`](src/lib/ui/cancel-download.ts) drives worker iframe abort, offscreen accumulator drop, mux queue cancel marker, and persisted-retry deletion - all keyed off the same `videoId`. A cancelled download is never resurrected by a stale retry.
+- **The Retry button is for unrecoverable errors only.** Auto-retry handles 5xx / 429 / network reset / stall silently (5 s / 20 s / 60 s backoff, 3 attempts) via [`scheduleAutoRetry`](src/layers/background/download/network-retry.ts). If the user sees Retry, the failure is a class that a fresh attempt can't fix on its own - FFmpeg mux failure, codec parse error, attestation wall, OPFS write error.
 - **Streams are copied, not re-encoded, whenever the container allows.** Every download goes through one plan ([`resolveDownloadPlan`](src/lib/youtube/download-plan.ts)) that swaps the picked streams for same-quality variants the container holds as-is, steered by the codec settings. When nothing fits, the output becomes MKV rather than re-encoding the video. See [Format, codec, and container selection](#format-codec-and-container-selection).
 - **Every picker reads one choices table.** Settings dropdowns, radio groups and the download panel's pickers take their options from `{ value: { label, description } }` tables through [`listChoices`](src/lib/utils/choices.ts), so each value's label and description are written once and adding a codec or container is one entry. YouTube's Polymer selects, which have no room for a second line, get the same text inlined by `toInlineLabeledOption`.
 - **One rule decides the download type.** "Auto" means audio only for music and video + audio for everything else, and only [`resolveDownloadType`](src/lib/youtube/download-type.ts) applies it. The watch button, the panel, and playlist and grid downloads all ask it instead of re-deriving it.
@@ -155,7 +155,7 @@ These are the rules the rest of the code relies on. Many are "absence of somethi
 
 These sections cover the parts of the system that are most non-obvious and most worth understanding before changing code.
 
-### Chrome stream fetch — four-layer fallback chain
+### Chrome stream fetch - four-layer fallback chain
 
 ```mermaid
 sequenceDiagram
@@ -208,7 +208,7 @@ The Chrome path walks four layers, each only invoked when the one above returns 
 
 Captured bytes from every layer flow into the same [offscreen accumulator](src/layers/processing/entrypoints/offscreen/stream/accumulator.ts), so muxing is identical regardless of which layer produced them.
 
-### Firefox stream fetch — `ANDROID_VR` bypass
+### Firefox stream fetch - `ANDROID_VR` bypass
 
 ```mermaid
 sequenceDiagram
@@ -255,16 +255,16 @@ On Firefox-on-Windows, YouTube's anti-bot infrastructure rejects SABR (HTTP 403 
 The bypass mirrors [yt-dlp](https://github.com/yt-dlp/yt-dlp)'s `android_vr` extractor:
 
 1. **InnerTube call.** [`resolveAndroidUrls`](src/layers/background/lib/youtube/android-player.ts) issues `POST /youtubei/v1/player` with `clientName: ANDROID_VR` in the InnerTube request body (client id 28, Oculus Quest 3 device, Android 12L user agent; the identity travels in the JSON `context.client`, not in request headers). `ANDROID_VR` is the only first-party client that returns direct CDN URLs for every adaptive format without forcing SABR, without requiring a PO token, and without the 4 MB per-request range cap that the plain `ANDROID` client enforces.
-2. **Page-proxy auth.** The InnerTube anti-bot gate validates the *value* of the `visitorData` blob, not just its presence — empty string and dummy bytes both return `LOGIN_REQUIRED`. The blob is a 520-byte base64-protobuf with server-generated metadata the extension can't reconstruct, and only exists in MAIN-world page context (`ytcfg.get("VISITOR_DATA")`). So the call has to go through a page-proxy bridge: the background sends a `pageSabrFetch` message (handled by [`registerPageSabrFetchBridge`](src/layers/youtube/entrypoints/youtube.content/handlers/page-sabr-fetch-bridge.ts)) to a MAIN-world iframe, which substitutes a `__YTDL_VISITOR_DATA__` placeholder in the request body ([`substituteBodyTokens`](src/layers/youtube/entrypoints/page-sabr-fetch.content.ts), reading via [`readVisitorData`](src/layers/youtube/entrypoints/page-sabr-fetch.content.ts)) and runs the fetch from page context. A BG-direct fast path is tried first and falls through to the page-proxy on failure.
+2. **Page-proxy auth.** The InnerTube anti-bot gate validates the *value* of the `visitorData` blob, not just its presence - empty string and dummy bytes both return `LOGIN_REQUIRED`. The blob is a 520-byte base64-protobuf with server-generated metadata the extension can't reconstruct, and only exists in MAIN-world page context (`ytcfg.get("VISITOR_DATA")`). So the call has to go through a page-proxy bridge: the background sends a `pageSabrFetch` message (handled by [`registerPageSabrFetchBridge`](src/layers/youtube/entrypoints/youtube.content/handlers/page-sabr-fetch-bridge.ts)) to a MAIN-world iframe, which substitutes a `__YTDL_VISITOR_DATA__` placeholder in the request body ([`substituteBodyTokens`](src/layers/youtube/entrypoints/page-sabr-fetch.content.ts), reading via [`readVisitorData`](src/layers/youtube/entrypoints/page-sabr-fetch.content.ts)) and runs the fetch from page context. A BG-direct fast path is tried first and falls through to the page-proxy on failure.
 3. **Chunked download.** [`runFirefoxDirectDownload`](src/layers/background/download/firefox-direct-download.ts) fetches the resolved adaptive URLs as 10 MB closed-range chunks (matching yt-dlp's `--http-chunk-size` default) in parallel for video and audio. ANDROID_VR URLs are signature-authenticated so chunk fetches succeed BG-direct with `credentials: "include"`; the page-proxy fallback covers the rare case of a transient block.
 
 Chunks stream to the offscreen iframe and join the same [accumulator](src/layers/processing/entrypoints/offscreen/stream/accumulator.ts) -> [`handleProcessStreamEnd`](src/layers/processing/entrypoints/offscreen/stream/end-handler.ts) -> [FFmpeg](src/layers/processing/entrypoints/mux-worker/index.ts) pipeline Chrome uses.
 
 ### Cross-world progress propagation
 
-Progress crosses three boundaries — offscreen → BG → tab → MAIN-world UI — and lands as the same `DownloadProgressEntry` object on every consumer.
+Progress crosses three boundaries - offscreen → BG → tab → MAIN-world UI - and lands as the same `DownloadProgressEntry` object on every consumer.
 
-Inside the BG, the dispatcher in [`progress-fetch.ts:178`](src/layers/background/download/progress-fetch.ts) `sendProgressUpdate` decides whether to message the tab directly or route via the SW. The probe ([`progress-fetch.ts:15`](src/layers/background/download/progress-fetch.ts) `canSendToTabDirectly`): *direct dispatch is possible from any context that owns the tabs API* — Chrome service worker (no `document`), Firefox event-page, Firefox offscreen iframe. The Chrome offscreen document and Chrome download-worker iframe lack `chrome.tabs` and must route via `ForwardProgressUpdate` to the SW, which writes [`statusProgressItem`](src/lib/storage/storage.ts) to storage and forwards to the tab. Same end state on both browsers; different number of hops.
+Inside the BG, the dispatcher in [`progress-fetch.ts:178`](src/layers/background/download/progress-fetch.ts) `sendProgressUpdate` decides whether to message the tab directly or route via the SW. The probe ([`progress-fetch.ts:15`](src/layers/background/download/progress-fetch.ts) `canSendToTabDirectly`): *direct dispatch is possible from any context that owns the tabs API* - Chrome service worker (no `document`), Firefox event-page, Firefox offscreen iframe. The Chrome offscreen document and Chrome download-worker iframe lack `chrome.tabs` and must route via `ForwardProgressUpdate` to the SW, which writes [`statusProgressItem`](src/lib/storage/storage.ts) to storage and forwards to the tab. Same end state on both browsers; different number of hops.
 
 Updates are coalesced per `videoId` at 100 ms (constant [`PROGRESS_COALESCE_MS`](src/layers/background/download/progress-fetch.ts)). Without coalescing, per-chunk emit rates starve the watch tab's hover and tooltip events. The coalesce also smooths out the byte readout (`downloadedBytes` / `totalBytes` / `bytesPerSecond`, the last computed from a 2-second sliding window) that the popup shows.
 
@@ -371,7 +371,7 @@ flowchart LR
 
 ### Metadata, ID3 tags, and cover art
 
-Output files carry as much rich metadata as YouTube exposes: title, artist, album, album artist, genres, publish date, and an embedded thumbnail. Two distinct mux paths consume this metadata differently — audio-only files get global ID3-style tags + a cover-art image, video files get per-track titles + language tags but no globals.
+Output files carry as much rich metadata as YouTube exposes: title, artist, album, album artist, genres, publish date, and an embedded thumbnail. Two distinct mux paths consume this metadata differently - audio-only files get global ID3-style tags + a cover-art image, video files get per-track titles + language tags but no globals.
 
 ```mermaid
 flowchart TB
@@ -395,7 +395,7 @@ flowchart TB
 
 - **Prefer JPEG over WebP.** [`preferJpegThumbnail`](src/layers/processing/entrypoints/mux-worker/mux-thumbnail.ts) rewrites `/vi_webp/...webp` URLs to `/vi/...jpg`. YouTube serves both; the JPEG version lets FFmpeg `-c:v copy` the image into the container without an MJPEG re-encode pass.
 - **Magic-byte sniff.** [`detectImageExtension`](src/layers/processing/entrypoints/mux-worker/mux-thumbnail.ts) checks for `FF D8 FF` (JPEG), `89 50 4E 47` (PNG), or `RIFF...WEBP` at offset 8 (WebP). Trusting the URL extension isn't enough because the rewrite occasionally falls back to the original format.
-- **Embed as attached picture.** The image is written to FFmpeg's MEMFS as `cover.<ext>`, added as the 2nd input (`-i cover.<ext>`), mapped with `-map 1`, codec'd as `copy` for JPEG or `mjpeg` for PNG/WebP, and stamped with `-disposition:v attached_pic`. The disposition flag is what tells the container "this video stream is a static cover, not a video track" — so players show it as album art, not a 1-frame video.
+- **Embed as attached picture.** The image is written to FFmpeg's MEMFS as `cover.<ext>`, added as the 2nd input (`-i cover.<ext>`), mapped with `-map 1`, codec'd as `copy` for JPEG or `mjpeg` for PNG/WebP, and stamped with `-disposition:v attached_pic`. The disposition flag is what tells the container "this video stream is a static cover, not a video track" - so players show it as album art, not a 1-frame video.
 - **Skipped for WebM output.** Opus-in-WebM containers don't support attached pictures cleanly; the flag is gated by `!isWebmOutput`.
 
 **ID3-style tag injection (audio-only path)**, same [`handleEmbedMetadata`](src/layers/processing/entrypoints/mux-worker/mux-handler-embed-metadata.ts):
@@ -411,8 +411,8 @@ flowchart TB
 - Each audio input gets `-metadata:s:a:<i> title=<label>` and `-metadata:s:a:<i> language=<code>`. The label is the human-readable track name (e.g. "English (United States)"), the language code is the BCP-47 tag (e.g. `en-US`).
 - Each subtitle input gets `-metadata:s:s:<i> title=<label>` and `-metadata:s:s:<i> language=<code>`.
 - Multi-track audio: `-disposition:a:<i> default` is set on the user-selected primary track, `-disposition:a:<i> 0` on the rest. Players (VLC, mpv) honor this when picking the default track on open.
-- No global `-metadata title=` / `-metadata artist=` is set on video files — those tags don't have a standard meaning across video container formats and would clobber the per-track metadata in some containers.
-- No cover-art embedding — the source has a thumbnail URL but the video mux path ignores it. Cover art on video containers is inconsistent across players, and the visible video stream already serves as the visual identity.
+- No global `-metadata title=` / `-metadata artist=` is set on video files - those tags don't have a standard meaning across video container formats and would clobber the per-track metadata in some containers.
+- No cover-art embedding - the source has a thumbnail URL but the video mux path ignores it. Cover art on video containers is inconsistent across players, and the visible video stream already serves as the visual identity.
 
 ### Popup downloads
 
@@ -459,20 +459,21 @@ A download restarted immediately after cancel runs from scratch with no state in
 
 ### Telemetry
 
-Anonymous usage telemetry goes through GA4's Measurement Protocol from the background ([`src/layers/background/lib/analytics/`](src/layers/background/lib/analytics/ga4.ts)), chosen because it needs no `host_permissions` — the request targets `google-analytics.com`, which is not a YouTube origin, so it sits outside the extension's content-script grants. A stable per-install client id is minted once and survives local-storage clears ([`getOrCreateClientId`](src/lib/storage/storage.ts)). Active-user pings fire from a daily alarm heartbeat (not per-action), install fires once, and uninstall is captured by `setUninstallURL` pointing at a GitHub Pages beacon ([`docs/uninstall/index.html`](docs/uninstall/index.html)) whose GA4 ids are injected at deploy time by the [Pages workflow](.github/workflows/pages.yml). No video ids, titles, or URLs are ever sent.
+Anonymous usage telemetry goes through GA4's Measurement Protocol from the background ([`src/layers/background/lib/analytics/`](src/layers/background/lib/analytics/ga4.ts)), chosen because it needs no `host_permissions` - the request targets `google-analytics.com`, which is not a YouTube origin, so it sits outside the extension's content-script grants. A stable per-install client id is minted once and survives local-storage clears ([`getOrCreateClientId`](src/lib/storage/storage.ts)). Active-user pings fire from a daily alarm heartbeat (not per-action), install fires once, and uninstall is captured by `setUninstallURL` pointing at a GitHub Pages beacon ([`docs/uninstall/index.html`](docs/uninstall/index.html)) whose GA4 ids are injected at deploy time by the [Pages workflow](.github/workflows/pages.yml). No video ids, titles, or URLs are ever sent.
 
 ### Development loop
 
-`pnpm dev` runs [`scripts/dev-server.ts`](scripts/dev-server.ts). It rebuilds on every change under `src/`, compares the new build with the previous one file by file by content hash ([`dev-output-changes.ts`](scripts/dev-output-changes.ts)), and applies the smallest update that keeps open YouTube tabs alive:
+`pnpm dev` runs [`scripts/dev/server/main.ts`](scripts/dev/server/main.ts). Popup and content-script components hot-swap in place with their `$state` ([`scripts/dev/hmr/`](scripts/dev/hmr)). Anything else rebuilds, is compared with the previous build file by file by content hash ([`reload-plan.ts`](scripts/dev/output/reload-plan.ts)), and gets the smallest update that keeps open YouTube tabs alive:
 
 | What changed | What the dev server does |
 | --- | --- |
 | Popup, offscreen document, or a worker | Reloads the open popup and closes the offscreen document (recreated on next use) |
-| Background, ISOLATED content script, or manifest | Reloads the extension, re-injects `youtube.content` into open tabs in place, and replays the download panel's handshake, so page state survives |
+| Background only | Evaluates the rebuilt background in the running service worker / event page, which tears its previous copy down and restarts in place ([`background-swap.ts`](scripts/dev/browsers/background-swap.ts)); the extension and tabs are untouched |
+| ISOLATED content script entry, or manifest | Reloads the extension, re-injects `youtube.content` into open tabs in place, and replays the download panel's handshake, so page state survives |
 | MAIN-world content script | Reloads the extension and only the tabs that script runs in |
 
-Two browser quirks shape it. Chrome keeps the old isolated world running after an extension reload, so the dev server neutralizes it over the DevTools protocol before the new copy goes in. Firefox re-runs every declared content script on an add-on reload, so dev builds wrap each one in a run-once guard ([`dev-build-patches.ts`](scripts/dev-build-patches.ts)). MAIN-world scripts aren't hot-swapped: they patch YouTube's globals and register listeners with no teardown, so a fresh page is the only clean state. None of this ships; the `scripting` permission the re-injection needs is added to dev builds only.
+Two browser quirks shape it. Chrome keeps the old isolated world running after an extension reload, so the dev server neutralizes it over the DevTools protocol before the new copy goes in. Firefox re-runs every declared content script on an add-on reload, so dev builds wrap each one in a run-once guard ([`patches.ts`](scripts/dev/output/patches.ts)). MAIN-world scripts aren't hot-swapped: they patch YouTube's globals and register listeners with no teardown, so a fresh page is the only clean state. None of this ships; the `scripting` permission the re-injection needs is added to dev builds only.
 
 ## When to update this document
 
-Revisit when an *architectural invariant* changes — a new browser branch, a new context boundary, a new top-level directory, a new authentication flow. Don't update it for changes to specific timeouts, message names, file paths, or retry counts; those will go stale faster than you can document them.
+Revisit when an *architectural invariant* changes - a new browser branch, a new context boundary, a new top-level directory, a new authentication flow. Don't update it for changes to specific timeouts, message names, file paths, or retry counts; those will go stale faster than you can document them.

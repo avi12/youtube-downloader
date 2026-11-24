@@ -22,3 +22,6 @@ keys/
 .verify/
 .eslintcache
 .svelte-check/
+
+/dev-server/target/
+/tools/target/

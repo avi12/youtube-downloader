@@ -1,6 +1,6 @@
 # Contributing
 
-This guide gets you from `git clone` to a working dev loop and a mergeable PR. For how the system is put together, read [ARCHITECTURE.md](ARCHITECTURE.md) — it has the system diagram, a codemap of every layer and shared `src/` directory, and the invariants the code relies on.
+This guide gets you from `git clone` to a working dev loop and a mergeable PR. For how the system is put together, read [ARCHITECTURE.md](ARCHITECTURE.md) - it has the system diagram, a codemap of every layer and shared `src/` directory, and the invariants the code relies on.
 
 ## Quick start
 
@@ -12,7 +12,7 @@ pnpm dev            # Chrome
 pnpm dev:firefox    # Firefox
 ```
 
-`pnpm dev` runs [`scripts/dev-server.ts`](scripts/dev-server.ts): it production-builds the extension, launches one browser with it sideloaded, and on every file change under `src/` rebuilds and applies the smallest update - an open popup reloads, a background or content-script change reloads the extension and swaps the content script into the open YouTube tabs in place, and only a change to a script that runs in the page itself (`youtube-main`) reloads the tabs. The browser stays open; each update is logged with what it did. No manual reloading.
+`pnpm dev` runs [`scripts/dev/server/main.ts`](scripts/dev/server/main.ts): it production-builds the extension, launches one browser with it sideloaded, and on every file change under `src/` applies the smallest update - popup and content-script components hot-swap in place keeping their state, a background change restarts the background inside the running extension, other changes reload the extension and swap the content script into the open YouTube tabs in place, and only a change to a script that runs in the page itself (`youtube-main`) reloads the tabs. The browser stays open; each update is logged with what it did. No manual reloading.
 
 No `.env` is needed for development. [`.env.example`](.env.example) documents the variables used for release signing (Firefox AMO) and analytics.
 
@@ -30,9 +30,9 @@ The 30-second mental model: MV3 splits the extension across isolated runtimes, s
 
 Start with these three, in order:
 
-1. [ARCHITECTURE.md](ARCHITECTURE.md) — the system diagram maps every step of that relay to the exact file and function.
-2. [`src/layers/`](src/layers) — one WXT layer per runtime: `src/layers/background` (service-worker logic + its private lib), `src/layers/popup` (popup UI), `src/layers/processing` (offscreen document + workers), `src/layers/youtube` (content scripts, Svelte components, and page-context lib). WXT auto-discovers each layer's `entrypoints/` (a thin background stub remains at [`src/entrypoints/background.ts`](src/entrypoints/background.ts)).
-3. [`src/lib/`](src/lib) — shared code, grouped by domain (`youtube/`, `messaging/`, `download-pipeline/`, `storage/`, `ui/`, `utils/`). Layers import it via the `@/` alias and their own files via `#<layer>/`.
+1. [ARCHITECTURE.md](ARCHITECTURE.md) - the system diagram maps every step of that relay to the exact file and function.
+2. [`src/layers/`](src/layers) - one WXT layer per runtime: `src/layers/background` (service-worker logic + its private lib), `src/layers/popup` (popup UI), `src/layers/processing` (offscreen document + workers), `src/layers/youtube` (content scripts, Svelte components, and page-context lib). WXT auto-discovers each layer's `entrypoints/` (a thin background stub remains at [`src/entrypoints/background.ts`](src/entrypoints/background.ts)).
+3. [`src/lib/`](src/lib) - shared code, grouped by domain (`youtube/`, `messaging/`, `download-pipeline/`, `storage/`, `ui/`, `utils/`). Layers import it via the `@/` alias and their own files via `#<layer>/`.
 
 ### The four messaging buses
 
@@ -47,8 +47,8 @@ The most common newcomer confusion is which bus connects which runtimes. They ar
 
 ### Naming patterns you'll see
 
-- `Component.svelte` + `Component.<purpose>.svelte.ts` — Svelte 5 rune state and effects extracted from a component, e.g. `WatchButton.svelte` with `WatchButton.state.svelte.ts`. The `.svelte.ts` suffix is what enables runes outside a component.
-- `*.content.ts` / `*.content/` under `src/layers/youtube/entrypoints/` — content scripts; the WXT `world` option in each file's `defineContentScript` says whether it runs in MAIN or ISOLATED world.
+- `Component.svelte` + `Component.<purpose>.svelte.ts` - Svelte 5 rune state and effects extracted from a component, e.g. `WatchButton.svelte` with `WatchButton.state.svelte.ts`. The `.svelte.ts` suffix is what enables runes outside a component.
+- `*.content.ts` / `*.content/` under `src/layers/youtube/entrypoints/` - content scripts; the WXT `world` option in each file's `defineContentScript` says whether it runs in MAIN or ISOLATED world.
 - `el` prefix for elements, `is` prefix for booleans, `i` prefix for indexes, `SCREAMING_SNAKE_CASE` for module-level constants.
 
 ## Code style
@@ -56,23 +56,23 @@ The most common newcomer confusion is which bus connects which runtimes. They ar
 [CLAUDE.md](CLAUDE.md) is the authoritative style guide and is enforced in review. The rules that shape the code most:
 
 - Early returns, minimal nesting, functional style, `for-of` over `.forEach`
-- No comments — use descriptive names instead
+- No comments - use descriptive names instead
 - Hardcoded strings go in enums, hardcoded numbers in `SCREAMING_SNAKE_CASE` constants
 - Use the `browser` namespace, never `chrome`
-- Content-script UI takes all styling from YouTube's own Polymer runtime — no custom CSS
+- Content-script UI takes all styling from YouTube's own Polymer runtime - no custom CSS
 - Don't persist settings automatically; rely on fallback values until the user explicitly sets something
 
 **Every change must work on both Chrome MV3 and Firefox MV3.** Prefer one shared code path; branch only where an API genuinely diverges (the only browser probe is `isFirefoxRuntime()` in [`background-downloader.ts`](src/layers/background/download/background-downloader.ts)).
 
 ## Quality gates
 
-Run these before pushing — all must pass:
+Run these before pushing - all must pass:
 
 ```sh
 pnpm lint           # oxlint + ESLint, both with --fix
 pnpm stylelint      # CSS + Svelte styles, with --fix
 pnpm svelte-check
-pnpm compile        # tsc --noEmit
+pnpm compile        # tsrs --noEmit
 npx fallow audit    # dead code + complexity on your changed files
 ```
 
@@ -91,7 +91,7 @@ npx fallow audit    # dead code + complexity on your changed files
 
 - Conventional-commit style subjects under 70 characters: `fix(firefox): …`, `feat(popup): …`, `docs(readme): …`
 - Skip the body unless something is genuinely non-obvious
-- Update ARCHITECTURE.md only when an architectural invariant changes (new context boundary, new browser branch, new top-level directory) — not for renames, timeouts, or message names
+- Update ARCHITECTURE.md only when an architectural invariant changes (new context boundary, new browser branch, new top-level directory) - not for renames, timeouts, or message names
 
 ## Testing on Chrome on Linux
 

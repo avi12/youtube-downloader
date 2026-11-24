@@ -8,7 +8,9 @@
     "src/layers/*/entrypoints/*/index.ts",
     "src/layers/*/entrypoints/*/index.content.ts",
     "src/layers/*/entrypoints/*/main.ts",
-    "src/layers/*/layer.config.ts"
+    "src/layers/*/layer.config.ts",
+    "scripts/dev/hmr/runtime/runtime.ts",
+    "scripts/dev/hmr/runtime/background-prelude.ts"
   ],
   "ignoreUnresolvedImports": [
     "#imports",
@@ -24,5 +26,9 @@
     "postcss-html",
     "svelte-check",
     "ws"
+  ],
+  "ignorePatterns": [
+    "dev-server/bindings/**",
+    "tools/bindings/**"
   ]
 }

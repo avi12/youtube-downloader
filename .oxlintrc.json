@@ -33,23 +33,23 @@
     ".wxt/**",
     "User Data/**",
     "patches/**",
-    "scripts/bisect-*",
-    "scripts/verify-download.mjs",
-    "scripts/inspect-*",
-    "scripts/check-*",
-    "scripts/capture-logs.mjs",
-    "scripts/reload-yt.mjs",
-    "scripts/cherry-pick-*",
-    "scripts/firefox-*",
-    "scripts/dump-*",
     "scripts/cdp-*",
-    "scripts/screenshot-*",
     "src/layers/processing/entrypoints/mux-worker/opfs.d.ts",
     ".claude/**",
     "user-profiles/**",
-    ".verify-output/**"
+    ".verify-output/**",
+    "dev-server/bindings/**",
+    "tools/bindings/**",
+    "tools/assets/browsers/**",
+    "tools/assets/payload/**"
   ],
   "overrides": [
+    {
+      "files": ["scripts/dev/hmr/runtime/globals.d.ts"],
+      "rules": {
+        "no-var": "off"
+      }
+    },
     {
       "files": [
         "src/layers/youtube/entrypoints/iframe-mute.content.ts",
@@ -64,7 +64,8 @@
       "files": [
         "src/lib/youtube/format-filters.ts",
         "src/lib/download-options/helpers/audio-language-helpers.ts",
-        "src/lib/youtube/movie-player.ts"
+        "src/lib/youtube/movie-player.ts",
+        "scripts/dev/hmr/runtime/background-prelude.ts"
       ],
       "rules": {
         "house/positional-parameters": "off"

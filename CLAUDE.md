@@ -55,7 +55,7 @@
 After each modification, lint with oxlint, ESLint, Stylelint, svelte-check, and `npx fallow audit`.
 
 # Dev server
-`scripts/dev-server.ts` rebuilds on any change under `src/` and applies the smallest update, keeping the open YouTube tabs:
+`pnpm dev` (`scripts/dev/server/main.ts`) and `pnpm dev:rs` (the Rust `ytdl dev run` in `tools/`, with the sidecar in `dev-server/`) rebuild on any change under `src/` and apply the smallest update, keeping the open YouTube tabs. The Rust server keeps its Node workers warm, so a component edit hot-swaps in about 0.3s:
 - Popup/offscreen/worker change: reloads the open popup, closes the offscreen document (recreated on next use)
 - Background or ISOLATED content-script change: reloads the extension and re-injects `youtube.content` into open tabs in place
 - MAIN-world content-script change: reloads the extension and the tabs it runs in
@@ -68,3 +68,6 @@ After each modification, lint with oxlint, ESLint, Stylelint, svelte-check, and 
 - `emscripten-fs.d.ts` keeps `interface FS`: it merges into the `FS` interface of `@ffmpeg/types`, so the name is fixed by that package; the `id-length` override in `.oxlintrc.json` adds it to the exceptions
 - `__ytdlAudioWatched`, `__ytdlCaptionWatched` and `__ytdlCapture` are marker flags set on YouTube's player object; the double underscore keeps them out of YouTube's own names, and `naming/convention` lists them in `allowedNames`
 - `declaration-no-important` is off in `.stylelintrc.json` for `App.svelte` (the reduced-motion reset) and the YouTube-page components under `src/layers/youtube/components`, whose declarations must beat YouTube's own styles
+- `no-var` is off in `.oxlintrc.json` for `scripts/dev/hmr/runtime/globals.d.ts`: only `declare var` puts a name on `globalThis`, which is how the HMR runtime (`scripts/dev/hmr/runtime/runtime.ts`) reads `browser`, `chrome` and its own flags
+- `dev-server/bindings/` is in `.oxlintrc.json`'s `ignorePatterns`: ts-rs generates it from the sidecar's wire types (`cargo test` rewrites it and fails on drift), so its formatting is the generator's
+- `tools/assets/browsers/` and `tools/assets/payload/` are in `.oxlintrc.json`'s `ignorePatterns` and `eslint.config.js`'s `ignores`: they are snippets the dev server evaluates inside the browser (expression statements, no module scope), so the module-style rules do not apply
