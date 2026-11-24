@@ -204,7 +204,7 @@ export async function closeTarget(port: number, targetId: string) {
 }
 
 export function fetchTargets(port: number) {
-  return new Promise((resolve, reject) => {
+  return new Promise<CdpTarget[]>((resolve, reject) => {
     http.get(`http://127.0.0.1:${port}/json`, response => {
       let data = "";
       response.on("data", chunk => data += chunk);

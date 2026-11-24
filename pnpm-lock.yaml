@@ -54,9 +54,6 @@ importers:
       avi12-lint:
         specifier: github:avi12/lint-config#v0.11.0&path:/packages/avi12-lint
         version: https://codeload.github.com/avi12/lint-config/tar.gz/3b2bed262448df9fcfacba0253a1425e389883b5#path:/packages/avi12-lint
-      chokidar:
-        specifier: ^5.0.0
-        version: 5.0.0
       eslint:
         specifier: ^10.12.0
         version: 10.12.0(jiti@2.7.0)(supports-color@10.2.2)
