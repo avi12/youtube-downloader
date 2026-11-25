@@ -269,11 +269,21 @@ impl ChromeTarget {
                 Ok(Some(PageAction::Reloaded))
             }
             TargetKind::Other => {
+                if self.is_close_deferred().await {
+                    return Ok(Some(PageAction::Deferred));
+                }
                 close_target(self.port.get(), &target.id.to_string()).await?;
                 Ok(Some(PageAction::Closed))
             }
             _ => Ok(None),
         }
+    }
+
+    /// Closing the offscreen document would kill the downloads in it. A stopped worker has none.
+    async fn is_close_deferred(&self) -> bool {
+        self.evaluate_in_worker(scripts::DEFER_CLOSE_WHILE_DOWNLOADING)
+            .await
+            .is_ok_and(|value| value == Value::Bool(true))
     }
 
     async fn refresh_pages_now(&self, plan: &PageRefreshPlan) -> Result<Vec<RefreshedPage>> {

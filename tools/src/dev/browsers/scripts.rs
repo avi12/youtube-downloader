@@ -38,6 +38,10 @@ pub(super) const MANIFEST_NAME: &str =
 pub(super) const RUNTIME_RELOAD: &str =
     include_str!("../../../assets/browsers/expressions/runtime-reload.js");
 
+/// Run in the service worker: true while downloads run, closing the offscreen document once they end.
+pub(super) const DEFER_CLOSE_WHILE_DOWNLOADING: &str =
+    include_str!("../../../assets/browsers/expressions/defer-close-while-downloading.js");
+
 const EXTENSION_RELOAD: &str = include_str!("../../../assets/browsers/extension-reload.js");
 const EXTENSION_ID_BY_NAME: &str = include_str!("../../../assets/browsers/extension-id-by-name.js");
 

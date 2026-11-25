@@ -3,4 +3,4 @@
 /**
  * What happened to one open extension page.
  */
-export type PageAction = "reloaded" | "closed - recreated on next use";
+export type PageAction = "reloaded" | "closed - recreated on next use" | "busy downloading - closes when downloads end";

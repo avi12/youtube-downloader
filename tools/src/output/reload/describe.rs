@@ -36,6 +36,9 @@ pub(crate) enum PageAction {
     /// A document the background owns; it recreates it on next use.
     #[serde(rename = "closed - recreated on next use")]
     Closed,
+    /// A document with downloads running in it; it closes once they end.
+    #[serde(rename = "busy downloading - closes when downloads end")]
+    Deferred,
 }
 
 impl PageAction {
@@ -43,6 +46,7 @@ impl PageAction {
         match self {
             Self::Reloaded => "reloaded",
             Self::Closed => "closed - recreated on next use",
+            Self::Deferred => "busy downloading - closes when downloads end",
         }
     }
 }
