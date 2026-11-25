@@ -8,6 +8,7 @@ import { VideoPlaybackAbrRequest } from "googlevideo/protos";
 // BotGuard-minted token that follows it is accepted past SABR's attestation grace period.
 const MIN_ATTESTED_PO_TOKEN_BYTES = 32;
 const REQUEST_NUMBER_PARAM = "rn";
+const FRAME_SESSION_TIMEOUT_MS = 20_000;
 
 type PlayerSession = Prettify<{
   videoId: string;
@@ -17,6 +18,32 @@ type PlayerSession = Prettify<{
 }>;
 
 const sessionsByTab = new Map<number, PlayerSession>();
+// Hidden download frames have no tab, so they are told apart by frame: the frame's own navigation
+// names its video, and its player's SABR requests carry the same frame id
+const sessionsByVideo = new Map<string, PlayerSession>();
+const videoIdsByFrame = new Map<number, string>();
+const sessionWaiters = new Map<string, Set<() => void>>();
+
+function readAttestedCredentials({ url, body }: {
+  url: string;
+  body: Uint8Array;
+}) {
+  const request = VideoPlaybackAbrRequest.decode(body);
+  const poToken = request.streamerContext?.poToken;
+  const ustreamerConfig = request.videoPlaybackUstreamerConfig;
+  const isAttested = (poToken?.byteLength ?? 0) >= MIN_ATTESTED_PO_TOKEN_BYTES;
+  if (!isAttested || !ustreamerConfig?.byteLength) {
+    return null;
+  }
+
+  const streamingUrl = new URL(url);
+  streamingUrl.searchParams.delete(REQUEST_NUMBER_PARAM);
+  return {
+    serverAbrStreamingUrl: streamingUrl.href,
+    videoPlaybackUstreamerConfig: uint8ToBase64(ustreamerConfig),
+    poToken: uint8ToBase64(required(poToken))
+  };
+}
 
 type RecordPlayerSessionParams = Prettify<{
   tabId: number;
@@ -24,11 +51,11 @@ type RecordPlayerSessionParams = Prettify<{
   body: Uint8Array;
 }>;
 export async function recordPlayerSession({ tabId, url, body }: RecordPlayerSessionParams) {
-  const request = VideoPlaybackAbrRequest.decode(body);
-  const poToken = request.streamerContext?.poToken;
-  const ustreamerConfig = request.videoPlaybackUstreamerConfig;
-  const isAttested = (poToken?.byteLength ?? 0) >= MIN_ATTESTED_PO_TOKEN_BYTES;
-  if (!isAttested || !ustreamerConfig?.byteLength) {
+  const credentials = readAttestedCredentials({
+    url,
+    body
+  });
+  if (!credentials) {
     return;
   }
 
@@ -38,13 +65,62 @@ export async function recordPlayerSession({ tabId, url, body }: RecordPlayerSess
     return;
   }
 
-  const streamingUrl = new URL(url);
-  streamingUrl.searchParams.delete(REQUEST_NUMBER_PARAM);
   sessionsByTab.set(tabId, {
     videoId,
-    serverAbrStreamingUrl: streamingUrl.href,
-    videoPlaybackUstreamerConfig: uint8ToBase64(ustreamerConfig),
-    poToken: uint8ToBase64(required(poToken))
+    ...credentials
+  });
+}
+
+export function recordFrameVideo({ frameId, url }: {
+  frameId: number;
+  url: string;
+}) {
+  const videoId = getVideoIdFromUrl(url);
+  if (videoId) {
+    videoIdsByFrame.set(frameId, videoId);
+  }
+}
+
+type RecordFrameSessionParams = Prettify<{
+  frameId: number;
+  url: string;
+  body: Uint8Array;
+}>;
+export function recordFrameSession({ frameId, url, body }: RecordFrameSessionParams) {
+  const videoId = videoIdsByFrame.get(frameId);
+  const credentials = videoId ? readAttestedCredentials({
+    url,
+    body
+  }) : null;
+  if (!videoId || !credentials) {
+    return;
+  }
+
+  sessionsByVideo.set(videoId, {
+    videoId,
+    ...credentials
+  });
+  for (const resolve of sessionWaiters.get(videoId) ?? []) {
+    resolve();
+  }
+
+  sessionWaiters.delete(videoId);
+}
+
+/** Resolves once a hidden frame's player has an attested session for the video, or on timeout */
+export async function awaitFrameSession(videoId: string) {
+  if (sessionsByVideo.has(videoId)) {
+    return;
+  }
+
+  await new Promise<void>(resolve => {
+    const waiters = sessionWaiters.get(videoId) ?? new Set();
+    waiters.add(resolve);
+    sessionWaiters.set(videoId, waiters);
+    AbortSignal.timeout(FRAME_SESSION_TIMEOUT_MS).addEventListener("abort", () => {
+      waiters.delete(resolve);
+      resolve();
+    }, { once: true });
   });
 }
 
@@ -59,7 +135,9 @@ function getPlayerSession({ tabId, videoId }: GetPlayerSessionParams) {
     return ownSession;
   }
 
-  return sessionsByTab.values().find(session => session.videoId === videoId) ?? null;
+  return sessionsByTab.values().find(session => session.videoId === videoId)
+    ?? sessionsByVideo.get(videoId)
+    ?? null;
 }
 
 export function clearPlayerSession(tabId: number) {

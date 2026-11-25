@@ -1,5 +1,5 @@
 import { required } from "@/lib/required";
-import { clearPlayerSession, recordPlayerSession } from "./player-session";
+import { clearPlayerSession, recordFrameSession, recordFrameVideo, recordPlayerSession } from "./player-session";
 import { extractPoTokenFromBody } from "./po-token-extractor";
 import { YOUTUBE_ORIGIN } from "@/lib/youtube/youtube-url";
 
@@ -8,6 +8,7 @@ export { extractPoTokenFromBody } from "./po-token-extractor";
 export const OFFSCREEN_PLAYER_TAB_ID = -2;
 
 const GOOGLEVIDEO_URL_PATTERN = "https://*.googlevideo.com/videoplayback*";
+const WATCH_FRAME_URL_PATTERN = "https://www.youtube.com/watch*";
 
 const capturedByTab = new Map<number, {
   body: number[];
@@ -21,6 +22,20 @@ export function startSabrRequestCapture() {
     handleSabrRequest,
     { urls: [GOOGLEVIDEO_URL_PATTERN] },
     ["requestBody"]
+  );
+  browser.webRequest.onBeforeRequest.addListener(
+    details => {
+      const isHiddenFrame = details.tabId < 0 && details.type === "sub_frame";
+      if (isHiddenFrame) {
+        recordFrameVideo(details);
+      }
+
+      return undefined;
+    },
+    {
+      urls: [WATCH_FRAME_URL_PATTERN],
+      types: ["sub_frame"]
+    }
   );
   browser.tabs.onRemoved.addListener(tabId => capturedByTab.delete(tabId));
 }
@@ -48,7 +63,13 @@ function handleSabrRequest(details: Browser.webRequest.OnBeforeRequestDetails) {
   }
 
   const bodyBytes = new Uint8Array(required(required(required(required(details.requestBody).raw)[0]).bytes));
-  if (!isOffscreenPlayer) {
+  if (isOffscreenPlayer) {
+    recordFrameSession({
+      frameId: details.frameId,
+      url: details.url,
+      body: bodyBytes
+    });
+  } else {
     recordPlayerSession({
       tabId: details.tabId,
       url: details.url,

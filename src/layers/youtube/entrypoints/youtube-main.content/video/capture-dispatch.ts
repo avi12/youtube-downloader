@@ -154,8 +154,7 @@ export async function buildAndDispatchVideoData({ playerResponse, shortsPageData
 
   const isIframe = self !== top;
   if (isIframe) {
-    getMoviePlayer()?.stopVideo?.();
-    await crossWorldMessenger.sendMessage(CrossWorldMessage.IframePlayerReady, { videoId: videoData.videoId });
+    await announceWhilePlaying(videoData.videoId);
     await generatePoTokenIfNeeded(videoData);
     return;
   }
@@ -176,6 +175,25 @@ export async function buildAndDispatchVideoData({ playerResponse, shortsPageData
   }
 }
 
+// YouTube only honours the token its own player attests, so the frame plays (muted) until the
+// background has captured that player's session. Retried because the player is still settling
+async function announceWhilePlaying(videoId: string) {
+  function play() {
+    getMoviePlayer()?.mute?.();
+    getMoviePlayer()?.playVideo?.();
+  }
+
+  play();
+  const playInterval = setInterval(play, PLAYBACK_NUDGE_INTERVAL_MS);
+  try {
+    await crossWorldMessenger.sendMessage(CrossWorldMessage.IframePlayerReady, { videoId });
+  } finally {
+    clearInterval(playInterval);
+    getMoviePlayer()?.stopVideo?.();
+  }
+}
+
+const PLAYBACK_NUDGE_INTERVAL_MS = 1000;
 const PLAYER_RESPONSE_POLL_ATTEMPTS = 20;
 const PLAYER_RESPONSE_POLL_INTERVAL_MS = 250;
 const IFRAME_DOWNLOAD_PARAM = "ytdl";

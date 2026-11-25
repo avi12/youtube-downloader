@@ -19,6 +19,7 @@ export const MessageType = {
   RequestPlaylistDownload: "requestPlaylistDownload",
   DownloadViaWatchPage: "downloadViaWatchPage",
   DownloadIframeReady: "downloadIframeReady",
+  AwaitPlayerSession: "awaitPlayerSession",
   CancelDownload: "cancelDownload",
   StartBackgroundDownload: "startBackgroundDownload",
   StartKeepalive: "startKeepalive",
@@ -201,6 +202,11 @@ export interface ProtocolMap {
   }): InterruptedDownload | null;
 
   downloadViaWatchPage(data: DownloadRequest): void;
+
+  /** Resolves once the sending frame's player has made an attested SABR request, or gave up */
+  awaitPlayerSession(data: {
+    videoId: string;
+  }): void;
 
   downloadIframeReady(data: {
     videoId: string;

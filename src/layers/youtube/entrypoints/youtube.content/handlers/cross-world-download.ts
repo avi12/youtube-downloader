@@ -23,6 +23,7 @@ export function registerDownloadProgressHandlers() {
   });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.IframePlayerReady, async ({ data }) => {
+    await sendMessage(MessageType.AwaitPlayerSession, { videoId: data.videoId }).catch(() => {});
     const request = await sendMessage(MessageType.DownloadIframeReady, { videoId: data.videoId });
     if (request) {
       await crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadRequest, request);

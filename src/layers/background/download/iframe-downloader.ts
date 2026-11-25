@@ -10,6 +10,7 @@ import { createLogger, LogScope } from "@/lib/utils/logger";
 import { resolveDownloadType } from "@/lib/youtube/download-type";
 import { WATCH_PAGE_URL } from "@/lib/youtube/youtube-url";
 import type { DownloadRequest, Prettify } from "@/types";
+import { awaitFrameSession } from "#background/lib/youtube/sabr/player-session";
 
 const log = createLogger(LogScope.Background);
 
@@ -22,6 +23,10 @@ const pendingIframeReady = new Map<string, {
 }>();
 
 export function initIframeReadyListener() {
+  onMessage(MessageType.AwaitPlayerSession, async ({ data }) => {
+    await awaitFrameSession(data.videoId);
+  });
+
   onMessage(MessageType.DownloadIframeReady, ({ data }) => {
     const pending = pendingIframeReady.get(data.videoId);
     if (!pending) {
