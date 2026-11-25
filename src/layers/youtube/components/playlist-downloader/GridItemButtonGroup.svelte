@@ -66,9 +66,18 @@
 
 <style>
   .ytdl-button-group {
+    position: relative;
+
+    /* Above the row's hover overlay, which would otherwise tint the buttons */
+    z-index: 1;
     display: inline-flex;
     flex-direction: column;
     margin-inline-start: 8px;
+  }
+
+  /* Pointing at the buttons is not pointing at the video, so the row's hover effect stays off */
+  :global(.ytLockupViewModelHost:has(.ytdl-button-group:hover) > yt-touch-feedback-shape) {
+    visibility: hidden;
   }
 
   .ytdl-button-row {
