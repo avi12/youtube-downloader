@@ -171,6 +171,8 @@ export async function injectPlaylistDownloaderUi(
     passive: true
   });
   context.onInvalidated(() => {
+    // Its observers would otherwise put the panel back once the context's UI is gone
+    cleanupPlaylistUi();
     document.removeEventListener(EVENT_MOUSEOVER, trackHoveredButton);
     document.removeEventListener(EVENT_SCROLL, dismissTooltipOnScroll, { capture: true });
   });
