@@ -7,6 +7,7 @@ use tokio::fs;
 
 use super::output::{finish_build, FinishInput};
 use super::protocol::{WorkerJob, MODE_DEVELOPMENT};
+use super::update::ContentScriptUpdate;
 use super::worker::{run_worker, Transforms, WorkerRole};
 use crate::dev::hmr::analysis::wxt_resolution::{
     entry_inputs, read_auto_imports, read_path_aliases, virtual_modules, PathAlias, VirtualModules,
@@ -38,8 +39,10 @@ pub(crate) struct HmrRequest {
 pub(crate) struct HmrBuild {
     /// Every source file an edit can hot-swap.
     pub(crate) source_modules: Vec<RelPath>,
-    /// Lines worth logging about modules whose edit reloads the page.
-    pub(crate) reload_logs: Vec<String>,
+    /// Lines worth logging about modules that can't hot-swap and what the running pages do.
+    pub(crate) logs: Vec<String>,
+    /// What the running pages do with this build, against the previous one.
+    pub(crate) content_script_update: ContentScriptUpdate,
 }
 
 /// What the two worker builds share.
@@ -117,6 +120,7 @@ pub(crate) async fn build_hmr(request: &HmrRequest) -> Result<HmrBuild> {
     let main_world_modules: BTreeSet<String> =
         GraphCollector::from_modules(&shared.paths, &main_world.modules).files;
     let finish = FinishInput {
+        browser: request.browser,
         paths: shared.paths,
         output_directory,
         runtime_source: request.runtime_source.clone(),
@@ -131,6 +135,7 @@ pub(crate) async fn build_hmr(request: &HmrRequest) -> Result<HmrBuild> {
             .iter()
             .map(RelPath::new)
             .collect(),
-        reload_logs: finished.reload_logs,
+        logs: finished.logs,
+        content_script_update: finished.content_script_update,
     })
 }

@@ -12,7 +12,7 @@ use std::path::PathBuf;
 use clap::Subcommand;
 
 use self::analysis::side_effects::find_side_effect;
-pub(crate) use self::compile::{build_hmr, HmrBuild, HmrRequest};
+pub(crate) use self::compile::{build_hmr, ContentScriptUpdate, HmrBuild, HmrRequest};
 use self::config::BuildBrowser;
 pub(crate) use self::error::HmrError;
 
@@ -58,7 +58,7 @@ pub(crate) async fn run(command: Command) -> Result<(), HmrError> {
                 runtime_source,
             };
             let built: HmrBuild = build_hmr(&request).await?;
-            for line in &built.reload_logs {
+            for line in &built.logs {
                 println!("{line}");
             }
             for module in &built.source_modules {

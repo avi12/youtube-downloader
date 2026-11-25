@@ -6,6 +6,7 @@ use std::path::Path;
 use super::error::Result;
 use super::swap::BackgroundSwapper;
 use super::target::ReloadTarget;
+use crate::dev::hmr::ContentScriptUpdate;
 use crate::output::reload::{
     describe_background_swap, describe_extension_reload, describe_page_refresh, BackgroundSwapPlan,
     ReloadPlan,
@@ -14,11 +15,17 @@ use crate::output::reload::{
 /// Keeps a script ending in an expression without a semicolon from running into the next one.
 const SCRIPT_SEPARATOR: &str = "\n;\n";
 const NO_CHANGES: &str = "No output changes - skipped reload";
+const RESTARTED_ONLY: &str =
+    "No extension or tab reload needed - the YouTube content script restarts in place";
+const PAGES_RELOAD_THEMSELVES: &str =
+    "No extension reload needed - the pages running HMR modules reload themselves";
 
 /// Everything one application of a plan needs.
 pub(crate) struct ApplyRequest<'a> {
     /// What the rebuild needs from the browser.
     pub(crate) plan: &'a ReloadPlan,
+    /// What the HMR runtime does by itself, which a plan of nothing still has to report.
+    pub(crate) content_script_update: ContentScriptUpdate,
     /// The browser to apply it to.
     pub(crate) target: &'a dyn ReloadTarget,
     /// Keeps a swapped background swapped; told to forget on a full reload.
@@ -57,10 +64,18 @@ async fn swap_background(request: &ApplyRequest<'_>, plan: &BackgroundSwapPlan) 
     Ok(describe_background_swap(plan, &refreshed_pages))
 }
 
+fn describe_no_update(update: ContentScriptUpdate) -> &'static str {
+    match update {
+        ContentScriptUpdate::Unchanged => NO_CHANGES,
+        ContentScriptUpdate::Restarted => RESTARTED_ONLY,
+        ContentScriptUpdate::PageReloaded => PAGES_RELOAD_THEMSELVES,
+    }
+}
+
 /// Applies a plan and returns the one logged sentence of its outcome.
 pub(crate) async fn apply_reload_plan(request: &ApplyRequest<'_>) -> Result<String> {
     match request.plan {
-        ReloadPlan::None => Ok(NO_CHANGES.to_owned()),
+        ReloadPlan::None => Ok(describe_no_update(request.content_script_update).to_owned()),
         ReloadPlan::RefreshPages(plan) => {
             let refreshed_pages = request.target.refresh_pages(plan).await?;
             Ok(describe_page_refresh(plan, &refreshed_pages))
@@ -185,6 +200,7 @@ mod tests {
         let swapper = BackgroundSwapper::new(fake.clone(), Arc::new(|_| {}));
         let request = ApplyRequest {
             plan,
+            content_script_update: ContentScriptUpdate::Unchanged,
             target: fake.as_ref(),
             swapper: &swapper,
             output_dir: dir,
@@ -200,6 +216,12 @@ mod tests {
         let outcome = apply(&ReloadPlan::None, &fake, Path::new(".")).await;
         assert_eq!(outcome, NO_CHANGES);
         assert_eq!(fake.reloads(), 0);
+    }
+
+    #[test]
+    fn a_restart_is_not_reported_as_no_change() {
+        let outcome = describe_no_update(ContentScriptUpdate::Restarted);
+        assert_eq!(outcome, RESTARTED_ONLY);
     }
 
     #[tokio::test]

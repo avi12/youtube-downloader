@@ -22,6 +22,7 @@ pub(crate) use self::swap::BackgroundSwapper;
 pub(crate) use self::target::ReloadTarget;
 pub(crate) use self::targets::{ChromeTarget, FirefoxTarget, FirefoxTargetConfig};
 
+use crate::dev::hmr::ContentScriptUpdate;
 use crate::output::reload::ReloadPlan;
 use crate::port::parse_port_number;
 
@@ -139,6 +140,7 @@ async fn apply(args: ApplyArgs) -> Result<()> {
         Arc::new(|message| println!("{message}")),
     );
     let outcome = apply_reload_plan(&ApplyRequest {
+        content_script_update: ContentScriptUpdate::Unchanged,
         plan: &plan,
         target: target.as_ref(),
         swapper: &swapper,

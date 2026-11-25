@@ -8,21 +8,25 @@ use std::sync::{Mutex, PoisonError};
 
 use base64::Engine;
 
+use super::update::{ContentScriptUpdate, RuntimeHashes};
 use super::versions::{
     compute_final_versions, describe_chunks, hash_vendor_chunks, HmrChunk, ImportStamper,
 };
 use crate::dev::hmr::analysis::hot_sources::{describe_hot_sources, HotSourceInput};
 use crate::dev::hmr::chunks::{BuildOutput, ChunkType, GraphCollector, OutputChunk};
 use crate::dev::hmr::config::{
-    short_hash, HmrManifest, ManifestModule, ProjectPaths, HMR_MANIFEST_FILE, HMR_OUT_SUBDIR,
-    HMR_POPUP_LOADER_FILE, HMR_RUNTIME_FILE, POPUP_ENTRY_NAME, YOUTUBE_ENTRY_NAME,
+    short_hash, BuildBrowser, HmrManifest, ManifestModule, ProjectPaths, HMR_MANIFEST_FILE,
+    HMR_OUT_SUBDIR, HMR_POPUP_LOADER_FILE, HMR_RUNTIME_FILE, POPUP_ENTRY_NAME, YOUTUBE_ENTRY_NAME,
 };
 use crate::dev::hmr::error::{HmrError, Result};
 use crate::dev::payload::{loader_source, PopupLoaderPaths};
 
 const SVELTE_EXTENSION: &str = ".svelte";
 
-/// The source hash of each module whose edit reloads, as of the previous build of this process.
+/// The runtime hashes of the previous build of this process.
+static PREVIOUS_RUNTIME_HASHES: Mutex<Option<RuntimeHashes>> = Mutex::new(None);
+
+/// The source hash of each module whose edit can't hot-swap, as of the previous build of this process.
 static PREVIOUS_SOURCE_HASHES: Mutex<BTreeMap<String, String>> = Mutex::new(BTreeMap::new());
 
 /// A hash of what was last written to each output file, so an edit rewrites only what changed.
@@ -32,6 +36,7 @@ static PREVIOUS_FILES: Mutex<BTreeSet<String>> = Mutex::new(BTreeSet::new());
 
 /// Everything the post-processing of one build needs.
 pub(super) struct FinishInput {
+    pub(super) browser: BuildBrowser,
     pub(super) paths: ProjectPaths,
     pub(super) output_directory: PathBuf,
     pub(super) runtime_source: String,
@@ -42,7 +47,8 @@ pub(super) struct FinishInput {
 /// What a finished build reports.
 pub(super) struct Finished {
     pub(super) manifest: HmrManifest,
-    pub(super) reload_logs: Vec<String>,
+    pub(super) logs: Vec<String>,
+    pub(super) content_script_update: ContentScriptUpdate,
 }
 
 fn chunk_codes(chunks: &[OutputChunk]) -> BTreeMap<String, String> {
@@ -207,8 +213,8 @@ fn sweep_stale_outputs(output_directory: &Path, expected_files: &BTreeSet<String
     }
 }
 
-/// Which modules whose edit reloads the page changed since the last build, and why - the one place
-/// the side-effect rules are reported.
+/// Which modules that can't hot-swap changed since the last build, and why - the one place the
+/// side-effect rules are reported.
 fn describe_reload_logs(
     paths: &ProjectPaths,
     reload_reasons: &BTreeMap<String, String>,
@@ -224,17 +230,30 @@ fn describe_reload_logs(
         let hash = short_hash(&bytes);
         let is_edited_since_last_build = !is_first_build && previous.get(source_id) != Some(&hash);
         if is_edited_since_last_build {
-            logs.push(format!("HMR: {source_id} reloads - {reason}"));
+            logs.push(format!("HMR: {source_id} can't hot-swap - {reason}"));
         }
         previous.insert(source_id.clone(), hash);
     }
     if is_first_build {
         logs.push(format!(
-            "HMR: {} modules reload the page when edited (the rest hot-swap)",
+            "HMR: {} modules can't hot-swap when edited (the rest do)",
             reload_reasons.len()
         ));
     }
     Ok(logs)
+}
+
+fn classify_update(manifest: &HmrManifest) -> ContentScriptUpdate {
+    let next = RuntimeHashes {
+        vendor: manifest.vendor_hash.clone(),
+        restart: manifest.restart_hash.clone(),
+    };
+    let mut previous = PREVIOUS_RUNTIME_HASHES
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner);
+    let update = ContentScriptUpdate::between(previous.as_ref(), &next);
+    *previous = Some(next);
+    update
 }
 
 fn write_stamped_modules(
@@ -253,6 +272,7 @@ fn write_stamped_modules(
 /// Stamps and writes the modules, analyses what can swap, writes the loaders and the manifest.
 pub(super) fn finish_build(input: FinishInput) -> Result<Finished> {
     let FinishInput {
+        browser,
         paths,
         output_directory,
         runtime_source,
@@ -326,9 +346,12 @@ pub(super) fn finish_build(input: FinishInput) -> Result<Finished> {
         HMR_MANIFEST_FILE,
         serde_json::to_string(&manifest)?.as_bytes(),
     )?;
-    let reload_logs = describe_reload_logs(&paths, &manifest.reload_reasons)?;
+    let mut logs = describe_reload_logs(&paths, &manifest.reload_reasons)?;
+    let content_script_update = classify_update(&manifest);
+    logs.extend(content_script_update.log_line(browser));
     Ok(Finished {
         manifest,
-        reload_logs,
+        logs,
+        content_script_update,
     })
 }

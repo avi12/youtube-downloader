@@ -7,12 +7,11 @@ use std::time::Duration;
 
 use serde_json::{json, Value};
 use tokio::time::sleep;
-use ytdl_dev_hot::types::RelPath;
 
 use super::error::{LauncherError, Result};
 use super::log::log_event;
 use super::wxt_worker::{run_wxt_build, WxtBuildRequest};
-use crate::dev::hmr::{build_hmr, HmrRequest};
+use crate::dev::hmr::{build_hmr, HmrBuild, HmrRequest};
 use crate::dev::payload::{background_prelude_source, runtime_source, PayloadConfig};
 use crate::output::manifest::{ExtensionManifest, MANIFEST_FILE};
 use crate::output::options::DevOptions;
@@ -158,11 +157,8 @@ pub(super) async fn build_with_lock_retry(options: &DevOptions) -> Result<PathBu
 }
 
 /// The hot-swappable entrypoints run from these modules, so every WXT build, which empties the
-/// output dir, is followed by this. Returns the source files of the HMR graph.
-pub(super) async fn build_hmr_modules(
-    options: &DevOptions,
-    output_dir: &Path,
-) -> Result<Vec<RelPath>> {
+/// output dir, is followed by this.
+pub(super) async fn build_hmr_modules(options: &DevOptions, output_dir: &Path) -> Result<HmrBuild> {
     let request = HmrRequest {
         project_root: options.project_root.clone(),
         output_dir: output_dir.to_owned(),
@@ -170,10 +166,10 @@ pub(super) async fn build_hmr_modules(
         runtime_source: runtime_source(&PayloadConfig::dev_default())?,
     };
     let build = build_hmr(&request).await?;
-    for line in &build.reload_logs {
+    for line in &build.logs {
         log_event(line);
     }
-    Ok(build.source_modules)
+    Ok(build)
 }
 
 #[cfg(test)]

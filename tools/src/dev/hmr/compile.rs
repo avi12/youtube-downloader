@@ -12,7 +12,9 @@ mod build;
 mod output;
 mod preserve_state;
 mod protocol;
+mod update;
 mod versions;
 mod worker;
 
 pub(crate) use self::build::{build_hmr, HmrBuild, HmrRequest};
+pub(crate) use self::update::ContentScriptUpdate;

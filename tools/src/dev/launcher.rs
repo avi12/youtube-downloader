@@ -74,7 +74,9 @@ async fn start(args: &RunArgs) -> Result<()> {
     let name = browser_name(&options);
     println!("Building extension for {name} (production)...");
     let output_dir = build_with_lock_retry(&options).await?;
-    let hmr_source_files = build_hmr_modules(&options, &output_dir).await?;
+    let hmr_source_files = build_hmr_modules(&options, &output_dir)
+        .await?
+        .source_modules;
     let relative_output = output_dir
         .strip_prefix(&options.project_root)
         .unwrap_or(&output_dir);

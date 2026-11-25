@@ -14,6 +14,7 @@ use super::build::{build_hmr_modules, build_with_lock_retry};
 use super::error::Result;
 use super::log::{format_elapsed, log_event};
 use crate::dev::browsers::{apply_reload_plan, ApplyRequest, BackgroundSwapper, ReloadTarget};
+use crate::dev::hmr::ContentScriptUpdate;
 use crate::output::manifest::ExtensionManifest;
 use crate::output::options::DevOptions;
 use crate::output::reload::{
@@ -43,6 +44,8 @@ pub(super) struct DevHost {
     target: Arc<dyn ReloadTarget>,
     swapper: BackgroundSwapper,
     last_snapshot: Mutex<BuildSnapshot>,
+    /// What the HMR builds since the last extension build do to the running pages.
+    content_script_update: Mutex<ContentScriptUpdate>,
 }
 
 impl DevHost {
@@ -59,12 +62,14 @@ impl DevHost {
             target,
             swapper,
             last_snapshot,
+            content_script_update: Mutex::default(),
         })
     }
 
     async fn apply(&self, plan: &ReloadPlan) -> Result<String> {
         Ok(apply_reload_plan(&ApplyRequest {
             plan,
+            content_script_update: *self.content_script_update.lock().await,
             target: self.target.as_ref(),
             swapper: &self.swapper,
             output_dir: &self.output_dir,
@@ -93,6 +98,7 @@ impl DevHost {
 
 impl Host for DevHost {
     async fn build_extension(&self) -> ytdl_dev_hot::Result<Option<EntrypointLayout>> {
+        *self.content_script_update.lock().await = ContentScriptUpdate::default();
         build_with_lock_retry(&self.options)
             .await
             .map_err(host_error)?;
@@ -100,10 +106,15 @@ impl Host for DevHost {
     }
 
     async fn rebuild_hmr(&self) -> ytdl_dev_hot::Result<RebuildHmrResult> {
-        let hmr_source_files = build_hmr_modules(&self.options, &self.output_dir)
+        let build = build_hmr_modules(&self.options, &self.output_dir)
             .await
             .map_err(host_error)?;
-        Ok(RebuildHmrResult { hmr_source_files })
+        // A retried build compares against its own first attempt, so the stronger answer stays
+        let mut update = self.content_script_update.lock().await;
+        *update = (*update).max(build.content_script_update);
+        Ok(RebuildHmrResult {
+            hmr_source_files: build.source_modules,
+        })
     }
 
     async fn reload_extension(&self, params: ReloadExtensionParams) -> ytdl_dev_hot::Result<()> {
