@@ -9,7 +9,7 @@ use crate::output::manifest::describe_content_scripts;
 /// A tab reloaded because in-place re-injection failed.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(test, derive(ts_rs::TS), ts(export))]
-pub(crate) struct FallbackReload {
+pub(crate) struct FailedInjection {
     pub(crate) url: String,
     pub(crate) message: String,
 }
@@ -19,11 +19,11 @@ pub(crate) struct FallbackReload {
 #[cfg_attr(test, derive(ts_rs::TS), ts(export))]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct TabUpdateResult {
-    pub(crate) reloaded_tab_count: usize,
+    pub(crate) stale_tab_count: usize,
     pub(crate) reinjected_tab_count: usize,
     /// One-shot MAIN-to-ISOLATED messages re-sent to the fresh scripts.
     pub(crate) replayed_handshake_count: usize,
-    pub(crate) fallback_reloads: Vec<FallbackReload>,
+    pub(crate) failed_injections: Vec<FailedInjection>,
 }
 
 /// What happened to one open extension page.
@@ -60,7 +60,7 @@ pub(crate) fn describe_extension_reload(
     result: &TabUpdateResult,
 ) -> String {
     let mut fallback_messages: Vec<&str> = Vec::new();
-    for reload in &result.fallback_reloads {
+    for reload in &result.failed_injections {
         if !fallback_messages.contains(&reload.message.as_str()) {
             fallback_messages.push(&reload.message);
         }
@@ -83,18 +83,18 @@ pub(crate) fn describe_extension_reload(
             "CSS rules deleted from {files} since a tab was loaded stay applied in it until it reloads"
         ));
     }
-    if result.reloaded_tab_count > 0 {
-        let count = result.reloaded_tab_count;
+    if result.stale_tab_count > 0 {
+        let count = result.stale_tab_count;
         let names = describe_content_scripts(&plan.main_world_content_scripts);
         outcomes.push(format!(
-            "reloaded {count} tab(s) because MAIN-world content script {names} runs in the page itself and can't be swapped in place"
+            "{count} tab(s) keep the old MAIN-world content script {names} until you reload them"
         ));
     }
     if !fallback_messages.is_empty() {
-        let count = result.fallback_reloads.len();
+        let count = result.failed_injections.len();
         let messages = fallback_messages.join("; ");
         outcomes.push(format!(
-            "reloaded {count} tab(s) because in-place re-injection failed: {messages}"
+            "in-place re-injection failed in {count} tab(s), which keep the old script until you reload them: {messages}"
         ));
     }
     if outcomes.is_empty() {
@@ -169,16 +169,16 @@ mod tests {
 
     #[test]
     fn fallback_messages_are_deduplicated() {
-        let reload = FallbackReload {
+        let reload = FailedInjection {
             url: "u".to_owned(),
             message: "boom".to_owned(),
         };
         let result = TabUpdateResult {
-            fallback_reloads: vec![reload.clone(), reload],
+            failed_injections: vec![reload.clone(), reload],
             ..TabUpdateResult::default()
         };
         let text = describe_extension_reload(&reload_plan(), &result);
-        assert!(text.ends_with("reloaded 2 tab(s) because in-place re-injection failed: boom"));
+        assert!(text.ends_with("in-place re-injection failed in 2 tab(s), which keep the old script until you reload them: boom"));
     }
 
     #[test]

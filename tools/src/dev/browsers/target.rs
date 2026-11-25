@@ -15,7 +15,7 @@ pub(crate) type BoxFuture<'a, T> = Pin<Box<dyn Future<Output = Result<T>> + Send
 /// What a Chrome or Firefox target can do to the extension under development.
 pub(crate) trait ReloadTarget: Send + Sync {
     /// Reloads the extension, re-runs the ISOLATED content scripts in the open tabs in place and
-    /// reloads only the tabs a changed MAIN-world script runs in.
+    /// reports the tabs a changed MAIN-world script runs in as stale.
     fn reload_extension<'a>(
         &'a self,
         plan: &'a ExtensionReloadPlan,

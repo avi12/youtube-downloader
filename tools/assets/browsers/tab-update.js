@@ -1,13 +1,12 @@
 async ({ mainWorldPatterns, isolatedContentScripts }, replayHandshakes) => {
   const api = globalThis.browser ?? globalThis.chrome;
-  const reloadedTabIds = new Set();
+  // Tabs are never reloaded: whatever can't be updated in place is only reported
+  const staleTabIds = new Set();
   const reinjectedTabIds = new Set();
-  const fallbackReloadedTabIds = new Set();
-  const fallbackReloads = [];
+  const failedInjections = [];
   if (mainWorldPatterns.length) {
     for (const tab of await api.tabs.query({ url: mainWorldPatterns })) {
-      await api.tabs.reload(tab.id);
-      reloadedTabIds.add(tab.id);
+      staleTabIds.add(tab.id);
     }
   }
 
@@ -16,7 +15,7 @@ async ({ mainWorldPatterns, isolatedContentScripts }, replayHandshakes) => {
        url: entry.matches,
        status: "complete" 
     })) {
-      if (tab.discarded || reloadedTabIds.has(tab.id) || fallbackReloadedTabIds.has(tab.id)) {
+      if (tab.discarded) {
         continue;
       }
 
@@ -44,13 +43,11 @@ async ({ mainWorldPatterns, isolatedContentScripts }, replayHandshakes) => {
         });
         reinjectedTabIds.add(tab.id);
       } catch (error) {
-        fallbackReloads.push({
+        failedInjections.push({
            url: tab.url,
            message: String(error?.message ?? error) 
         });
         reinjectedTabIds.delete(tab.id);
-        fallbackReloadedTabIds.add(tab.id);
-        await api.tabs.reload(tab.id);
       }
     }
   }
@@ -68,9 +65,9 @@ async ({ mainWorldPatterns, isolatedContentScripts }, replayHandshakes) => {
   }
 
   return {
-    reloadedTabCount: reloadedTabIds.size,
+    staleTabCount: staleTabIds.size,
     reinjectedTabCount: reinjectedTabIds.size,
     replayedHandshakeCount,
-    fallbackReloads
+    failedInjections
   };
 }

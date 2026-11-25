@@ -90,8 +90,8 @@ fn invoke(asset: &str, arguments: &[String]) -> String {
     format!("({})({})", asset.trim(), arguments.join(", "))
 }
 
-/// Reloads the tabs a changed MAIN-world script matches, then re-injects every ISOLATED script into
-/// the remaining complete, non-discarded tabs it matches and replays the handshakes it missed.
+/// Counts the tabs a changed MAIN-world script matches, then re-injects every ISOLATED script into
+/// the complete, non-discarded tabs it matches and replays the handshakes it missed.
 pub(super) fn tab_update(plan: &ExtensionReloadPlan) -> serde_json::Result<String> {
     let config = TabUpdateConfig {
         main_world_patterns: unique(

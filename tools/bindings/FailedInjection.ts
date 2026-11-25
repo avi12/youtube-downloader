@@ -3,4 +3,4 @@
 /**
  * A tab reloaded because in-place re-injection failed.
  */
-export type FallbackReload = { url: string, message: string, };
+export type FailedInjection = { url: string, message: string, };

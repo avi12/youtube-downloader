@@ -151,8 +151,14 @@ function isExtensionAlive() {
   return Boolean(extensionApi.runtime.id);
 }
 
+// A YouTube page is never reloaded: it keeps the code it has until the next save applies
 /** @param {string} reason */
 function reloadPage(reason) {
+  if (globalThis.ytdlDevHmrEntry === "youtube") {
+    console.warn(`[YTDL HMR] not applied, reload the page yourself to pick it up: ${reason}`);
+    return;
+  }
+
   console.info(`[YTDL HMR] reloading the page: ${reason}`);
   location.reload();
 }
@@ -282,7 +288,9 @@ async function restartContentScript(manifest) {
 
 /** @param {{ previous: HmrManifestShape, next: HmrManifestShape }} options */
 async function applyHotUpdates({ previous, next }) {
-  if (previous.vendorHash !== next.vendorHash) {
+  const isGraphChanged = previous.vendorHash !== next.vendorHash;
+  const isContentScript = globalThis.ytdlDevHmrEntry === "youtube";
+  if (isGraphChanged && !isContentScript) {
     reloadPage("the dependency graph changed");
     return;
   }
@@ -293,7 +301,8 @@ async function applyHotUpdates({ previous, next }) {
   }
 
   const changedIds = Object.keys(next.modules).filter(id => previous.modules[id]?.hash !== next.modules[id].hash);
-  const isRestartNeeded = globalThis.ytdlDevHmrEntry === "youtube" && previous.restartHash !== next.restartHash;
+  // A restart imports the entry afresh, so a re-split graph needs nothing else
+  const isRestartNeeded = isContentScript && (isGraphChanged || previous.restartHash !== next.restartHash);
   if (isRestartNeeded) {
     await restartContentScript(next).catch(
       /** @param {unknown} error */

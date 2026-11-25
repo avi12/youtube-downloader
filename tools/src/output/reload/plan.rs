@@ -43,13 +43,13 @@ impl PageRefreshPlan {
     }
 }
 
-/// Reload the extension, re-inject the isolated scripts and reload tabs of changed MAIN scripts.
+/// Reload the extension, re-inject the isolated scripts. Tabs are never reloaded.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(test, derive(ts_rs::TS), ts(export))]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ExtensionReloadPlan {
     pub(crate) reasons: Vec<String>,
-    /// MAIN-world scripts that changed: their tabs reload, a page-world script cannot be swapped.
+    /// MAIN-world scripts that changed: a page-world script cannot be swapped, so their tabs are reported as stale.
     pub(crate) main_world_content_scripts: Vec<ContentScriptEntry>,
     /// Every isolated script: the extension reload orphans them all.
     pub(crate) isolated_content_scripts: Vec<ContentScriptEntry>,
