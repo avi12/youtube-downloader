@@ -1,10 +1,9 @@
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { videoDataFailedStore, videoDataStore } from "@/lib/ui/synced-stores.svelte";
 
-const DOWNLOADABILITY_TIMEOUT_MS = 15_000;
-
 // Settles once the video's data is known: whether it can be downloaded, or false when it failed to
-// load or took too long. A video item mounts only after this, so it never shows a guessed state
+// load. A video item mounts only after this, so it never shows a guessed state. There is no timeout
+// here: requests queue behind each other, and the fetch itself is what times out
 export function resolveVideoDownloadability(videoId: string) {
   return new Promise<boolean>(resolve => {
     const effects: {
@@ -49,6 +48,5 @@ export function resolveVideoDownloadability(videoId: string) {
     }
 
     requestUntilSettled().catch(() => settle(false));
-    AbortSignal.timeout(DOWNLOADABILITY_TIMEOUT_MS).addEventListener("abort", () => settle(false), { once: true });
   });
 }

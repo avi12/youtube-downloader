@@ -7,8 +7,16 @@ import { createLogger, LogScope } from "@/lib/utils/logger";
 const log = createLogger(LogScope.Main);
 
 const MAX_CONCURRENT_FETCHES = 3;
+const FETCH_TIMEOUT_MS = 15_000;
 const videoDataPending = new Set<string>();
 let activeVideoDataFetches = 0;
+
+function rejectAfter(milliseconds: number) {
+  return new Promise<never>((_, reject) => {
+    const signal = AbortSignal.timeout(milliseconds);
+    signal.addEventListener("abort", () => reject(signal.reason), { once: true });
+  });
+}
 
 async function processNextVideoData() {
   const isAtCapacity = activeVideoDataFetches >= MAX_CONCURRENT_FETCHES;
@@ -26,7 +34,7 @@ async function processNextVideoData() {
   activeVideoDataFetches++;
 
   try {
-    await fetchVideoDataViaApi(videoId);
+    await Promise.race([fetchVideoDataViaApi(videoId), rejectAfter(FETCH_TIMEOUT_MS)]);
 
     if (!videoDataCache.has(videoId)) {
       videoDataFailedStore.set(videoId, true);
