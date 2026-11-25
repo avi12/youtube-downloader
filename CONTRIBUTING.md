@@ -12,7 +12,7 @@ pnpm dev            # Chrome
 pnpm dev:firefox    # Firefox
 ```
 
-`pnpm dev` runs [`scripts/dev/server/main.ts`](scripts/dev/server/main.ts): it production-builds the extension, launches one browser with it sideloaded, and on every file change under `src/` applies the smallest update - popup and content-script components hot-swap in place keeping their state, a background change restarts the background inside the running extension, other changes reload the extension and swap the content script into the open YouTube tabs in place, and only a change to a script that runs in the page itself (`youtube-main`) reloads the tabs. The browser stays open; each update is logged with what it did. No manual reloading.
+`pnpm dev` runs the Rust dev server ([`tools/src/dev/`](tools/src/dev)): it production-builds the extension, launches one browser with it sideloaded, and on every file change under `src/` applies the smallest update - popup and content-script components hot-swap in place keeping their state, a background change restarts the background inside the running extension, other changes reload the extension and swap the content script into the open YouTube tabs in place, and only a change to a script that runs in the page itself (`youtube-main`) reloads the tabs. The browser stays open; each update is logged with what it did. No manual reloading.
 
 No `.env` is needed for development. [`.env.example`](.env.example) documents the variables used for release signing (Firefox AMO) and analytics.
 

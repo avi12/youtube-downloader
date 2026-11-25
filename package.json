@@ -11,10 +11,8 @@
     "#dev-server/*": "./dev-server/*"
   },
   "scripts": {
-    "dev": "tsx scripts/dev/server/main.ts",
-    "dev:firefox": "tsx scripts/dev/server/main.ts --firefox",
-    "dev:rs": "pnpm ytdl dev run",
-    "dev:rs:firefox": "pnpm ytdl dev run --firefox",
+    "dev": "pnpm ytdl dev run",
+    "dev:firefox": "pnpm ytdl dev run --firefox",
     "ytdl": "cargo run --release --quiet --manifest-path tools/Cargo.toml --",
     "install:hyperv-multipass": "pnpm ytdl release linux-vm install-prerequisites",
     "setup:linux-vm": "pnpm ytdl release linux-vm setup",
@@ -34,8 +32,7 @@
     "lint:fix": "avi12-lint --fix",
     "fallow": "fallow audit --base HEAD",
     "dev-server:test": "cargo test --manifest-path dev-server/Cargo.toml",
-    "tools:test": "cargo test --manifest-path tools/Cargo.toml",
-    "dev-hmr:test": "tsx --test \"scripts/dev/**/*.test.ts\""
+    "tools:test": "cargo test --manifest-path tools/Cargo.toml"
   },
   "dependencies": {
     "@ffmpeg/core": "0.12.10",
@@ -68,10 +65,8 @@
     "svelte-check": "^4.7.8",
     "svelte-eslint-parser": "^1.9.0",
     "tsrs": "0.25.0-ts7.1.0-beta",
-    "tsx": "^4.23.15",
     "typescript": "^6.0.3",
     "vite": "^8.3.4",
-    "web-ext-run": "^0.2.4",
     "ws": "^8.22.0",
     "wxt": "^0.21.4",
     "wxt-module-layers": "^1.3.0"

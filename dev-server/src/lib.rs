@@ -2,7 +2,7 @@
 //!
 //! # Process model
 //!
-//! The TypeScript launcher (`scripts/dev*.ts`) keeps launching the browser through
+//! The TypeScript launcher keeps launching the browser through
 //! web-ext-run, cloning profiles, running the first WXT build and the HMR module build. Once the
 //! browser is up it spawns this crate's binary (`ytdl-dev-hot`) as a sidecar and sends one JSON
 //! line on stdin: the [`bridge::protocol::SidecarConfig`]. From then on the sidecar owns the hot loop:

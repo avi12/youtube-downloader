@@ -45,12 +45,6 @@
   ],
   "overrides": [
     {
-      "files": ["scripts/dev/hmr/runtime/globals.d.ts"],
-      "rules": {
-        "no-var": "off"
-      }
-    },
-    {
       "files": [
         "src/layers/youtube/entrypoints/iframe-mute.content.ts",
         "src/layers/youtube/entrypoints/sourcebuffer-capture/sourcebuffer-capture-patches.ts",
@@ -64,8 +58,7 @@
       "files": [
         "src/lib/youtube/format-filters.ts",
         "src/lib/download-options/helpers/audio-language-helpers.ts",
-        "src/lib/youtube/movie-player.ts",
-        "scripts/dev/hmr/runtime/background-prelude.ts"
+        "src/lib/youtube/movie-player.ts"
       ],
       "rules": {
         "house/positional-parameters": "off"

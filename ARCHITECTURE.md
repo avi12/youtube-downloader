@@ -463,16 +463,16 @@ Anonymous usage telemetry goes through GA4's Measurement Protocol from the backg
 
 ### Development loop
 
-`pnpm dev` runs [`scripts/dev/server/main.ts`](scripts/dev/server/main.ts). Popup and content-script components hot-swap in place with their `$state` ([`scripts/dev/hmr/`](scripts/dev/hmr)). Anything else rebuilds, is compared with the previous build file by file by content hash ([`reload-plan.ts`](scripts/dev/output/reload-plan.ts)), and gets the smallest update that keeps open YouTube tabs alive:
+`pnpm dev` runs the Rust dev server (`ytdl dev run`, [`tools/src/dev/`](tools/src/dev)). Popup and content-script components hot-swap in place with their `$state` ([`tools/src/dev/hmr/`](tools/src/dev/hmr)). Anything else rebuilds, is compared with the previous build file by file by content hash ([`plan.rs`](tools/src/output/reload/plan.rs)), and gets the smallest update that keeps open YouTube tabs alive:
 
 | What changed | What the dev server does |
 | --- | --- |
 | Popup, offscreen document, or a worker | Reloads the open popup and closes the offscreen document (recreated on next use) |
-| Background only | Evaluates the rebuilt background in the running service worker / event page, which tears its previous copy down and restarts in place ([`background-swap.ts`](scripts/dev/browsers/background-swap.ts)); the extension and tabs are untouched |
+| Background only | Evaluates the rebuilt background in the running service worker / event page, which tears its previous copy down and restarts in place ([`swap.rs`](tools/src/dev/browsers/swap.rs)); the extension and tabs are untouched |
 | ISOLATED content script entry, or manifest | Reloads the extension, re-injects `youtube.content` into open tabs in place, and replays the download panel's handshake, so page state survives |
 | MAIN-world content script | Reloads the extension and only the tabs that script runs in |
 
-Two browser quirks shape it. Chrome keeps the old isolated world running after an extension reload, so the dev server neutralizes it over the DevTools protocol before the new copy goes in. Firefox re-runs every declared content script on an add-on reload, so dev builds wrap each one in a run-once guard ([`patches.ts`](scripts/dev/output/patches.ts)). MAIN-world scripts aren't hot-swapped: they patch YouTube's globals and register listeners with no teardown, so a fresh page is the only clean state. None of this ships; the `scripting` permission the re-injection needs is added to dev builds only.
+Two browser quirks shape it. Chrome keeps the old isolated world running after an extension reload, so the dev server neutralizes it over the DevTools protocol before the new copy goes in. Firefox re-runs every declared content script on an add-on reload, so dev builds wrap each one in a run-once guard ([`patches.rs`](tools/src/output/patches.rs)). MAIN-world scripts aren't hot-swapped: they patch YouTube's globals and register listeners with no teardown, so a fresh page is the only clean state. None of this ships; the `scripting` permission the re-injection needs is added to dev builds only.
 
 ## When to update this document
 

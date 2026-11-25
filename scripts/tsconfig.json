@@ -11,5 +11,5 @@
     "strict": true,
     "skipLibCheck": true
   },
-  "include": ["./*.ts", "./*.d.ts", "./dev/**/*.ts"]
+  "include": ["./*.ts", "./*.d.ts"]
 }
