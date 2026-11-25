@@ -4,12 +4,11 @@
 use std::path::Path;
 
 use super::error::Result;
-use super::swap::BackgroundSwapper;
+use super::reloader::ExtensionReloader;
 use super::target::ReloadTarget;
 use crate::dev::hmr::ContentScriptUpdate;
 use crate::output::reload::{
-    describe_background_swap, describe_extension_reload, describe_page_refresh, BackgroundSwapPlan,
-    ReloadPlan,
+    describe_background_swap, describe_page_refresh, BackgroundSwapPlan, ReloadPlan,
 };
 
 /// Keeps a script ending in an expression without a semicolon from running into the next one.
@@ -28,8 +27,8 @@ pub(crate) struct ApplyRequest<'a> {
     pub(crate) content_script_update: ContentScriptUpdate,
     /// The browser to apply it to.
     pub(crate) target: &'a dyn ReloadTarget,
-    /// Keeps a swapped background swapped; told to forget on a full reload.
-    pub(crate) swapper: &'a BackgroundSwapper,
+    /// Reloads the extension once no download runs, and keeps a swapped background swapped.
+    pub(crate) reloader: &'a ExtensionReloader,
     /// The build output directory the rebuilt background is read from.
     pub(crate) output_dir: &'a Path,
 }
@@ -44,15 +43,14 @@ async fn read_background_script(output_dir: &Path, plan: &BackgroundSwapPlan) ->
 
 async fn try_swap(request: &ApplyRequest<'_>, plan: &BackgroundSwapPlan) -> Result<()> {
     let script = read_background_script(request.output_dir, plan).await?;
-    request.swapper.swap(&script).await
+    request.reloader.swapper().swap(&script).await
 }
 
 /// A swap that fails (the background is unreachable, the new script throws) falls back to the reload.
 async fn swap_background(request: &ApplyRequest<'_>, plan: &BackgroundSwapPlan) -> Result<String> {
     if let Err(error) = try_swap(request, plan).await {
-        request.swapper.forget();
-        let result = request.target.reload_extension(&plan.fallback).await?;
-        let reload = describe_extension_reload(&plan.fallback, &result);
+        request.reloader.swapper().forget();
+        let reload = request.reloader.reload(&plan.fallback).await?.describe();
         return Ok(format!(
             "Swapping the background in place failed ({error}) - {reload}"
         ));
@@ -81,16 +79,13 @@ pub(crate) async fn apply_reload_plan(request: &ApplyRequest<'_>) -> Result<Stri
             Ok(describe_page_refresh(plan, &refreshed_pages))
         }
         ReloadPlan::SwapBackground(plan) => swap_background(request, plan).await,
-        ReloadPlan::ReloadExtension(plan) => {
-            request.swapper.forget();
-            let result = request.target.reload_extension(plan).await?;
-            Ok(describe_extension_reload(plan, &result))
-        }
+        ReloadPlan::ReloadExtension(plan) => Ok(request.reloader.reload(plan).await?.describe()),
     }
 }
 
 #[cfg(test)]
 pub(super) mod fake {
+    use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::Mutex;
 
     use serde_json::Value;
@@ -106,6 +101,7 @@ pub(super) mod fake {
         scripts: Mutex<Vec<String>>,
         reloads: Mutex<usize>,
         is_failing: bool,
+        is_downloading: AtomicBool,
     }
 
     impl FakeTarget {
@@ -114,6 +110,10 @@ pub(super) mod fake {
                 is_failing: true,
                 ..Self::default()
             }
+        }
+
+        pub(in crate::dev::browsers) fn set_downloading(&self, is_downloading: bool) {
+            self.is_downloading.store(is_downloading, Ordering::SeqCst);
         }
 
         pub(in crate::dev::browsers) fn scripts(&self) -> Vec<String> {
@@ -153,7 +153,8 @@ pub(super) mod fake {
         }
 
         fn evaluate_in_background<'a>(&'a self, _expression: &'a str) -> BoxFuture<'a, Value> {
-            Box::pin(async { Ok(Value::Null) })
+            // The download check reads this as "have the downloads ended"
+            Box::pin(async { Ok(Value::Bool(!self.is_downloading.load(Ordering::SeqCst))) })
         }
 
         fn run_script_in_background<'a>(&'a self, script: &'a str) -> BoxFuture<'a, ()> {
@@ -197,16 +198,16 @@ mod tests {
     }
 
     async fn apply(plan: &ReloadPlan, fake: &Arc<FakeTarget>, dir: &Path) -> String {
-        let swapper = BackgroundSwapper::new(fake.clone(), Arc::new(|_| {}));
+        let reloader = ExtensionReloader::new(fake.clone(), Arc::new(|_| {}));
         let request = ApplyRequest {
             plan,
             content_script_update: ContentScriptUpdate::Unchanged,
             target: fake.as_ref(),
-            swapper: &swapper,
+            reloader: &reloader,
             output_dir: dir,
         };
         let outcome = apply_reload_plan(&request).await.unwrap();
-        swapper.forget();
+        reloader.swapper().forget();
         outcome
     }
 
@@ -235,6 +236,16 @@ mod tests {
         let outcome = apply(&swap_plan("background.js"), &fake, &dir).await;
         assert!(outcome.starts_with("Swapped background background.js in place"));
         assert!(outcome.contains("popup reloaded"));
+        assert_eq!(fake.reloads(), 0);
+    }
+
+    #[tokio::test]
+    async fn a_reload_during_downloads_is_postponed() {
+        let fake = Arc::new(FakeTarget::default());
+        fake.set_downloading(true);
+        let plan = ReloadPlan::ReloadExtension(reload_plan());
+        let outcome = apply(&plan, &fake, Path::new(".")).await;
+        assert!(outcome.starts_with("Postponed the extension reload"));
         assert_eq!(fake.reloads(), 0);
     }
 

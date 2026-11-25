@@ -223,3 +223,21 @@ fn a_hot_change_beside_a_shared_file_refreshes_only_that_file() -> Result<()> {
     );
     Ok(())
 }
+
+#[test]
+fn merged_reloads_keep_every_reason_once() {
+    let older = ExtensionReloadPlan {
+        reasons: vec!["a".to_owned()],
+        main_world_content_scripts: Vec::new(),
+        isolated_content_scripts: Vec::new(),
+        changed_isolated_style_sheets: vec!["old.css".to_owned()],
+    };
+    let newer = ExtensionReloadPlan {
+        reasons: vec!["a".to_owned(), "b".to_owned()],
+        changed_isolated_style_sheets: vec!["new.css".to_owned()],
+        ..older.clone()
+    };
+    let merged = older.merge(newer);
+    assert_eq!(merged.reasons, ["a", "b"]);
+    assert_eq!(merged.changed_isolated_style_sheets, ["old.css", "new.css"]);
+}

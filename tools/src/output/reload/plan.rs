@@ -58,6 +58,33 @@ pub(crate) struct ExtensionReloadPlan {
     pub(crate) changed_isolated_style_sheets: Vec<String>,
 }
 
+/// Appends the items `target` does not hold yet, keeping their order.
+fn extend_unique<T: PartialEq>(target: &mut Vec<T>, items: Vec<T>) {
+    for item in items {
+        if !target.contains(&item) {
+            target.push(item);
+        }
+    }
+}
+
+impl ExtensionReloadPlan {
+    /// One reload covering this plan and a newer one. The isolated scripts are the newer build's,
+    /// since those are what gets injected.
+    pub(crate) fn merge(mut self, newer: Self) -> Self {
+        extend_unique(&mut self.reasons, newer.reasons);
+        extend_unique(
+            &mut self.main_world_content_scripts,
+            newer.main_world_content_scripts,
+        );
+        extend_unique(
+            &mut self.changed_isolated_style_sheets,
+            newer.changed_isolated_style_sheets,
+        );
+        self.isolated_content_scripts = newer.isolated_content_scripts;
+        self
+    }
+}
+
 /// Only the background changed: it restarts in place; `fallback` runs if that fails.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(test, derive(ts_rs::TS), ts(export))]
@@ -277,13 +304,15 @@ pub(crate) fn plan_reload(before: &BuildSnapshot, after: &BuildSnapshot) -> Resu
 
 /// Chrome runs an unpacked extension's worker from the script it cached at install, so a profile
 /// reused from an older session can start with stale code.
-pub(crate) fn plan_stale_background_reload(manifest: &ExtensionManifest) -> Result<ReloadPlan> {
-    Ok(ReloadPlan::ReloadExtension(ExtensionReloadPlan {
+pub(crate) fn plan_stale_background_reload(
+    manifest: &ExtensionManifest,
+) -> Result<ExtensionReloadPlan> {
+    Ok(ExtensionReloadPlan {
         reasons: vec![STALE_BACKGROUND_REASON.to_owned()],
         main_world_content_scripts: Vec::new(),
         isolated_content_scripts: manifest.list_isolated_content_scripts()?,
         changed_isolated_style_sheets: Vec::new(),
-    }))
+    })
 }
 
 #[cfg(test)]

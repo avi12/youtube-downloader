@@ -5,8 +5,8 @@ mod plan;
 mod snapshot;
 
 pub(crate) use describe::{
-    describe_background_swap, describe_extension_reload, describe_page_refresh, PageAction,
-    RefreshedPage, TabUpdateResult,
+    describe_background_swap, describe_extension_reload, describe_page_refresh,
+    describe_postponed_reload, PageAction, RefreshedPage, TabUpdateResult,
 };
 pub(crate) use plan::{
     plan_reload, plan_stale_background_reload, BackgroundSwapPlan, ExtensionReloadPlan,

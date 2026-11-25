@@ -284,7 +284,7 @@ impl ChromeTarget {
 
     /// Closing the offscreen document would kill the downloads in it. A stopped worker has none.
     async fn is_close_deferred(&self) -> bool {
-        self.evaluate_in_worker(scripts::DEFER_CLOSE_WHILE_DOWNLOADING)
+        self.evaluate_in_worker(&scripts::defer_close_while_downloading())
             .await
             .is_ok_and(|value| value == Value::Bool(true))
     }

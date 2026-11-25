@@ -108,6 +108,13 @@ pub(crate) fn describe_extension_reload(
     format!("Reloaded extension ({reasons}) - {}", outcomes.join(" - "))
 }
 
+pub(crate) fn describe_postponed_reload(plan: &ExtensionReloadPlan) -> String {
+    let reasons = plan.reasons.join("; ");
+    format!(
+        "Postponed the extension reload ({reasons}) - downloads are running, it applies once they end"
+    )
+}
+
 pub(crate) fn describe_page_refresh(
     plan: &PageRefreshPlan,
     refreshed_pages: &[RefreshedPage],

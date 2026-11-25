@@ -1,8 +1,4 @@
-(async () => {
-  const isDownloading = async () => {
-    const { statusProgress = {} } = await chrome.storage.local.get("statusProgress");
-    return Object.values(statusProgress).some(entry => entry.isDownloading);
-  };
+async isDownloading => {
   if (!await isDownloading()) {
     return false;
   }
@@ -21,4 +17,4 @@
   }
 
   return true;
-})()
+}

@@ -1,13 +1,11 @@
-async ({ pageNames, isSharedAssetChanged }) => {
+async ({ pageNames, isSharedAssetChanged }, isDownloading) => {
   const api = globalThis.browser ?? globalThis.chrome;
   // Opened anew for every download, so the next one loads a new build
   const PER_DOWNLOAD_PAGE = "download-worker";
   const refreshedPages = [];
   // Removing a processing frame would kill the downloads in it
   const removeOnceIdle = async frame => {
-    const { statusProgress = {} } = await api.storage.local.get("statusProgress");
-    const isDownloading = Object.values(statusProgress).some(entry => entry.isDownloading);
-    if (isDownloading) {
+    if (await isDownloading()) {
       const retry = () => {
         api.storage.local.onChanged.removeListener(retry);
         removeOnceIdle(frame);

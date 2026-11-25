@@ -13,12 +13,13 @@ use ytdl_dev_hot::bridge::Host;
 use super::build::{build_hmr_modules, build_with_lock_retry};
 use super::error::Result;
 use super::log::{format_elapsed, log_event};
-use crate::dev::browsers::{apply_reload_plan, ApplyRequest, BackgroundSwapper, ReloadTarget};
+use crate::dev::browsers::{apply_reload_plan, ApplyRequest, ExtensionReloader, ReloadTarget};
 use crate::dev::hmr::ContentScriptUpdate;
 use crate::output::manifest::ExtensionManifest;
 use crate::output::options::DevOptions;
 use crate::output::reload::{
-    plan_reload, plan_stale_background_reload, take_build_snapshot, BuildSnapshot, ReloadPlan,
+    describe_extension_reload, plan_reload, plan_stale_background_reload, take_build_snapshot,
+    BuildSnapshot, ReloadPlan,
 };
 
 // The background's dev prelude is missing only when the browser ran a script it cached before
@@ -42,7 +43,7 @@ pub(super) struct DevHost {
     options: DevOptions,
     output_dir: PathBuf,
     target: Arc<dyn ReloadTarget>,
-    swapper: BackgroundSwapper,
+    reloader: ExtensionReloader,
     last_snapshot: Mutex<BuildSnapshot>,
     /// What the HMR builds since the last extension build do to the running pages.
     content_script_update: Mutex<ContentScriptUpdate>,
@@ -55,12 +56,12 @@ impl DevHost {
         target: Arc<dyn ReloadTarget>,
     ) -> Result<Self> {
         let last_snapshot = Mutex::new(take_build_snapshot(&output_dir)?);
-        let swapper = BackgroundSwapper::new(Arc::clone(&target), Arc::new(log_event));
+        let reloader = ExtensionReloader::new(Arc::clone(&target), Arc::new(log_event));
         Ok(Self {
             options,
             output_dir,
             target,
-            swapper,
+            reloader,
             last_snapshot,
             content_script_update: Mutex::default(),
         })
@@ -71,7 +72,7 @@ impl DevHost {
             plan,
             content_script_update: *self.content_script_update.lock().await,
             target: self.target.as_ref(),
-            swapper: &self.swapper,
+            reloader: &self.reloader,
             output_dir: &self.output_dir,
         })
         .await?)
@@ -91,7 +92,9 @@ impl DevHost {
             return Ok(());
         }
         let plan = plan_stale_background_reload(&ExtensionManifest::read(&self.output_dir)?)?;
-        log_event(&self.apply(&plan).await?);
+        // Never postponed: the browser just started, so a stored running download is a leftover
+        let result = self.target.reload_extension(&plan).await?;
+        log_event(&describe_extension_reload(&plan, &result));
         Ok(())
     }
 }

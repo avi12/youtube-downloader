@@ -5,6 +5,7 @@
 mod error;
 
 mod plan;
+mod reloader;
 mod scripts;
 mod swap;
 mod target;
@@ -18,7 +19,7 @@ use ytdl_dev_hot::types::Port;
 
 pub(crate) use self::error::{BrowserError, Result};
 pub(crate) use self::plan::{apply_reload_plan, ApplyRequest};
-pub(crate) use self::swap::BackgroundSwapper;
+pub(crate) use self::reloader::ExtensionReloader;
 pub(crate) use self::target::ReloadTarget;
 pub(crate) use self::targets::{ChromeTarget, FirefoxTarget, FirefoxTargetConfig};
 
@@ -135,7 +136,7 @@ impl ApplyArgs {
 async fn apply(args: ApplyArgs) -> Result<()> {
     let plan: ReloadPlan = serde_json::from_str(&tokio::fs::read_to_string(&args.plan).await?)?;
     let target = args.target()?;
-    let swapper = BackgroundSwapper::new(
+    let reloader = ExtensionReloader::new(
         Arc::clone(&target),
         Arc::new(|message| println!("{message}")),
     );
@@ -143,12 +144,12 @@ async fn apply(args: ApplyArgs) -> Result<()> {
         content_script_update: ContentScriptUpdate::Unchanged,
         plan: &plan,
         target: target.as_ref(),
-        swapper: &swapper,
+        reloader: &reloader,
         output_dir: &args.out_dir,
     })
     .await?;
     println!("{outcome}");
-    Ok(())
+    reloader.finish_postponed().await
 }
 
 /// Runs one command of this part.
