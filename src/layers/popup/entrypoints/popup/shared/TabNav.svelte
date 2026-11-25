@@ -135,7 +135,6 @@
     @supports (text-box: trim-both cap alphabetic) {
       .tab-nav-label {
         align-content: end;
-        /* stylelint-disable-next-line unit-disallowed-list */
         block-size: round(1cap, 2px);
         text-box: trim-both cap alphabetic;
       }
@@ -181,11 +180,9 @@
     translate: var(--ind-left, 0) 0;
 
     &.tab-ind--animated {
-      /* stylelint-disable plugin/no-low-performance-animation-properties */
       transition:
         translate 420ms cubic-bezier(0.34, 1.56, 0.64, 1),
         width 300ms cubic-bezier(0.3, 0, 0, 1);
-      /* stylelint-enable plugin/no-low-performance-animation-properties */
     }
   }
 

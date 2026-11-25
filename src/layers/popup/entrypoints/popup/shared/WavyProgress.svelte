@@ -112,7 +112,6 @@
     stroke: var(--accent);
     stroke-linecap: round;
     stroke-width: 4;
-    /* stylelint-disable-next-line no-unknown-animations */
     animation: wave-shift calc(1050ms / var(--motion, 1)) linear infinite;
   }
 
