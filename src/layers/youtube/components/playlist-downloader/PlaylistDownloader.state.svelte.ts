@@ -5,7 +5,7 @@ import { createProgressState } from "./PlaylistDownloader.progress.svelte";
 import { createRevealState } from "./PlaylistDownloader.reveal.svelte";
 import { createVideoDataState } from "./PlaylistDownloader.video-data.svelte";
 import { setOption } from "@/lib/storage/storage";
-import { CONTENT_OPTIONS, playlistMetadataSignal } from "@/lib/ui/synced-stores.svelte";
+import { CONTENT_OPTIONS, playlistMetadataSignal, statusProgressSignal } from "@/lib/ui/synced-stores.svelte";
 import { VideoQualityMode } from "@/types";
 import { checkedPlaylistVideos } from "#youtube/lib/ui/playlist-selection.svelte";
 
@@ -63,6 +63,17 @@ export function createPlaylistDownloaderState() {
   return {
     get isDownloading() {
       return batch.isDownloading;
+    },
+    // A panel that was mounted again has lost its batch, but its downloads are still running
+    get isStoppable() {
+      return batch.isDownloading || progress.activeIndividualDownloadCount > 0;
+    },
+    stopAll() {
+      const unfinishedIds = [...videoData.videoDataMap.keys()].filter(videoId => {
+        const entry = statusProgressSignal.value[videoId];
+        return !!entry && !entry.isDone;
+      });
+      void batch.cancelDownload(unfinishedIds);
     },
     get downloadedCount() {
       return batch.downloadedCount;
@@ -185,7 +196,7 @@ export function createPlaylistDownloaderState() {
     resetOverrides: overrides.resetOverrides,
     toggleSelectedDownload() {
       if (batch.isDownloading) {
-        void batch.cancelDownload();
+        void batch.cancelDownload([]);
       } else {
         void batch.startDownload(videoData.selectedDownloadableVideos);
       }

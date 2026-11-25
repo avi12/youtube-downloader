@@ -21,6 +21,7 @@ export function createPlaylistActionButtons(state: {
   toggleSelectedDownload(): void;
   revealAndDownloadAll(): Promise<void> | void;
   cancelReveal(): void;
+  stopAll(): void;
 }) {
   let elDeselectAll = $state<HTMLElement | null>(null);
   let elDownload = $state<HTMLElement | null>(null);

@@ -22,7 +22,7 @@
   <div class="ytdl-section">
     <div class="ytdl-section-title">
       <span>Download playlist</span>
-      {#if playlist.isDownloading}
+      {#if playlist.isStoppable}
         <yt-button-view-model {@attach actionButtons.attachStopAll}></yt-button-view-model>
       {/if}
     </div>

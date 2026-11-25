@@ -1,6 +1,6 @@
 import {
   buildBatchDownloadRequests,
-  cancelActiveDownloads,
+  cancelDownloads,
   sendBatchDownloadMessage
 } from "./helpers/playlist-batch-ops";
 import { ZIP_PROGRESS_KEY_PREFIX } from "./helpers/playlist-progress-helpers";
@@ -129,8 +129,12 @@ export function createBatchDownloadState({
     }
   }
 
-  async function cancelDownload() {
-    await cancelActiveDownloads(activeDownloadRequests);
+  async function cancelDownload(otherVideoIds: string[]) {
+    // Queued videos count too, or the ones that haven't started yet stay in the queue
+    const unfinishedIds = isDownloading
+      ? activeDownloadRequests.map(request => request.videoId).filter(videoId => !batchDoneIds.has(videoId))
+      : [];
+    await cancelDownloads([...unfinishedIds, ...otherVideoIds.filter(videoId => !unfinishedIds.includes(videoId))]);
 
     completedBatchProgress = 0;
     isDownloading = false;

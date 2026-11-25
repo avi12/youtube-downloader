@@ -1,20 +1,23 @@
 import { buildDownloadRequest } from "./playlist-download-builder";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { performCancelDownload } from "@/lib/ui/cancel-download";
-import { playlistMetadataSignal, statusProgressSignal } from "@/lib/ui/synced-stores.svelte";
+import { playlistMetadataSignal } from "@/lib/ui/synced-stores.svelte";
 import { PlaylistDownloadMode, PlaylistOutputMode } from "@/types";
 import type { DownloadRequest, Options, VideoData } from "@/types";
+import { cancelStreamTransfer } from "#youtube/entrypoints/youtube.content/download/stream-transfer";
 
 const PLAYLIST_ID_PREFIX = "playlist-";
 
-export async function cancelActiveDownloads(activeDownloadRequests: DownloadRequest[]) {
-  const activeVideoIds = activeDownloadRequests
-    .filter(request => statusProgressSignal.value[request.videoId]?.isDownloading)
-    .map(request => request.videoId);
-  const isActiveDownloadsPresent = activeVideoIds.length > 0;
-  if (isActiveDownloadsPresent) {
-    await performCancelDownload(activeVideoIds);
+export async function cancelDownloads(videoIds: string[]) {
+  if (videoIds.length === 0) {
+    return;
   }
+
+  for (const videoId of videoIds) {
+    cancelStreamTransfer(videoId);
+  }
+
+  await performCancelDownload(videoIds);
 }
 
 export function buildBatchDownloadRequests({

@@ -43,7 +43,7 @@ export function setupPlaylistEffects({
   });
 
   $effect(() => {
-    void playlist.isDownloading;
+    void playlist.isStoppable;
     actionButtons.refreshStopAll();
   });
 
