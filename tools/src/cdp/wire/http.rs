@@ -11,6 +11,7 @@ use tokio::time::timeout;
 use super::error::{CdpError, Result};
 
 const HTTP_TIMEOUT: Duration = Duration::from_secs(5);
+const GET_ATTEMPTS: usize = 3;
 const HEADER_END: &str = "\r\n\r\n";
 const OK_STATUS: &str = " 200 ";
 
@@ -47,8 +48,17 @@ async fn send(port: u16, verb: &str, path: &str) -> Result<String> {
     Ok(body.to_owned())
 }
 
+/// A reload or a waking service worker can leave the debug port unanswered for a few seconds; a
+/// `GET` changes nothing, so it is safe to ask again.
 async fn get(port: u16, path: &str) -> Result<String> {
-    send(port, "GET", path).await
+    let mut outcome = send(port, "GET", path).await;
+    for _ in 1..GET_ATTEMPTS {
+        if !matches!(outcome, Err(CdpError::Timeout(_))) {
+            break;
+        }
+        outcome = send(port, "GET", path).await;
+    }
+    outcome
 }
 
 /// A tab opened through `/json/new`.
