@@ -270,9 +270,18 @@ function replayPanelAnnouncement() {
 // The old run is stopped before its UI goes, or its observers put the UI straight back
 /** @param {HmrManifestShape} manifest */
 async function restartContentScript(manifest) {
-  const entry = await importFresh(manifest.entries[globalThis.ytdlDevHmrEntry ?? ""]);
-  globalThis.ytdlDevContentContext?.notifyInvalidated();
+  // Taken before the import: a re-evaluated module's top-level handlers belong to no run, and no
+  // later run would register them again
   const disposers = globalThis.ytdlDevRunDisposers ?? [];
+  globalThis.ytdlDevRunDisposers = undefined;
+  const entry = await importFresh(manifest.entries[globalThis.ytdlDevHmrEntry ?? ""]).catch(
+    /** @param {unknown} error */
+    error => {
+      globalThis.ytdlDevRunDisposers = disposers;
+      throw error;
+    }
+  );
+  globalThis.ytdlDevContentContext?.notifyInvalidated();
   for (const dispose of disposers) {
     dispose();
   }

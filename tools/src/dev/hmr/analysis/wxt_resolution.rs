@@ -40,6 +40,36 @@ const WXT_IMPORTS_BARREL: [&str; 15] = [
     r#"export { afterUpdate, beforeUpdate, createEventDispatcher, getAllContexts, getContext, hasContext, onDestroy, onMount, setContext, tick } from "svelte";"#,
 ];
 
+/// The messaging packages and the factories whose handlers a content script restart has to drop.
+const TRACKED_MESSAGING: [(&str, &[&str]); 2] = [
+    ("@webext-core/messaging", &["defineExtensionMessaging"]),
+    (
+        "@webext-core/messaging/page",
+        &["defineCustomEventMessaging", "defineWindowMessaging"],
+    ),
+];
+/// Records every `onMessage` remover in the list the in-page runtime empties on a restart. A
+/// re-evaluated module also disposes the messenger it replaces, as Vite disposes a replaced module,
+/// since the handlers registered at its top level are in no run's list.
+const TRACK_HANDLERS: [&str; 16] = [
+    "function track(factory, define) {",
+    "  return (...config) => {",
+    "    const messengers = (globalThis.ytdlDevMessengers ??= new Map());",
+    "    const key = `${factory}:${JSON.stringify(config)}`;",
+    "    messengers.get(key)?.removeAllListeners();",
+    "    const messenger = define(...config);",
+    "    messengers.set(key, messenger);",
+    "    const onMessage = messenger.onMessage;",
+    "    messenger.onMessage = (...args) => {",
+    "      const remove = onMessage(...args);",
+    "      globalThis.ytdlDevRunDisposers?.push(remove);",
+    "      return remove;",
+    "    };",
+    "    return messenger;",
+    "  };",
+    "}",
+];
+
 /// One path alias of `.wxt/tsconfig.json`, resolved to an absolute target.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -58,7 +88,26 @@ pub(crate) struct VirtualModules {
     pub(crate) imports_id: String,
     pub(crate) stub_specifier_prefix: &'static str,
     pub(crate) stub_id_prefix: String,
+    /// The packages `src` gets a virtual module for, in place of the real one
+    pub(crate) tracked_imports: BTreeMap<&'static str, String>,
     pub(crate) modules: BTreeMap<String, String>,
+}
+
+/// The module that stands in for a messaging package: the same exports, with tracked factories.
+fn tracked_messaging_module((specifier, factories): &(&str, &[&str])) -> String {
+    let package = json_string(specifier);
+    let mut lines = vec![format!("export * from {package};")];
+    lines.extend(TRACK_HANDLERS.map(str::to_owned));
+    for factory in *factories {
+        lines.push(format!(
+            "import {{ {factory} as untracked_{factory} }} from {package};"
+        ));
+        lines.push(format!(
+            "export const {factory} = track(\"{factory}\", untracked_{factory});"
+        ));
+    }
+
+    lines.join("\n")
 }
 
 /// One name WXT auto-imports.
@@ -113,7 +162,15 @@ pub(crate) fn virtual_modules(paths: &ProjectPaths) -> VirtualModules {
         ];
         modules.insert(content_entry_id(&source_path), wrapper.join("\n"));
     }
+    let mut tracked_imports = BTreeMap::new();
+    for tracked in &TRACKED_MESSAGING {
+        let id = format!("{VIRTUAL_PREFIX}tracked:{}", tracked.0);
+        modules.insert(id.clone(), tracked_messaging_module(tracked));
+        tracked_imports.insert(tracked.0, id);
+    }
+
     VirtualModules {
+        tracked_imports,
         content_entry_prefix: content_entry_id(""),
         imports_specifier: WXT_IMPORTS_SPECIFIER,
         imports_id,

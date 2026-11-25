@@ -57,7 +57,7 @@ After each modification, lint with oxlint, ESLint, Stylelint, svelte-check, and 
 # Dev server
 `pnpm dev` (the Rust `ytdl dev run` in `tools/`, with the sidecar in `dev-server/`) rebuild on any change under `src/` and apply the smallest update, keeping the open YouTube tabs. The Rust server keeps its Node workers warm, so a component edit hot-swaps in about 0.3s:
 - Popup/offscreen/worker change: reloads the open popup, closes the offscreen document (recreated on next use)
-- `youtube.content` change outside a component: the HMR runtime restarts the content script in place, with no extension or tab reload. Message handlers are dropped first (`disposeOnRestart` wraps each messenger), so tie any other registration to the content script context
+- `youtube.content` change outside a component: the HMR runtime restarts the content script in place, with no extension or tab reload. The dev server drops message handlers first (its HMR build wraps the messaging library, so `src` carries no dev hooks), so tie any other registration to the content script context
 - Manifest change, or another ISOLATED content script: reloads the extension and re-injects `youtube.content` into open tabs in place
 - MAIN-world content-script change: reloads the extension; no YouTube tab is ever reloaded, the log counts the ones keeping the old page script
 - The log line names the outcome; flags `--cdp-port`, `--profile-dir`, `--out-dir` run a second instance side by side

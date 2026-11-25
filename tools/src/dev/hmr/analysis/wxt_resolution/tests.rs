@@ -55,6 +55,19 @@ fn aliases_keep_declaration_order_and_resolve_against_the_wxt_dir() {
 }
 
 #[test]
+fn messaging_packages_get_a_tracking_module() {
+    let modules = virtual_modules(&ProjectPaths::new(Path::new("/repo")));
+    let page_id = modules
+        .tracked_imports
+        .get("@webext-core/messaging/page")
+        .unwrap();
+    let source = modules.modules.get(page_id).unwrap();
+    assert!(source.contains("export * from \"@webext-core/messaging/page\";"));
+    assert!(source.contains("export const defineWindowMessaging = track("));
+    assert!(source.contains("ytdlDevRunDisposers?.push(remove)"));
+}
+
+#[test]
 fn content_scripts_get_a_wrapper_module() {
     let paths = ProjectPaths::new(Path::new("/repo"));
     let modules = virtual_modules(&paths);

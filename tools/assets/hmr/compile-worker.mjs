@@ -68,6 +68,11 @@ function wxtResolutionPlugin() {
 
       if (id.startsWith(virtual.stubSpecifierPrefix)) {return virtual.stubIdPrefix + id;}
 
+      // Only `src` gets the stand-in, which itself imports the real package
+      const isSourceImporter = importer?.replaceAll("\\", "/").startsWith(job.srcPrefix);
+      const isTrackedImport = isSourceImporter && Object.hasOwn(virtual.trackedImports, id);
+      if (isTrackedImport) {return virtual.trackedImports[id];}
+
       const alias = aliases.find(({ prefix, isWildcard }) => isWildcard ? id.startsWith(prefix) : id === prefix.replace(/\/$/, ""));
       if (!alias) {return null;}
 
