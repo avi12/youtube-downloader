@@ -2,8 +2,8 @@
 //!
 //! Replaces the chokidar block at the end of `runDevServer` (the replaced TypeScript dev server, `chokidar.watch([...])`
 //! with `usePolling: true, interval: 500, ignoreInitial: true, cwd: PROJECT_ROOT`) and the debounce
-//! half of `scheduleRebuild` (`REBUILD_DEBOUNCE_MS = 800`, each event restarts the timer, the
-//! batch fires once the paths have been quiet).
+//! half of `scheduleRebuild`: each event restarts the quiet window, capped so a steady stream of
+//! events still fires its batch.
 //!
 //! - [`notify::PollWatcher`] (mtime and size snapshots) is used, never the native backend: file
 //!   reads by the build, the TS server or a search must not register as edits.

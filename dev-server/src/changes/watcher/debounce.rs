@@ -8,8 +8,12 @@ use tokio_util::sync::CancellationToken;
 
 use super::{ChangeBatch, ChangeEvent};
 
+/// A batch waits at most this many windows, however steadily events keep arriving.
+const MAX_WAIT_WINDOWS: u32 = 10;
+
 /// Collects events and releases them once the paths have been quiet for the debounce window:
-/// every event restarts the window, a path seen twice keeps its first position and its last kind.
+/// every event restarts the window, up to a maximum wait counted from the batch's first event, and a
+/// path seen twice keeps its first position and its last kind.
 ///
 /// ```
 /// use std::time::Duration;
@@ -31,6 +35,7 @@ pub struct Debouncer {
     debounce: Duration,
     events: Vec<ChangeEvent>,
     deadline: Option<Instant>,
+    latest_deadline: Option<Instant>,
 }
 
 impl Debouncer {
@@ -40,12 +45,16 @@ impl Debouncer {
             debounce,
             events: Vec::new(),
             deadline: None,
+            latest_deadline: None,
         }
     }
 
     /// Adds an event seen at `now` and restarts the quiet window.
     pub fn push(&mut self, event: ChangeEvent, now: Instant) {
-        self.deadline = Some(now + self.debounce);
+        let latest = *self
+            .latest_deadline
+            .get_or_insert_with(|| now + self.debounce * MAX_WAIT_WINDOWS);
+        self.deadline = Some(latest.min(now + self.debounce));
         let known = self
             .events
             .iter_mut()
@@ -64,6 +73,7 @@ impl Debouncer {
     /// Takes the pending batch, `None` with nothing pending.
     pub fn flush(&mut self) -> Option<ChangeBatch> {
         self.deadline = None;
+        self.latest_deadline = None;
         if self.events.is_empty() {
             return None;
         }
@@ -128,6 +138,19 @@ mod tests {
             path: RelPath::new(path),
             kind,
         }
+    }
+
+    #[test]
+    fn a_steady_stream_of_events_cannot_hold_a_batch_forever() {
+        let mut debouncer = Debouncer::new(WINDOW);
+        let start = Instant::now();
+        for i in 0..=MAX_WAIT_WINDOWS * 2 {
+            debouncer.push(event("a", ChangeKind::Modified), start + WINDOW / 2 * i);
+        }
+        assert_eq!(
+            debouncer.deadline(),
+            Some(start + WINDOW * MAX_WAIT_WINDOWS)
+        );
     }
 
     #[test]
