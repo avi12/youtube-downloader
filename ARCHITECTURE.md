@@ -469,7 +469,8 @@ Anonymous usage telemetry goes through GA4's Measurement Protocol from the backg
 | --- | --- |
 | Popup, offscreen document, or a worker | Reloads the open popup and closes the offscreen document (recreated on next use) |
 | Background only | Evaluates the rebuilt background in the running service worker / event page, which tears its previous copy down and restarts in place ([`swap.rs`](tools/src/dev/browsers/swap.rs)); the extension and tabs are untouched |
-| ISOLATED content script entry, or manifest | Reloads the extension, re-injects `youtube.content` into open tabs in place, and replays the download panel's handshake, so page state survives |
+| `youtube.content` code outside a component | The page runtime restarts the content script in place - no extension or tab reload |
+| Another ISOLATED content script, or manifest | Reloads the extension, re-injects `youtube.content` into open tabs in place, and replays the download panel's handshake, so page state survives |
 | MAIN-world content script | Reloads the extension and only the tabs that script runs in |
 
 Two browser quirks shape it. Chrome keeps the old isolated world running after an extension reload, so the dev server neutralizes it over the DevTools protocol before the new copy goes in. Firefox re-runs every declared content script on an add-on reload, so dev builds wrap each one in a run-once guard ([`patches.rs`](tools/src/output/patches.rs)). MAIN-world scripts aren't hot-swapped: they patch YouTube's globals and register listeners with no teardown, so a fresh page is the only clean state. None of this ships; the `scripting` permission the re-injection needs is added to dev builds only.

@@ -115,17 +115,11 @@ pub(super) fn compute_final_versions(
 
 /// Dependency chunks (the Svelte runtime, vendor code) are cached singletons every swap resolves
 /// against; when the bundler re-splits the graph, the runtime reloads the page instead of swapping.
-pub(super) fn hash_vendor_chunks(
-    chunks: &BTreeMap<String, HmrChunk>,
-    versions: &BTreeMap<String, String>,
-) -> String {
+pub(super) fn hash_vendor_chunks(chunks: &BTreeMap<String, HmrChunk>) -> String {
     let mut entries: Vec<String> = chunks
         .iter()
         .filter(|(_, chunk)| chunk.is_vendor)
-        .map(|(file_name, _)| {
-            let version = versions.get(file_name).map_or("undefined", String::as_str);
-            format!("{file_name}:{version}")
-        })
+        .map(|(file_name, chunk)| format!("{file_name}:{}", chunk.src_hash))
         .collect();
     entries.sort();
     let mut joined = Vec::new();

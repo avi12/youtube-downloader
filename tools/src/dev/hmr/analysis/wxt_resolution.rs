@@ -101,10 +101,15 @@ pub(crate) fn virtual_modules(paths: &ProjectPaths) -> VirtualModules {
         let wrapper = [
             format!("import definition from {};", json_string(&source_path)),
             format!("import {{ ContentScriptContext }} from \"{CONTENT_SCRIPT_CONTEXT_MODULE}\";"),
+            // The runtime invalidates the previous context before running this again
+            "export function run() {".to_owned(),
+            "  globalThis.ytdlDevRunDisposers = [];".to_owned(),
             format!(
-                "export function run() {{ return definition.main(new ContentScriptContext({}, definition)); }}",
+                "  globalThis.ytdlDevContentContext = new ContentScriptContext({}, definition);",
                 json_string(entry.name)
             ),
+            "  return definition.main(globalThis.ytdlDevContentContext);".to_owned(),
+            "}".to_owned(),
         ];
         modules.insert(content_entry_id(&source_path), wrapper.join("\n"));
     }

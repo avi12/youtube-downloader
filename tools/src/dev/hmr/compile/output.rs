@@ -15,7 +15,7 @@ use crate::dev::hmr::analysis::hot_sources::{describe_hot_sources, HotSourceInpu
 use crate::dev::hmr::chunks::{BuildOutput, ChunkType, GraphCollector, OutputChunk};
 use crate::dev::hmr::config::{
     short_hash, HmrManifest, ManifestModule, ProjectPaths, HMR_MANIFEST_FILE, HMR_OUT_SUBDIR,
-    HMR_POPUP_LOADER_FILE, HMR_RUNTIME_FILE, POPUP_ENTRY_NAME,
+    HMR_POPUP_LOADER_FILE, HMR_RUNTIME_FILE, POPUP_ENTRY_NAME, YOUTUBE_ENTRY_NAME,
 };
 use crate::dev::hmr::error::{HmrError, Result};
 use crate::dev::payload::{loader_source, PopupLoaderPaths};
@@ -299,6 +299,13 @@ pub(super) fn finish_build(input: FinishInput) -> Result<Finished> {
     if is_file_set_changed {
         sweep_stale_outputs(&output_directory, &expected_files);
     }
+    // The entry's version covers everything a change reaches without passing through a component
+    let restart_hash = entries
+        .get(YOUTUBE_ENTRY_NAME)
+        .and_then(|url| url.strip_prefix(&format!("{HMR_OUT_SUBDIR}/")))
+        .and_then(|file| versions.get(file))
+        .cloned()
+        .unwrap_or_default();
     let source_modules = modules
         .keys()
         .cloned()
@@ -307,11 +314,12 @@ pub(super) fn finish_build(input: FinishInput) -> Result<Finished> {
         .collect();
     let manifest = HmrManifest {
         entries,
-        vendor_hash: hash_vendor_chunks(&by_file_name, &versions),
+        vendor_hash: hash_vendor_chunks(&by_file_name),
         modules,
         styles: hot_sources.styles,
         reload_reasons: hot_sources.reload_reasons,
         source_modules,
+        restart_hash,
     };
     write_if_changed(
         &output_directory,

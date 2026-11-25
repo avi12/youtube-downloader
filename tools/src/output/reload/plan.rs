@@ -19,6 +19,9 @@ const LIVE_LOADED_EXTENSIONS: [&str; 3] = ["html", "js", "css"];
 const HASHED_ASSET_DIRS: [&str; 2] = ["chunks/", "assets/"];
 const HASHED_ASSET_SUFFIXES: [&str; 2] = [".js", ".css"];
 const ASSET_HASH_LENGTH: usize = 8;
+/// The files of the content script the HMR runtime restarts by itself, without a browser update.
+const HOT_CONTENT_SCRIPT_FILES: [&str; 2] =
+    ["content-scripts/youtube.js", "content-scripts/youtube.css"];
 const BACKGROUND_CHANGED_REASON: &str = "background changed";
 const STALE_BACKGROUND_REASON: &str =
     "the browser started the background from a script it cached before this build";
@@ -247,7 +250,11 @@ fn plan_extension_reload(
 
 /// The smallest update that makes the changes between two builds live.
 pub(crate) fn plan_reload(before: &BuildSnapshot, after: &BuildSnapshot) -> Result<ReloadPlan> {
-    let changed = diff_file_hashes(before, after);
+    let mut changed = diff_file_hashes(before, after);
+    // A changed manifest still needs the reload that registers the scripts again
+    if !changed.contains(MANIFEST_FILE) {
+        changed.retain(|file| !HOT_CONTENT_SCRIPT_FILES.contains(&file.as_str()));
+    }
     if changed.is_empty() {
         return Ok(ReloadPlan::None);
     }

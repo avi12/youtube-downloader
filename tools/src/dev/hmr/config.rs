@@ -73,6 +73,8 @@ pub(crate) struct HmrManifest {
     /// Module id to why editing it reloads the page, for modules the build analysed and rejected.
     pub(crate) reload_reasons: BTreeMap<String, String>,
     pub(crate) source_modules: Vec<String>,
+    /// A change of it restarts the `YouTube` content script in place.
+    pub(crate) restart_hash: String,
 }
 
 /// The first twelve hex digits of the SHA-256 of `content`: the cache-busting version of a module.

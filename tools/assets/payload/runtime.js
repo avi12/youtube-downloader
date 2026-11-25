@@ -15,7 +15,7 @@
 
 /** @typedef {{ url: string, hash: string }} ManifestModule */
 /** @typedef {{ urls: string[], hash: string }} ManifestStyles */
-/** @typedef {{ vendorHash: string, styles: Record<string, ManifestStyles>, modules: Record<string, ManifestModule> }} HmrManifestShape */
+/** @typedef {{ vendorHash: string, styles: Record<string, ManifestStyles>, modules: Record<string, ManifestModule>, entries: Record<string, string>, restartHash: string }} HmrManifestShape */
 /** @typedef {(module: unknown) => void} AcceptCallback */
 
 function getExtensionApi() {
@@ -228,6 +228,58 @@ async function applyStyles(styles) {
   (document.head ?? document.documentElement).append(element);
 }
 
+// Mount points the content script made by hand, which its context's invalidation leaves behind
+const OWN_UI_SELECTOR = "[data-ytdl-item], [data-ytdl-grid-item], [data-ytdl-playlist-downloader], [data-ytdl-watch-snackbar]";
+
+// The page script announces the download panel once; a restarted content script has to hear it again
+const MESSAGE_EVENT = "@webext-core/messaging/custom-events";
+const REPLAYED_MESSAGE_TYPE = "panelContentReady";
+const MESSAGE_ID_RANGE = 1_000_000_000;
+/** @type {{ message: { type: string, id: number } } | undefined} */
+let panelAnnouncement;
+addEventListener(MESSAGE_EVENT, event => {
+  const { detail } = /** @type {CustomEvent} */ (event);
+  if (detail?.message?.type === REPLAYED_MESSAGE_TYPE) {
+    panelAnnouncement = detail;
+  }
+});
+
+function replayPanelAnnouncement() {
+  if (!panelAnnouncement) {
+    return;
+  }
+
+  const message = {
+    ...panelAnnouncement.message,
+    id: Math.floor(Math.random() * MESSAGE_ID_RANGE)
+  };
+  dispatchEvent(new CustomEvent(MESSAGE_EVENT, {
+    detail: {
+      ...panelAnnouncement,
+      message
+    }
+  }));
+}
+
+// The old run is stopped before its UI goes, or its observers put the UI straight back
+/** @param {HmrManifestShape} manifest */
+async function restartContentScript(manifest) {
+  const entry = await importFresh(manifest.entries[globalThis.ytdlDevHmrEntry ?? ""]);
+  globalThis.ytdlDevContentContext?.notifyInvalidated();
+  const disposers = globalThis.ytdlDevRunDisposers ?? [];
+  for (const dispose of disposers) {
+    dispose();
+  }
+
+  for (const element of document.querySelectorAll(OWN_UI_SELECTOR)) {
+    element.remove();
+  }
+
+  await entry.run();
+  replayPanelAnnouncement();
+  console.info(`[YTDL HMR] content script restarted in place - removed ${disposers.length} message handlers`);
+}
+
 /** @param {{ previous: HmrManifestShape, next: HmrManifestShape }} options */
 async function applyHotUpdates({ previous, next }) {
   if (previous.vendorHash !== next.vendorHash) {
@@ -241,6 +293,18 @@ async function applyHotUpdates({ previous, next }) {
   }
 
   const changedIds = Object.keys(next.modules).filter(id => previous.modules[id]?.hash !== next.modules[id].hash);
+  const isRestartNeeded = globalThis.ytdlDevHmrEntry === "youtube" && previous.restartHash !== next.restartHash;
+  if (isRestartNeeded) {
+    await restartContentScript(next).catch(
+      /** @param {unknown} error */
+      error => {
+        console.error("[YTDL HMR] restarting the content script failed", error);
+        reloadPage("the content script restart failed");
+      }
+    );
+    return;
+  }
+
   const imports = await importChanged({
      changedIds,
      manifest: next 
@@ -283,7 +347,7 @@ async function pollManifest() {
       continue;
     }
 
-    const isChanged = JSON.stringify(next.modules) !== JSON.stringify(current.modules) || next.vendorHash !== current.vendorHash || ownStyles(next)?.hash !== ownStyles(current)?.hash;
+    const isChanged = next.restartHash !== current.restartHash || JSON.stringify(next.modules) !== JSON.stringify(current.modules) || next.vendorHash !== current.vendorHash || ownStyles(next)?.hash !== ownStyles(current)?.hash;
     if (!isChanged) {
       continue;
     }

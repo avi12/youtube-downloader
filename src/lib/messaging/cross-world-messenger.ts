@@ -13,6 +13,7 @@ import type {
 } from "@/types";
 import type { ProgressType } from "@/types";
 import { defineCustomEventMessaging } from "@webext-core/messaging/page";
+import { disposeOnRestart } from "@/lib/messaging/dev-restart";
 
 export const CrossWorldMessage = {
   VideoData: "videoData",
@@ -151,7 +152,7 @@ export interface PageMessengerSchema {
 
 export type StreamDataPayload = Prettify<Parameters<PageMessengerSchema[typeof CrossWorldMessage.StreamData]>[0]>;
 
-export const crossWorldMessenger = defineCustomEventMessaging<PageMessengerSchema>({ namespace: "ytdl" });
+export const crossWorldMessenger = disposeOnRestart(defineCustomEventMessaging<PageMessengerSchema>({ namespace: "ytdl" }));
 
 const buttonClickHandlers = new Set<(buttonId: string) => void>();
 

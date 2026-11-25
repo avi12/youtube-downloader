@@ -6,6 +6,7 @@ import type {
   VideoMetadata
 } from "@/types";
 import { defineExtensionMessaging, type GetDataType } from "@webext-core/messaging";
+import { disposeOnRestart } from "@/lib/messaging/dev-restart";
 
 export const MessageType = {
   BackgroundProxyFetch: "backgroundProxyFetch",
@@ -311,7 +312,7 @@ export interface ProtocolMap {
 }
 
 export const { sendMessage, onMessage } =
-  defineExtensionMessaging<ProtocolMap>();
+  disposeOnRestart(defineExtensionMessaging<ProtocolMap>());
 
 export async function sendMessageToTab<TType extends keyof ProtocolMap>(
   { type, data, tabId }: { type: TType; data: GetDataType<ProtocolMap[TType]>; tabId: number }
