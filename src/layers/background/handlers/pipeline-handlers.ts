@@ -1,5 +1,4 @@
 import { enqueueToPopupList, removeFromPopupList } from "@/layers/background/queue/popup-list";
-import { signalBytesTransferred } from "@/layers/background/queue/sequential-queue";
 import { resolveTabId } from "@/layers/background/queue/tab-tracker";
 import { registerRecentDownloadHandlers } from "@/layers/background/recent/recent-downloads";
 import { registerPipelineQueueHandlers } from "./pipeline-queue-handlers";
@@ -89,7 +88,6 @@ export function registerPipelineHandlers() {
     }
 
     clearCancelledVideo(data.videoId);
-    signalBytesTransferred(data.videoId);
   });
 
   onMessage(MessageType.PipelineProgress, async ({ data }) => {

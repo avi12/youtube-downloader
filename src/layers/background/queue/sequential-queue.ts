@@ -3,7 +3,6 @@ import { required } from "@/lib/required";
 const MAX_VIDEO_DOWNLOAD_MS = 10 * 60 * 1_000;
 
 const completionCallbacks = new Map<string, Set<() => void>>();
-const bytesTransferredCallbacks = new Map<string, () => void>();
 
 export async function awaitVideoComplete(videoId: string) {
   return new Promise<void>((resolve, reject) => {
@@ -33,7 +32,6 @@ export async function awaitVideoComplete(videoId: string) {
 }
 
 export function signalVideoComplete(videoId: string) {
-  signalBytesTransferred(videoId);
   const callbacks = completionCallbacks.get(videoId);
   completionCallbacks.delete(videoId);
 
@@ -44,14 +42,4 @@ export function signalVideoComplete(videoId: string) {
   }
 }
 
-export function awaitBytesTransferred(videoId: string) {
-  return new Promise<void>(resolve => {
-    bytesTransferredCallbacks.set(videoId, resolve);
-  });
-}
 
-export function signalBytesTransferred(videoId: string) {
-  const callback = bytesTransferredCallbacks.get(videoId);
-  bytesTransferredCallbacks.delete(videoId);
-  callback?.();
-}

@@ -1,5 +1,5 @@
 import { reportDownloadFailed } from "@/layers/background/download/background-downloader";
-import { awaitBytesTransferred, awaitVideoComplete } from "@/layers/background/queue/sequential-queue";
+import { awaitVideoComplete } from "@/layers/background/queue/sequential-queue";
 import { MessageType, sendMessageToTab } from "@/lib/messaging/messaging";
 import { createLogger, LogScope } from "@/lib/utils/logger";
 import type { DownloadRequest, Prettify } from "@/types";
@@ -46,39 +46,37 @@ export async function dispatchSequentially({ items, tabId, signal }: DispatchPar
   }
 }
 
+// Every video gets its download signal at once; each runs on its own and finishes on its own
 export async function dispatchParallel({ items, tabId, signal }: DispatchParams) {
-  const completionPromises: Promise<void>[] = [];
+  await Promise.all(
+    items.map(async item => {
+      if (signal.aborted) {
+        return;
+      }
 
-  for (const item of items) {
-    if (signal.aborted) {
-      break;
-    }
+      try {
+        await sendMessageToTab({
+          type: MessageType.ExecuteDownloadItem,
+          data: item,
+          tabId
+        });
+        await sendMessageToTab({
+          type: MessageType.StartKeepalive,
+          data: {
+            videoId: item.videoId
+          },
+          tabId
+        });
+      } catch (error) {
+        log.error("ExecuteDownloadItem failed:", item.videoId, error);
+        await reportDownloadFailed({
+          videoId: item.videoId,
+          tabId
+        });
+        return;
+      }
 
-    try {
-      await sendMessageToTab({
-         type: MessageType.ExecuteDownloadItem,
-         data: item,
-         tabId 
-      });
-      await sendMessageToTab({
-         type: MessageType.StartKeepalive,
-         data: {
-         videoId: item.videoId 
-      },
-         tabId 
-      });
-    } catch (error) {
-      log.error("ExecuteDownloadItem failed:", item.videoId, error);
-      await reportDownloadFailed({
-        videoId: item.videoId,
-        tabId
-      });
-      continue;
-    }
-
-    completionPromises.push(awaitVideoComplete(item.videoId));
-    await awaitBytesTransferred(item.videoId);
-  }
-
-  await Promise.all(completionPromises);
+      await awaitVideoComplete(item.videoId);
+    })
+  );
 }
