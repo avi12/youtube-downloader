@@ -178,7 +178,13 @@ mod tests {
 
     #[test]
     fn no_placeholder_survives() {
-        let loader = content_script_loader("youtube", "hmr/runtime.js", "hmr/manifest.json", "run();", "abc");
+        let loader = content_script_loader(
+            "youtube",
+            "hmr/runtime.js",
+            "hmr/manifest.json",
+            "run();",
+            "abc",
+        );
         let sources = [
             recorder_source(),
             replay_function_source(),
