@@ -16,7 +16,7 @@ import {
 import { clearIframeAutoRetry } from "@/layers/background/download/iframe-auto-retries";
 import { handleIframeFallback } from "@/layers/background/download/sabr-attempt";
 import { enqueueToPopupList, removeFromPopupList } from "@/layers/background/queue/popup-list";
-import { signalVideoComplete } from "@/layers/background/queue/sequential-queue";
+import { signalVideoComplete, touchVideoActivity } from "@/layers/background/queue/sequential-queue";
 import { cancelDownloads, getTabIdsForVideo, trackVideoForTab } from "@/layers/background/queue/tab-tracker";
 import { notifyWatchTabsOnComplete, trackDownloadCompleteOnce } from "@/layers/background/recent/recent-downloads";
 import { addMuxCancelledVideoIds, markVideosCancelled } from "./pipeline-handlers";
@@ -304,6 +304,7 @@ export function registerDownloadHandlers() {
   });
 
   onMessage(MessageType.ForwardProgressUpdate, async ({ data }) => {
+    touchVideoActivity(data.videoId);
     const { tabId, ...progressData } = data;
     if (isVideoCancelled(progressData.videoId)) {
       return;
@@ -339,6 +340,8 @@ export function registerDownloadHandlers() {
   });
 
   onMessage(MessageType.ReportPageProgress, async ({ data, sender }) => {
+    touchVideoActivity(data.videoId);
+
     if (isVideoCancelled(data.videoId)) {
       return;
     }

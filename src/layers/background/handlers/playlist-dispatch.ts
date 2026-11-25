@@ -41,7 +41,7 @@ export async function dispatchSequentially({ items, tabId, signal }: DispatchPar
     }
 
     if (isTriggered) {
-      await awaitVideoComplete(item.videoId);
+      await awaitVideoComplete({ videoId: item.videoId });
     }
   }
 }
@@ -76,7 +76,7 @@ export async function dispatchParallel({ items, tabId, signal }: DispatchParams)
         return;
       }
 
-      await awaitVideoComplete(item.videoId);
+      await awaitVideoComplete({ videoId: item.videoId });
     })
   );
 }

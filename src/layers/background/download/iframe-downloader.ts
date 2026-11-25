@@ -39,7 +39,13 @@ export function initIframeReadyListener() {
   });
 }
 
-async function prepareIframe(data: DownloadRequest) {
+// One hidden-frame attempt per video: a leftover one would time out later and fail its successor
+const attemptsByVideo = new Map<string, AbortController>();
+
+async function prepareIframe({ data, signal }: {
+  data: DownloadRequest;
+  signal: AbortSignal;
+}) {
   await ensureProcessor();
 
   // Mobile user agents get redirected to m.youtube.com, where no content script runs
@@ -60,11 +66,18 @@ async function prepareIframe(data: DownloadRequest) {
     }
   });
 
+  signal.throwIfAborted();
   await new Promise<void>((resolve, reject) => {
     const timeoutId = setTimeout(() => {
       pendingIframeReady.delete(data.videoId);
       reject(new Error(`Iframe ready timeout: ${data.videoId}`));
     }, IFRAME_READY_TIMEOUT_MS);
+
+    signal.addEventListener("abort", () => {
+      clearTimeout(timeoutId);
+      pendingIframeReady.delete(data.videoId);
+      reject(signal.reason);
+    }, { once: true });
 
     pendingIframeReady.set(data.videoId, {
       resolve() {
@@ -81,6 +94,10 @@ type DownloadViaWatchPageParams = Prettify<{
   tabId: number;
 }>;
 export async function downloadViaWatchPage({ data, tabId }: DownloadViaWatchPageParams) {
+  attemptsByVideo.get(data.videoId)?.abort();
+  const attempt = new AbortController();
+  attemptsByVideo.set(data.videoId, attempt);
+
   await enqueueToPopupList({
     videoId: data.videoId,
     type: data.type,
@@ -99,9 +116,12 @@ export async function downloadViaWatchPage({ data, tabId }: DownloadViaWatchPage
 
   try {
     await prepareIframe({
-      ...data,
-      isIframeFallback: true,
-      originTabId: tabId
+      data: {
+        ...data,
+        isIframeFallback: true,
+        originTabId: tabId
+      },
+      signal: attempt.signal
     });
 
     await sendMessageToTab({
@@ -112,7 +132,10 @@ export async function downloadViaWatchPage({ data, tabId }: DownloadViaWatchPage
        tabId 
     });
 
-    await awaitVideoComplete(data.videoId);
+    await awaitVideoComplete({
+      videoId: data.videoId,
+      signal: attempt.signal
+    });
     sendToOffscreen({
       type: OffscreenMessageType.RemoveDownloadIframe,
       data: {
@@ -120,6 +143,10 @@ export async function downloadViaWatchPage({ data, tabId }: DownloadViaWatchPage
       }
     });
   } catch (error) {
+    if (attempt.signal.aborted) {
+      return;
+    }
+
     log.error("DownloadViaWatchPage failed:", data.videoId, error);
     pendingIframeReady.delete(data.videoId);
     sendToOffscreen({

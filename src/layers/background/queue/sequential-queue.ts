@@ -1,44 +1,78 @@
-import { required } from "@/lib/required";
-
-const MAX_VIDEO_DOWNLOAD_MS = 10 * 60 * 1_000;
+// Counted from the last sign of progress: parallel 4K downloads take longer than this in total
+const MAX_VIDEO_IDLE_MS = 10 * 60 * 1_000;
 
 const completionCallbacks = new Map<string, Set<() => void>>();
 
-export async function awaitVideoComplete(videoId: string) {
+const activityCallbacks = new Map<string, Set<() => void>>();
+
+function addCallback({ callbacks, videoId, callback }: {
+  callbacks: Map<string, Set<() => void>>;
+  videoId: string;
+  callback: () => void;
+}) {
+  const videoCallbacks = callbacks.get(videoId) ?? new Set();
+  videoCallbacks.add(callback);
+  callbacks.set(videoId, videoCallbacks);
+
+  return () => {
+    videoCallbacks.delete(callback);
+
+    if (!videoCallbacks.size && callbacks.get(videoId) === videoCallbacks) {
+      callbacks.delete(videoId);
+    }
+  };
+}
+
+export async function awaitVideoComplete({ videoId, signal }: {
+  videoId: string;
+  signal?: AbortSignal;
+}) {
   return new Promise<void>((resolve, reject) => {
-    function onComplete() {
+    let timeoutId: ReturnType<typeof setTimeout>;
+    function settle() {
       clearTimeout(timeoutId);
-      resolve();
+      removeCompletion();
+      removeActivity();
     }
 
-    const timeoutId = setTimeout(() => {
-      const callbacks = completionCallbacks.get(videoId);
-      callbacks?.delete(onComplete);
+    function restartTimeout() {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        settle();
+        reject(new Error(`Download timed out: ${videoId}`));
+      }, MAX_VIDEO_IDLE_MS);
+    }
 
-      const isCallbacksEmpty = callbacks && !callbacks.size;
-      if (isCallbacksEmpty) {
-        completionCallbacks.delete(videoId);
+    const removeCompletion = addCallback({
+      callbacks: completionCallbacks,
+      videoId,
+      callback() {
+        settle();
+        resolve();
       }
-
-      reject(new Error(`Download timed out: ${videoId}`));
-    }, MAX_VIDEO_DOWNLOAD_MS);
-    const isCallbackSetMissing = !completionCallbacks.has(videoId);
-    if (isCallbackSetMissing) {
-      completionCallbacks.set(videoId, new Set());
-    }
-
-    required(completionCallbacks.get(videoId)).add(onComplete);
+    });
+    const removeActivity = addCallback({
+      callbacks: activityCallbacks,
+      videoId,
+      callback: restartTimeout
+    });
+    restartTimeout();
+    signal?.addEventListener("abort", () => {
+      settle();
+      reject(signal.reason);
+    }, { once: true });
   });
 }
 
-export function signalVideoComplete(videoId: string) {
-  const callbacks = completionCallbacks.get(videoId);
-  completionCallbacks.delete(videoId);
+export function touchVideoActivity(videoId: string) {
+  for (const callback of activityCallbacks.get(videoId) ?? []) {
+    callback();
+  }
+}
 
-  if (callbacks) {
-    for (const callback of callbacks) {
-      callback();
-    }
+export function signalVideoComplete(videoId: string) {
+  for (const callback of completionCallbacks.get(videoId) ?? []) {
+    callback();
   }
 }
 

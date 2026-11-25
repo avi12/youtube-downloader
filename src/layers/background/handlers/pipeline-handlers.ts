@@ -1,3 +1,4 @@
+import { touchVideoActivity } from "@/layers/background/queue/sequential-queue";
 import { enqueueToPopupList, removeFromPopupList } from "@/layers/background/queue/popup-list";
 import { resolveTabId } from "@/layers/background/queue/tab-tracker";
 import { registerRecentDownloadHandlers } from "@/layers/background/recent/recent-downloads";
@@ -91,6 +92,7 @@ export function registerPipelineHandlers() {
   });
 
   onMessage(MessageType.PipelineProgress, async ({ data }) => {
+    touchVideoActivity(data.videoId);
     const { videoId, progress, progressType, tabId } = data;
     if (isVideoCancelled(videoId)) {
       return;
