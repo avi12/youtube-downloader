@@ -76,9 +76,13 @@ export function recordFrameVideo({ frameId, url }: {
   url: string;
 }) {
   const videoId = getVideoIdFromUrl(url);
-  if (videoId) {
-    videoIdsByFrame.set(frameId, videoId);
+  if (!videoId) {
+    return;
   }
+
+  // A new frame means the last session failed or ran out; its attempt must wait for a fresh one
+  videoIdsByFrame.set(frameId, videoId);
+  sessionsByVideo.delete(videoId);
 }
 
 type RecordFrameSessionParams = Prettify<{
