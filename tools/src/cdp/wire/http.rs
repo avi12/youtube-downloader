@@ -14,6 +14,7 @@ const HTTP_TIMEOUT: Duration = Duration::from_secs(5);
 const GET_ATTEMPTS: usize = 3;
 const HEADER_END: &str = "\r\n\r\n";
 const OK_STATUS: &str = " 200 ";
+const CONTENT_LENGTH_HEADER: &str = "content-length:";
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -27,6 +28,24 @@ fn split_response(raw: &str) -> Option<(&str, &str)> {
     Some((head.lines().next()?, body))
 }
 
+/// Whether `raw` holds the headers and `Content-Length` bytes of body. Chrome keeps the socket open
+/// despite `Connection: close`, so a response is framed by its length, not by the end of the stream.
+fn is_response_complete(raw: &[u8]) -> bool {
+    let Some(header_end) = raw
+        .windows(HEADER_END.len())
+        .position(|window| window == HEADER_END.as_bytes())
+    else {
+        return false;
+    };
+    let head =
+        String::from_utf8_lossy(raw.get(..header_end).unwrap_or_default()).to_ascii_lowercase();
+    let content_length = head.lines().find_map(|line| {
+        line.strip_prefix(CONTENT_LENGTH_HEADER)
+            .and_then(|value| value.trim().parse::<usize>().ok())
+    });
+    content_length.is_some_and(|length| raw.len() >= header_end + HEADER_END.len() + length)
+}
+
 async fn send(port: u16, verb: &str, path: &str) -> Result<String> {
     let request =
         format!("{verb} {path} HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\nConnection: close\r\n\r\n");
@@ -34,7 +53,11 @@ async fn send(port: u16, verb: &str, path: &str) -> Result<String> {
         let mut stream = TcpStream::connect((Ipv4Addr::LOCALHOST, port)).await?;
         stream.write_all(request.as_bytes()).await?;
         let mut raw = Vec::new();
-        stream.read_to_end(&mut raw).await?;
+        while !is_response_complete(&raw) {
+            if stream.read_buf(&mut raw).await? == 0 {
+                break;
+            }
+        }
         Ok::<_, CdpError>(String::from_utf8_lossy(&raw).into_owned())
     };
     let raw = timeout(HTTP_TIMEOUT, exchange)
@@ -93,6 +116,14 @@ pub(crate) async fn close_target(port: u16, target_id: &str) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_response_ends_at_its_content_length() {
+        let whole = b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\n{}";
+        let (cut_short, _) = whole.split_at(whole.len() - 1);
+        assert!(!is_response_complete(cut_short));
+        assert!(is_response_complete(whole));
+    }
 
     #[test]
     fn splits_status_and_body() {
