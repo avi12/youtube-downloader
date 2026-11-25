@@ -39,19 +39,10 @@ export default defineConfig({
   srcDir: "src",
   publicDir: "src/public",
   modules: ["@wxt-dev/module-svelte", "wxt-module-layers"],
-  vite: () => ({
-    plugins: [
-      {
-        name: "ignore-dev-browser-profiles",
-        config: () => ({
-          server: {
-            watch: {
-              ignored: ["**/user-profiles/**"]
-            }
-          }
-        })
-      }
-    ]
+  vite: ({ mode }) => ({
+    build: {
+      sourcemap: mode === "production"
+    }
   }),
   layers: {
     sources: ["src/layers/background", "src/layers/popup", "src/layers/processing", "src/layers/youtube"]
