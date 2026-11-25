@@ -13,7 +13,7 @@ use super::extensions_page::evaluate_on_extensions_page;
 use super::worlds::neutralize_orphaned_worlds_in_page;
 use crate::cdp::wire::{close_target, evaluate_on, Method, Session};
 use crate::dev::browsers::error::{BrowserError, Result};
-use crate::dev::browsers::scripts::{self, MANIFEST_NAME, RUNTIME_RELOAD};
+use crate::dev::browsers::scripts::{self, MANIFEST_NAME};
 use crate::dev::browsers::target::{BoxFuture, ReloadTarget};
 use crate::output::manifest::matches_url_pattern;
 use crate::output::reload::{
@@ -206,11 +206,9 @@ impl ChromeTarget {
         }
     }
 
+    /// Always through the extensions page: `runtime.reload()` from the worker makes branded Chrome
+    /// disable a command-line-loaded extension as an "unsupported developer extension".
     async fn reload_extension_process(&self) -> Result<()> {
-        if let Some(worker) = self.live_service_worker(None).await {
-            evaluate_on(&worker, RUNTIME_RELOAD.trim()).await.ok();
-            return Ok(());
-        }
         let id = self.resolve_extension_id().await?;
         evaluate_on_extensions_page(self.port, &scripts::extension_reload(&id)?).await?;
         Ok(())
@@ -222,7 +220,13 @@ impl ChromeTarget {
             is_extension_service_worker(target) && extension_id_of(target) == known.as_deref()
         });
         self.reload_extension_process().await?;
-        let worker = self.find_service_worker(stale.as_ref()).await?;
+        // A reload that leaves the extension disabled is undone by a second one
+        let worker = if let Ok(worker) = self.find_service_worker(stale.as_ref()).await {
+            worker
+        } else {
+            self.reload_extension_process().await?;
+            self.find_service_worker(stale.as_ref()).await?
+        };
         self.neutralize_orphaned_content_scripts(plan).await;
         let source = scripts::tab_update(plan)?;
         let value = evaluate_on(&worker, &source).await?.into_value()?;
