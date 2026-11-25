@@ -24,6 +24,8 @@ const SERVICE_WORKER_WAIT: Duration = Duration::from_secs(10);
 const SERVICE_WORKER_POLL: Duration = Duration::from_millis(200);
 const EXTENSION_URL_PREFIX: &str = "chrome-extension://";
 const HTML_SUFFIX: &str = ".html";
+/// Opened anew for every download, so the next one loads a new build and a running one is left alone.
+const PER_DOWNLOAD_PAGE: &str = "download-worker";
 
 /// A Chrome-family browser reached over its remote debugging port.
 pub(crate) struct ChromeTarget {
@@ -249,7 +251,8 @@ impl ChromeTarget {
             .filter(|target| target.url.starts_with(&prefix))
             .filter_map(|target| {
                 let name = page_name_of(&target.url)?.to_owned();
-                (is_any_page_affected || plan.page_names.contains(&name)).then_some((target, name))
+                let is_affected = is_any_page_affected || plan.page_names.contains(&name);
+                (is_affected && name != PER_DOWNLOAD_PAGE).then_some((target, name))
             })
             .collect())
     }

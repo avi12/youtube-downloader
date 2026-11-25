@@ -7,13 +7,18 @@
     return false;
   }
 
-  globalThis.ytdlDevPendingClose ??= (async () => {
-    while (await isDownloading()) {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-    }
+  if (!globalThis.ytdlDevPendingClose) {
+    globalThis.ytdlDevPendingClose = async () => {
+      if (await isDownloading()) {
+        return;
+      }
 
-    globalThis.ytdlDevPendingClose = undefined;
-    await chrome.offscreen.closeDocument();
-  })();
+      chrome.storage.local.onChanged.removeListener(globalThis.ytdlDevPendingClose);
+      globalThis.ytdlDevPendingClose = undefined;
+      await chrome.offscreen.closeDocument();
+    };
+    chrome.storage.local.onChanged.addListener(globalThis.ytdlDevPendingClose);
+  }
+
   return true;
 })()

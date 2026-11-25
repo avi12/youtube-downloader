@@ -1,12 +1,18 @@
 async ({ pageNames, isSharedAssetChanged }) => {
   const api = globalThis.browser ?? globalThis.chrome;
+  // Opened anew for every download, so the next one loads a new build
+  const PER_DOWNLOAD_PAGE = "download-worker";
   const refreshedPages = [];
   // Removing a processing frame would kill the downloads in it
   const removeOnceIdle = async frame => {
     const { statusProgress = {} } = await api.storage.local.get("statusProgress");
     const isDownloading = Object.values(statusProgress).some(entry => entry.isDownloading);
     if (isDownloading) {
-      setTimeout(() => removeOnceIdle(frame), 2000);
+      const retry = () => {
+        api.storage.local.onChanged.removeListener(retry);
+        removeOnceIdle(frame);
+      };
+      api.storage.local.onChanged.addListener(retry);
       return;
     }
 
@@ -14,7 +20,8 @@ async ({ pageNames, isSharedAssetChanged }) => {
   };
   for (const view of api.extension.getViews()) {
     const name = view.location.pathname.replace(/^\//, "").replace(/\.html$/, "");
-    if (view === globalThis || (!isSharedAssetChanged && !pageNames.includes(name))) {
+    const isUntouched = view === globalThis || name === PER_DOWNLOAD_PAGE;
+    if (isUntouched || (!isSharedAssetChanged && !pageNames.includes(name))) {
       continue;
     }
 
