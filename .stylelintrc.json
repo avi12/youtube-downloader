@@ -11,6 +11,21 @@
       "rules": {
         "declaration-no-important": null
       }
+    },
+    {
+      "files": [
+        "src/layers/popup/entrypoints/popup/format-dialog/ChangeFormatDialog.svelte"
+      ],
+      "rules": {
+        "selector-pseudo-element-no-unknown": [
+          true,
+          {
+            "ignorePseudoElements": [
+              "view-transition-group-children"
+            ]
+          }
+        ]
+      }
     }
   ]
 }

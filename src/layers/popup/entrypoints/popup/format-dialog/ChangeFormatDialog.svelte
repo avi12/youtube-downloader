@@ -527,7 +527,6 @@
       animation: none;
     }
 
-    /* stylelint-disable-next-line selector-pseudo-element-no-unknown */
     ::view-transition-group-children(change-format-dialog) {
       overflow: clip;
       border-radius: 20px;
