@@ -44,7 +44,9 @@ export async function readStreamToBuffer({ reader, expectedBytes, onBytesReceive
     while (true) {
       const chunk = await readChunk(reader);
       const isChunkMissing = !chunk;
-      const isUnexpectedEnd = isChunkMissing && !stall.isStalled;
+      // SABR can error the stream after delivering every byte: its follow-up request gets no media
+      const isEveryByteReceived = hasExpectedBytes && totalBytes >= expectedBytes;
+      const isUnexpectedEnd = isChunkMissing && !stall.isStalled && !isEveryByteReceived;
       if (isUnexpectedEnd) {
         throw new StreamStallError(buildPartial());
       }
