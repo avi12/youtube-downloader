@@ -138,6 +138,8 @@ export function createPanelManager({
     }
   }
 
+  $effect(() => () => close());
+
   return {
     get isOpen() {
       return isOpen;

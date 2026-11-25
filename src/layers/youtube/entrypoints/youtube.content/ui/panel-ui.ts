@@ -37,7 +37,8 @@ export function mountPanelUi({
           videoData
         }
       });
-    }
+    },
+    onRemove: cleanupPanelUi
   });
 
   integratedUi.mount();
