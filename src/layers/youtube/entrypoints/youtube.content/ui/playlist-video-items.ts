@@ -105,6 +105,9 @@ async function injectPlaylistVideoItemUi({ context, elVideoItem }: InjectPlaylis
     return;
   }
 
+  // An invalidated run leaves its container behind, which the next run would take for a mounted item
+  context.onInvalidated(() => elItemContainer.remove());
+
   const integratedUi = createIntegratedUi(context, {
     position: "inline",
     anchor: elItemContainer,
