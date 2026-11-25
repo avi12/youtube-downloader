@@ -185,6 +185,7 @@ fn plan_extension_reload(
     before: &BuildSnapshot,
     after: &BuildSnapshot,
     changed: &BTreeSet<String>,
+    hot_files: &BTreeSet<String>,
 ) -> Result<Option<ReloadPlan>> {
     let changed_scripts = list_changed_content_scripts(before, after, changed)?;
     let (main_world, changed_isolated): (Vec<_>, Vec<_>) = changed_scripts
@@ -220,16 +221,18 @@ fn plan_extension_reload(
     }
     let has_other_reasons = !other_reasons.is_empty();
     reasons.extend(other_reasons);
-    let changed_style_sheets = changed_isolated
+    let isolated_content_scripts = after.manifest.list_isolated_content_scripts()?;
+    // The reload re-injects every isolated script, so a hot style sheet counts here too
+    let changed_style_sheets = isolated_content_scripts
         .iter()
         .flat_map(|entry| &entry.css)
-        .filter(|file| changed.contains(*file))
+        .filter(|file| changed.contains(*file) || hot_files.contains(*file))
         .cloned()
         .collect();
     let fallback = ExtensionReloadPlan {
         reasons,
         main_world_content_scripts: main_world,
-        isolated_content_scripts: after.manifest.list_isolated_content_scripts()?,
+        isolated_content_scripts,
         changed_isolated_style_sheets: changed_style_sheets,
     };
     if has_other_reasons {
@@ -252,13 +255,18 @@ fn plan_extension_reload(
 pub(crate) fn plan_reload(before: &BuildSnapshot, after: &BuildSnapshot) -> Result<ReloadPlan> {
     let mut changed = diff_file_hashes(before, after);
     // A changed manifest still needs the reload that registers the scripts again
-    if !changed.contains(MANIFEST_FILE) {
-        changed.retain(|file| !HOT_CONTENT_SCRIPT_FILES.contains(&file.as_str()));
-    }
+    let hot_files: BTreeSet<String> = if changed.contains(MANIFEST_FILE) {
+        BTreeSet::new()
+    } else {
+        HOT_CONTENT_SCRIPT_FILES
+            .iter()
+            .filter_map(|file| changed.take(*file))
+            .collect()
+    };
     if changed.is_empty() {
         return Ok(ReloadPlan::None);
     }
-    if let Some(plan) = plan_extension_reload(before, after, &changed)? {
+    if let Some(plan) = plan_extension_reload(before, after, &changed, &hot_files)? {
         return Ok(plan);
     }
     Ok(ReloadPlan::RefreshPages(plan_page_refresh(after, &changed)))
