@@ -1,13 +1,12 @@
 import { required } from "@/lib/required";
 import { buildInputArgs } from "./mux-ffmpeg-args";
 import { state } from "./mux-state";
-import { fetchThumbnail } from "./mux-thumbnail";
+import { fetchThumbnail, ImageExtension } from "./mux-thumbnail";
 import { uint8ToBase64 } from "@/lib/utils/binary";
 import { CoverArtStyle, FFMPEG_CODEC_COPY, getCoverArtStyle } from "@/lib/utils/containers";
 import type { Prettify } from "@/types";
 
 const FFMPEG_CODEC_MJPEG = "mjpeg";
-const JPEG_EXTENSION = "jpg";
 const COVER_FILENAME_PREFIX = "cover";
 const FLAC_PICTURE_TAG = "METADATA_BLOCK_PICTURE";
 const FLAC_PICTURE_TYPE_FRONT_COVER = 3;
@@ -16,10 +15,10 @@ const FLAC_PICTURE_NUMBER_FIELDS = 8;
 // Width, height, color depth and palette size, all left unspecified
 const FLAC_PICTURE_DIMENSION_FIELDS = 4;
 
-const IMAGE_MIME_TYPES: Record<string, string> = {
-  jpg: "image/jpeg",
-  png: "image/png",
-  webp: "image/webp"
+const IMAGE_MIME_TYPES: Record<ImageExtension, string> = {
+  [ImageExtension.Jpg]: "image/jpeg",
+  [ImageExtension.Png]: "image/png",
+  [ImageExtension.Webp]: "image/webp"
 };
 
 type Thumbnail = NonNullable<Awaited<ReturnType<typeof fetchThumbnail>>>;
@@ -82,7 +81,7 @@ export async function prepareCoverArt({ thumbnailUrl, outputExtension }: Prepare
 
   const filename = `${COVER_FILENAME_PREFIX}.${thumbnail.extension}`;
   required(state.ffmpeg).FS.writeFile(filename, thumbnail.data);
-  const codec = thumbnail.extension === JPEG_EXTENSION ? FFMPEG_CODEC_COPY : FFMPEG_CODEC_MJPEG;
+  const codec = thumbnail.extension === ImageExtension.Jpg ? FFMPEG_CODEC_COPY : FFMPEG_CODEC_MJPEG;
   return {
     filename,
     inputArgs: buildInputArgs(filename),

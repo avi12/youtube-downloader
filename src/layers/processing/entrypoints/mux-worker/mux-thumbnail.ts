@@ -7,6 +7,12 @@ const RIFF_MAGIC_BYTES = [0x52, 0x49, 0x46, 0x46];
 const WEBP_MAGIC_BYTES = [0x57, 0x45, 0x42, 0x50];
 const WEBP_MAGIC_OFFSET = 8;
 
+export enum ImageExtension {
+  Jpg = "jpg",
+  Png = "png",
+  Webp = "webp"
+}
+
 type MatchesMagicBytesParams = Prettify<{
   data: Uint8Array;
   bytes: number[];
@@ -21,14 +27,14 @@ function detectImageExtension(data: Uint8Array) {
     data,
     bytes: JPEG_MAGIC_BYTES
   })) {
-    return "jpg";
+    return ImageExtension.Jpg;
   }
 
   if (matchesMagicBytes({
     data,
     bytes: PNG_MAGIC_BYTES
   })) {
-    return "png";
+    return ImageExtension.Png;
   }
 
   const isWebp = matchesMagicBytes({
@@ -40,10 +46,10 @@ function detectImageExtension(data: Uint8Array) {
     offset: WEBP_MAGIC_OFFSET
   });
   if (isWebp) {
-    return "webp";
+    return ImageExtension.Webp;
   }
 
-  return "jpg";
+  return ImageExtension.Jpg;
 }
 
 export async function fetchThumbnail(url: string) {
