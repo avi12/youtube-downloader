@@ -33,6 +33,13 @@ const GUARD_TEMPLATE: &str = "if (!(@@RAN@@ ??= new Set()).has(@@NAME@@)) {
 ";
 
 const LOADER_TEMPLATE: &str = r#"(async () => {
+  const ancestors = globalThis.location.ancestorOrigins;
+  const isInExtensionPage = self !== top && ancestors?.[ancestors.length - 1]?.startsWith("chrome-extension:");
+  if (isInExtensionPage) {
+    @@STATIC_SOURCE@@
+    return;
+  }
+
   const api = globalThis.browser ?? globalThis.chrome;
   const hmrUrl = path => api.runtime.getURL(path);
   globalThis.@@ENTRY_GLOBAL@@ = @@ENTRY@@;
@@ -142,11 +149,14 @@ pub(crate) fn guard_run_once(name: &str, source: &str) -> String {
     )
 }
 
-/// The loader that replaces a hot-swappable content script's bundle.
+/// The loader that replaces a hot-swappable content script's bundle. A frame inside an extension
+/// page (the offscreen document's `YouTube` iframe) cannot import the HMR modules, so it runs the
+/// original bundle instead.
 pub(crate) fn content_script_loader(
     entry_name: &str,
     runtime_path: &str,
     manifest_path: &str,
+    static_source: &str,
     source_hash: &str,
 ) -> String {
     fill(
@@ -156,6 +166,7 @@ pub(crate) fn content_script_loader(
             ("ENTRY", literal(entry_name)),
             ("RUNTIME_PATH", literal(runtime_path)),
             ("MANIFEST_PATH", literal(manifest_path)),
+            ("STATIC_SOURCE", static_source.to_owned()),
             ("HASH", source_hash.to_owned()),
         ],
     )
@@ -167,7 +178,7 @@ mod tests {
 
     #[test]
     fn no_placeholder_survives() {
-        let loader = content_script_loader("youtube", "hmr/runtime.js", "hmr/manifest.json", "abc");
+        let loader = content_script_loader("youtube", "hmr/runtime.js", "hmr/manifest.json", "run();", "abc");
         let sources = [
             recorder_source(),
             replay_function_source(),

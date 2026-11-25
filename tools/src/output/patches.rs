@@ -187,6 +187,7 @@ fn patch_content_script(output_dir: &Path, file: &str) -> Result<()> {
             name,
             &format!("{HMR_OUT_SUBDIR}/{HMR_RUNTIME_FILE}"),
             &format!("{HMR_OUT_SUBDIR}/{HMR_MANIFEST_FILE}"),
+            &original,
             &source_hash(&original),
         ),
         None => original,
