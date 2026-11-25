@@ -204,6 +204,14 @@ fn a_hot_change_beside_a_main_world_change_still_reloads() -> Result<()> {
 }
 
 #[test]
+fn a_changed_source_map_needs_nothing() -> Result<()> {
+    let before = snapshot(&[("chunks/worker.js.map", "1")], manifest());
+    let after = snapshot(&[("chunks/worker.js.map", "2")], manifest());
+    assert_eq!(plan_reload(&before, &after)?, ReloadPlan::None);
+    Ok(())
+}
+
+#[test]
 fn a_hot_change_beside_a_shared_file_refreshes_only_that_file() -> Result<()> {
     let expected = PageRefreshPlan {
         page_names: Vec::new(),

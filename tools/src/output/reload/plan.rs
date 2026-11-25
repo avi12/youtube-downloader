@@ -15,6 +15,8 @@ use crate::output::manifest::{
 
 const LOCALES_DIR_PREFIX: &str = "_locales/";
 const HTML_SUFFIX: &str = ".html";
+/// Only developer tools read source maps, so a changed one never asks for a reload.
+const SOURCE_MAP_SUFFIX: &str = ".map";
 const LIVE_LOADED_EXTENSIONS: [&str; 3] = ["html", "js", "css"];
 const HASHED_ASSET_DIRS: [&str; 2] = ["chunks/", "assets/"];
 const HASHED_ASSET_SUFFIXES: [&str; 2] = [".js", ".css"];
@@ -86,6 +88,7 @@ pub(crate) enum ReloadPlan {
 fn diff_file_hashes(before: &BuildSnapshot, after: &BuildSnapshot) -> BTreeSet<String> {
     let files = before.file_hashes.keys().chain(after.file_hashes.keys());
     files
+        .filter(|file| !file.ends_with(SOURCE_MAP_SUFFIX))
         .filter(|file| before.file_hashes.get(*file) != after.file_hashes.get(*file))
         .cloned()
         .collect()
