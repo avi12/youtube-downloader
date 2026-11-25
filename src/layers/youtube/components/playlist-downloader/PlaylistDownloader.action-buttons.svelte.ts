@@ -2,8 +2,7 @@ import {
   ACTION_BUTTON_IDS,
   buildDeselectAllData,
   buildDownloadAllData,
-  buildDownloadData,
-  buildStopAllData
+  buildDownloadData
 } from "./helpers/playlist-action-button-data";
 import { attachButton, handleActionButtonClick } from "./helpers/playlist-action-button-handlers";
 import { DATA_BUTTON_ID_ATTR, sendButtonData } from "@/lib/ui/polymer-utils";
@@ -22,11 +21,12 @@ export function createPlaylistActionButtons(state: {
   revealAndDownloadAll(): Promise<void> | void;
   cancelReveal(): void;
   stopAll(): void;
+  isStoppable: boolean;
+  isStartedFromSelection: boolean;
 }) {
   let elDeselectAll = $state<HTMLElement | null>(null);
   let elDownload = $state<HTMLElement | null>(null);
   let elDownloadAll = $state<HTMLElement | null>(null);
-  let elStopAll = $state<HTMLElement | null>(null);
 
   function refreshDeselectAll() {
     if (!elDeselectAll) {
@@ -49,12 +49,14 @@ export function createPlaylistActionButtons(state: {
 
     elDownload.setAttribute(DATA_BUTTON_ID_ATTR, ACTION_BUTTON_IDS.Download);
     const isNothingSelectedAndIdle = state.selectedDownloadableVideos.length === 0 && !state.isDownloading;
-    const isDisabled = isNothingSelectedAndIdle;
+    const isStopButton = state.isDownloading && state.isStartedFromSelection;
+    const isOtherButtonStopping = state.isDownloading && !state.isStartedFromSelection;
+    const isDisabled = isNothingSelectedAndIdle || isOtherButtonStopping;
     sendButtonData({
       elButton: elDownload,
       data: buildDownloadData({
         isDisabled,
-        isDownloading: state.isDownloading,
+        isStopButton,
         downloadButtonLabel: state.downloadButtonLabel
       })
     });
@@ -73,20 +75,9 @@ export function createPlaylistActionButtons(state: {
       data: buildDownloadAllData({
         isBusy,
         isRevealingAll: state.isRevealingAll,
+        isStopButton: state.isStoppable && !(state.isDownloading && state.isStartedFromSelection),
         revealedVideoCount: state.revealedVideoCount
       })
-    });
-  }
-
-  function refreshStopAll() {
-    if (!elStopAll) {
-      return;
-    }
-
-    elStopAll.setAttribute(DATA_BUTTON_ID_ATTR, ACTION_BUTTON_IDS.StopAll);
-    sendButtonData({
-      elButton: elStopAll,
-      data: buildStopAllData()
     });
   }
 
@@ -109,16 +100,9 @@ export function createPlaylistActionButtons(state: {
         elDownloadAll = element;
       }
     }),
-    attachStopAll: attachButton({
-      buttonId: ACTION_BUTTON_IDS.StopAll,
-      setter(element) {
-        elStopAll = element;
-      }
-    }),
     refreshDeselectAll,
     refreshDownload,
     refreshDownloadAll,
-    refreshStopAll,
     handleClick: (buttonId: string) => handleActionButtonClick({
       buttonId,
       state

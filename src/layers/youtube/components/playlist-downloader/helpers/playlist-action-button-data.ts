@@ -9,8 +9,7 @@ import {
 export const ACTION_BUTTON_IDS = {
   DeselectAll: "playlist-deselect-all-btn",
   Download: "playlist-download-btn",
-  DownloadAll: "playlist-download-all-btn",
-  StopAll: "playlist-stop-all-btn"
+  DownloadAll: "playlist-download-all-btn"
 } as const;
 
 export function buildDeselectAllData(isDisabled: boolean) {
@@ -28,67 +27,65 @@ export function buildDeselectAllData(isDisabled: boolean) {
   };
 }
 
+const STOP_ALL_LABEL = "Stop all";
+
 export function buildDownloadData({
   isDisabled,
-  isDownloading,
+  isStopButton,
   downloadButtonLabel
 }: {
   isDisabled: boolean;
-  isDownloading: boolean;
+  isStopButton: boolean;
   downloadButtonLabel: string;
 }) {
+  const label = isStopButton ? STOP_ALL_LABEL : downloadButtonLabel;
   return {
-    iconName: isDownloading ? IconName.Close : IconName.Download,
-    title: downloadButtonLabel,
-    accessibilityText: downloadButtonLabel,
+    iconName: isStopButton ? IconName.Close : IconName.Download,
+    title: label,
+    accessibilityText: label,
     style: ButtonStyle.Mono,
     type: ButtonType.Tonal,
     buttonSize: ButtonSize.Default,
     state: isDisabled ? ButtonState.Disabled : ButtonState.Active,
     isFullWidth: false,
     isDisabled,
-    tooltip: downloadButtonLabel
+    tooltip: label
   };
 }
 
 export function buildDownloadAllData({
   isBusy,
   isRevealingAll,
+  isStopButton,
   revealedVideoCount
 }: {
   isBusy: boolean;
   isRevealingAll: boolean;
+  isStopButton: boolean;
   revealedVideoCount: number;
 }) {
-  const label = isRevealingAll
-    ? `Revealing hidden videos (${revealedVideoCount})`
-    : "Download whole playlist";
-  const tooltip = isRevealingAll ? "Stop revealing" : "Reveal all videos and download";
+  let label = "Download whole playlist";
+  let tooltip = "Reveal all videos and download";
+  if (isRevealingAll) {
+    label = `Revealing hidden videos (${revealedVideoCount})`;
+    tooltip = "Stop revealing";
+  } else if (isStopButton) {
+    label = STOP_ALL_LABEL;
+    tooltip = "Stop all downloads";
+  }
+
+  const isCancel = isRevealingAll || isStopButton;
+  const isDisabled = isBusy && !isCancel;
   return {
-    iconName: isRevealingAll ? IconName.Close : IconName.Download,
+    iconName: isCancel ? IconName.Close : IconName.Download,
     title: label,
     accessibilityText: label,
     style: ButtonStyle.Mono,
     type: ButtonType.Outline,
     buttonSize: ButtonSize.Default,
-    state: isBusy && !isRevealingAll ? ButtonState.Disabled : ButtonState.Active,
+    state: isDisabled ? ButtonState.Disabled : ButtonState.Active,
     isFullWidth: false,
-    isDisabled: isBusy && !isRevealingAll,
+    isDisabled,
     tooltip
-  };
-}
-
-export function buildStopAllData() {
-  return {
-    iconName: IconName.Close,
-    title: "Stop all",
-    accessibilityText: "Stop all downloads",
-    style: ButtonStyle.Mono,
-    type: ButtonType.Tonal,
-    buttonSize: ButtonSize.Default,
-    state: ButtonState.Active,
-    isFullWidth: false,
-    isDisabled: false,
-    tooltip: "Stop all downloads"
   };
 }

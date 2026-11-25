@@ -31,6 +31,7 @@ export function setupPlaylistEffects({
     void playlist.selectedDownloadableVideos.length;
     void playlist.isDownloading;
     void playlist.downloadButtonLabel;
+    void playlist.isStartedFromSelection;
     actionButtons.refreshDownload();
   });
 
@@ -39,12 +40,8 @@ export function setupPlaylistEffects({
     void playlist.isDownloading;
     void playlist.revealedVideoCount;
     void playlist.activeIndividualDownloadCount;
+    void playlist.isStartedFromSelection;
     actionButtons.refreshDownloadAll();
-  });
-
-  $effect(() => {
-    void playlist.isStoppable;
-    actionButtons.refreshStopAll();
   });
 
   $effect(() => onButtonClick(buttonId => {

@@ -67,9 +67,7 @@
 {/if}
 
 <div class="ytdl-playlist-actions">
-  {#if !playlist.isDownloading}
-    <PlaylistDownloaderSelectRow {actionButtons} {playlist} />
-  {/if}
+  <PlaylistDownloaderSelectRow {actionButtons} {playlist} />
 
   {#if isProgressVisible}
     {#if playlist.currentPhaseLabel}
@@ -82,11 +80,6 @@
       indeterminate={playlist.isRevealingAll || playlist.totalProgress === 0 || undefined}
       value={Math.round(playlist.totalProgress)}
     ></tp-yt-paper-progress>
-  {/if}
-
-  <!-- Below the progress bar: the panel scrolls, and this is the end people are at while downloading -->
-  {#if playlist.isStoppable}
-    <yt-button-view-model {@attach actionButtons.attachStopAll}></yt-button-view-model>
   {/if}
 </div>
 

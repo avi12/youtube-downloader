@@ -20,6 +20,8 @@ export const batchDownloadStatus = $state({
   isRunning: false,
   isZipBatch: false
 });
+// Which button started the downloads, and so turns into "Stop all"; outlives a panel remount
+export const batchStarter = $state({ isSelection: false });
 export const batchVideoIds = new SvelteSet<string>();
 export const batchCanceledIds = new SvelteSet<string>();
 

@@ -1,5 +1,5 @@
 import { resolveDefaultZipName } from "./helpers/playlist-download-builder";
-import { createBatchDownloadState } from "./PlaylistDownloader.batch.svelte";
+import { batchStarter, createBatchDownloadState } from "./PlaylistDownloader.batch.svelte";
 import { createOverrideState } from "./PlaylistDownloader.overrides.svelte";
 import { createProgressState } from "./PlaylistDownloader.progress.svelte";
 import { createRevealState } from "./PlaylistDownloader.reveal.svelte";
@@ -67,6 +67,9 @@ export function createPlaylistDownloaderState() {
     // A panel that was mounted again has lost its batch, but its downloads are still running
     get isStoppable() {
       return batch.isDownloading || progress.activeIndividualDownloadCount > 0;
+    },
+    get isStartedFromSelection() {
+      return batchStarter.isSelection;
     },
     stopAll() {
       const unfinishedIds = [...videoData.videoDataMap.keys()].filter(videoId => {
@@ -198,10 +201,14 @@ export function createPlaylistDownloaderState() {
       if (batch.isDownloading) {
         void batch.cancelDownload([]);
       } else {
+        batchStarter.isSelection = true;
         void batch.startDownload(videoData.selectedDownloadableVideos);
       }
     },
-    revealAndDownloadAll: reveal.revealAndDownloadAll,
+    revealAndDownloadAll() {
+      batchStarter.isSelection = false;
+      return reveal.revealAndDownloadAll();
+    },
     cancelReveal: reveal.cancelReveal,
     selectAll() {
       for (const video of videoData.downloadableVideos) {

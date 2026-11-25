@@ -22,6 +22,7 @@ type HandleActionButtonClickParams = Prettify<{
   buttonId: string;
   state: {
     isRevealingAll: boolean;
+    isStoppable: boolean;
     clearSelection(): void;
     toggleSelectedDownload(): void;
     stopAll(): void;
@@ -36,12 +37,6 @@ export function handleActionButtonClick({ buttonId, state }: HandleActionButtonC
     return true;
   }
 
-  const isStopAll = buttonId === ACTION_BUTTON_IDS.StopAll;
-  if (isStopAll) {
-    state.stopAll();
-    return true;
-  }
-
   const isDownload = buttonId === ACTION_BUTTON_IDS.Download;
   if (isDownload) {
     state.toggleSelectedDownload();
@@ -52,6 +47,8 @@ export function handleActionButtonClick({ buttonId, state }: HandleActionButtonC
   if (isDownloadAll) {
     if (state.isRevealingAll) {
       state.cancelReveal();
+    } else if (state.isStoppable) {
+      state.stopAll();
     } else {
       state.revealAndDownloadAll()?.catch(() => {});
     }
