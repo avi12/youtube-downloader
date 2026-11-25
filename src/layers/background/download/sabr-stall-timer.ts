@@ -1,4 +1,5 @@
-const SABR_STALL_TIMEOUT_MS = 10_000;
+// YouTube pauses fast downloads partway: single responses have taken 18s and still completed
+const SABR_STALL_TIMEOUT_MS = 30_000;
 const SABR_FIRST_BYTE_TIMEOUT_MS = 5_000;
 
 export function createSabrStallTimer(parentSignal: AbortSignal) {
