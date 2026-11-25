@@ -53,6 +53,12 @@ fn a_module_level_state_store_is_adopted_across_re_imports() {
 }
 
 #[test]
+fn state_local_to_a_factory_function_is_left_alone() {
+    let source = "function create() {\n  let data = $state(null);\n}\n";
+    assert_eq!(patterns().preserve_module_state(source, MODULE_ID), source);
+}
+
+#[test]
 fn a_reactive_instance_is_adopted_whole() {
     let code = patterns()
         .preserve_module_state("export const seen = new SvelteSet<string>();\n", MODULE_ID);

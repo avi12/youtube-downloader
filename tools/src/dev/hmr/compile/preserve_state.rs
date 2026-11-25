@@ -23,10 +23,12 @@ const SCRIPT_MODULE_ATTRIBUTE: &str = r"(?-u:\b)(?:module|context)(?-u:\b)";
 /// no `const|let|var` keyword, so this matches exactly the simple instance variables.
 const INSTANCE_STATE_DECLARATION: &str = r"(?:^|\n)[ \t]*(?:const|let|var)[ \t]+([A-Za-z_$][A-Za-z0-9_$]*)[ \t]*=[ \t]*\$state(?:\.raw)?[ \t]*\(";
 /// A module-level `$state` / `$state.raw` declaration start, capturing the variable name.
-const MODULE_STATE_DECLARATION: &str = r"(?:^|\n)[ \t]*(?:export[ \t]+)?(?:const|let|var)[ \t]+([A-Za-z_$][A-Za-z0-9_$]*)[ \t]*=[ \t]*\$state(?:\.raw)?[ \t]*\(";
+/// Anchored to column 0: an indented declaration is local to a factory function, and adopting it
+/// would hand one instance's state to every other.
+const MODULE_STATE_DECLARATION: &str = r"(?:^|\n)(?:export[ \t]+)?(?:const|let|var)[ \t]+([A-Za-z_$][A-Za-z0-9_$]*)[ \t]*=[ \t]*\$state(?:\.raw)?[ \t]*\(";
 /// A module-level reactive instance - `new SvelteMap(...)`, `new SvelteSet(...)`,
 /// `createSubscriber(...)` - capturing the variable name and the callee.
-const MODULE_REACTIVE_INSTANCE: &str = r"(?:^|\n)[ \t]*(?:export[ \t]+)?(?:const|let|var)[ \t]+([A-Za-z_$][A-Za-z0-9_$]*)[ \t]*=[ \t]*(new[ \t]+Svelte[A-Za-z0-9_]+(?:<[^()]*>)?|createSubscriber)[ \t]*\(";
+const MODULE_REACTIVE_INSTANCE: &str = r"(?:^|\n)(?:export[ \t]+)?(?:const|let|var)[ \t]+([A-Za-z_$][A-Za-z0-9_$]*)[ \t]*=[ \t]*(new[ \t]+Svelte[A-Za-z0-9_]+(?:<[^()]*>)?|createSubscriber)[ \t]*\(";
 /// Only a simple single-declarator statement (next non-space after `)` is `;`, a newline or the end);
 /// a multi-declarator `const a = $state(...), b = ...` is skipped to avoid mangling the rest.
 const STATEMENT_END: &str = r"^[ \t]*(?:;|\r?\n|$)";
