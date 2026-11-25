@@ -1,33 +1,11 @@
 import { IFRAME_AUTO_RETRIES, MAX_IFRAME_AUTO_RETRIES } from "./iframe-auto-retries";
 import { downloadViaWatchPage } from "./iframe-downloader";
-import { downloadViaSabr } from "./sabr-downloader";
-import { createSabrStallTimer } from "./sabr-stall-timer";
 import { MessageType, sendMessageToTab } from "@/lib/messaging/messaging";
 import { createLogger, LogScope } from "@/lib/utils/logger";
 import { ProgressType } from "@/types";
 import type { DownloadRequest, Prettify, VideoTabParams } from "@/types";
 
 const log = createLogger(LogScope.Background);
-
-type AttemptSabrDownloadParams = Prettify<{
-  request: DownloadRequest;
-  signal: AbortSignal;
-  tabId: number;
-}>;
-export async function attemptSabrDownload({ request, signal, tabId }: AttemptSabrDownloadParams) {
-  const stallTimer = createSabrStallTimer(signal);
-
-  try {
-    return downloadViaSabr({
-      request,
-      signal: stallTimer.signal,
-      tabId,
-      onProgress: stallTimer.onProgress
-    });
-  } finally {
-    stallTimer.cleanup();
-  }
-}
 
 type HandleIframeFallbackParams = Prettify<{
   request: DownloadRequest;
