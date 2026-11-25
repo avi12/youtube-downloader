@@ -83,6 +83,11 @@
       value={Math.round(playlist.totalProgress)}
     ></tp-yt-paper-progress>
   {/if}
+
+  <!-- Below the progress bar: the panel scrolls, and this is the end people are at while downloading -->
+  {#if playlist.isStoppable}
+    <yt-button-view-model {@attach actionButtons.attachStopAll}></yt-button-view-model>
+  {/if}
 </div>
 
 {#if playlist.nonDownloadableCount > 0}

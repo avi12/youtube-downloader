@@ -84,7 +84,7 @@ export function buildStopAllData() {
     title: "Stop all",
     accessibilityText: "Stop all downloads",
     style: ButtonStyle.Mono,
-    type: ButtonType.Text,
+    type: ButtonType.Tonal,
     buttonSize: ButtonSize.Default,
     state: ButtonState.Active,
     isFullWidth: false,

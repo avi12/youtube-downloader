@@ -22,9 +22,6 @@
   <div class="ytdl-section">
     <div class="ytdl-section-title">
       <span>Download playlist</span>
-      {#if playlist.isStoppable}
-        <yt-button-view-model {@attach actionButtons.attachStopAll}></yt-button-view-model>
-      {/if}
     </div>
     {#if playlist.isDownloading}
       <span class="ytdl-scroll-sync-hint" aria-live="polite">
