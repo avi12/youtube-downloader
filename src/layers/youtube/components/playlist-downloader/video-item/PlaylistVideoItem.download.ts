@@ -35,6 +35,12 @@ export function triggerDownload({ videoData, videoId, gridTitle, setLocallyDone 
   });
 
   setLocallyDone(false);
+
+  const isPartOfActiveBatch = batchDownloadStatus.isRunning && batchVideoIds.has(videoId);
+  if (isPartOfActiveBatch) {
+    checkedPlaylistVideos.add(videoId);
+  }
+
   crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadRequest, {
     type: downloadType,
     videoId,
@@ -53,6 +59,5 @@ export function cancelDownload(videoId: string) {
   const isPartOfActiveBatch = batchDownloadStatus.isRunning && batchVideoIds.has(videoId);
   if (isPartOfActiveBatch) {
     batchCanceledIds.add(videoId);
-    checkedPlaylistVideos.delete(videoId);
   }
 }
