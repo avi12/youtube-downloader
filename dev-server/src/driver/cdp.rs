@@ -32,6 +32,7 @@ use std::future::Future;
 use tokio::task::JoinSet;
 
 use self::http::Endpoint;
+pub use self::http::{request as debug_port_request, Verb};
 use self::session::{is_closed, Session};
 pub use self::target::{is_youtube_tab, CdpTarget, TargetId, TargetKind};
 use crate::driver::{entrypoint_page, BrowserDriver};
