@@ -3,16 +3,16 @@
 
 use std::time::Duration;
 
-use serde_json::json;
 use tokio::net::TcpStream;
 
 use super::connection::{Connection, Evaluation};
-use super::message::{ActorId, PacketKind, RequestKind, WatchedTargetType};
+use super::message::{
+    wake_background_script, ActorId, GetProcessParams, GetWatcherParams, NoParams, PacketKind,
+    RequestKind, WatchTargetsParams,
+};
 use super::RdpClient;
 use crate::error::{Error, Result};
 
-/// The id of the browser's parent process, whose privileged console can wake an event page.
-const PARENT_PROCESS_ID: u32 = 0;
 const MOZ_EXTENSION_SCHEME: &str = "moz-extension://";
 
 type TcpConnection = Connection<TcpStream>;
@@ -26,7 +26,12 @@ impl RdpClient {
     ) -> Result<Option<ActorId>> {
         let limit = self.timings.reply;
         let addons = connection
-            .request(&ActorId::root(), RequestKind::ListAddons, json!({}), limit)
+            .request(
+                &ActorId::root(),
+                RequestKind::ListAddons,
+                &NoParams {},
+                limit,
+            )
             .await?;
         let Some(addon_actor) = addons
             .addons
@@ -36,21 +41,24 @@ impl RdpClient {
         else {
             return Ok(None);
         };
-        let watcher_options = json!({"isServerTargetSwitchingEnabled": true});
         let watcher = connection
             .request(
                 &addon_actor,
                 RequestKind::GetWatcher,
-                watcher_options,
+                &GetWatcherParams::SWITCHING_TARGETS,
                 limit,
             )
             .await?;
         let Some(watcher_actor) = watcher.actor else {
             return Ok(None);
         };
-        let frames = json!({"targetType": WatchedTargetType::Frame});
         connection
-            .send(&watcher_actor, RequestKind::WatchTargets, frames, limit)
+            .send(
+                &watcher_actor,
+                RequestKind::WatchTargets,
+                &WatchTargetsParams::FRAMES,
+                limit,
+            )
             .await?;
         let awake = self
             .wait_background_frame(connection, self.timings.awake_background)
@@ -95,7 +103,7 @@ impl RdpClient {
             .request(
                 &ActorId::root(),
                 RequestKind::GetProcess,
-                json!({"id": PARENT_PROCESS_ID}),
+                &GetProcessParams::PARENT,
                 limit,
             )
             .await?;
@@ -103,7 +111,7 @@ impl RdpClient {
             return Ok(());
         };
         let target = connection
-            .request(&descriptor, RequestKind::GetTarget, json!({}), limit)
+            .request(&descriptor, RequestKind::GetTarget, &NoParams {}, limit)
             .await?;
         let Some(console) = target
             .process
@@ -112,10 +120,7 @@ impl RdpClient {
         else {
             return Ok(());
         };
-        let code = format!(
-            "WebExtensionPolicy.getByID({})?.extension.wakeupBackground()",
-            json!(self.extension_id)
-        );
+        let code = wake_background_script(&self.extension_id);
         connection
             .evaluate(&console, &code, Evaluation::Immediate, limit)
             .await?;

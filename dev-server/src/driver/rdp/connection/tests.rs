@@ -1,7 +1,8 @@
-use serde_json::json;
+use serde_json::{json, Value};
 use tokio::io::{duplex, DuplexStream};
 
 use super::*;
+use crate::driver::rdp::encode_packet;
 
 const LIMIT: Duration = Duration::from_secs(1);
 

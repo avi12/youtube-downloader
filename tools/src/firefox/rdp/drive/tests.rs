@@ -3,7 +3,7 @@ use super::*;
 fn target(url: &str) -> FrameTarget {
     FrameTarget {
         url: Some(url.to_owned()),
-        console_actor: Some(format!("console-{url}")),
+        console_actor: Some(ActorId::new(format!("console-{url}"))),
     }
 }
 
@@ -15,7 +15,7 @@ fn the_background_page_wins_over_other_extension_pages() {
     ];
     assert_eq!(
         background_console(&targets),
-        Some("console-moz-extension://x/background.js".to_owned())
+        Some(ActorId::new("console-moz-extension://x/background.js"))
     );
 }
 

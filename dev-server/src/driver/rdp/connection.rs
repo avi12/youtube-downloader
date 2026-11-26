@@ -4,13 +4,13 @@
 use std::collections::VecDeque;
 use std::time::Duration;
 
-use serde_json::{json, Map, Value};
+use serde::Serialize;
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 use tokio::net::TcpStream;
 use tokio::time::Instant;
 
-use super::message::{ActorId, Packet, PacketKind, RequestKind};
-use super::packet::{encode_packet, PacketDecoder};
+use super::message::{encode_request, ActorId, EvaluateParams, Packet, PacketKind, RequestKind};
+use super::packet::PacketDecoder;
 use crate::driver::net::{loopback, until, within};
 use crate::error::{Error, Result};
 use crate::types::Port;
@@ -28,10 +28,10 @@ pub(super) enum Evaluation {
 }
 
 impl Evaluation {
-    fn request(self, code: &str) -> Value {
+    const fn request(self, code: &str) -> EvaluateParams<'_> {
         match self {
-            Self::Awaited => json!({"text": code, "mapped": {"await": true}}),
-            Self::Immediate => json!({"text": code}),
+            Self::Awaited => EvaluateParams::new(code).awaiting(),
+            Self::Immediate => EvaluateParams::new(code),
         }
     }
 }
@@ -53,20 +53,14 @@ impl<S: AsyncRead + AsyncWrite + Unpin + Send> Connection<S> {
         }
     }
 
-    pub(super) async fn send(
+    pub(super) async fn send<P: Serialize + Sync>(
         &mut self,
         to: &ActorId,
         kind: RequestKind,
-        extra: Value,
+        params: &P,
         limit: Duration,
     ) -> Result<()> {
-        let mut message = Map::new();
-        message.insert("to".into(), json!(to));
-        message.insert("type".into(), json!(kind));
-        if let Value::Object(fields) = extra {
-            message.extend(fields);
-        }
-        let bytes = encode_packet(&Value::Object(message))?;
+        let bytes = encode_request(to, kind, params)?;
         within(limit, "rdp write", self.stream.write_all(&bytes)).await
     }
 
@@ -106,14 +100,14 @@ impl<S: AsyncRead + AsyncWrite + Unpin + Send> Connection<S> {
         }
     }
 
-    pub(super) async fn request(
+    pub(super) async fn request<P: Serialize + Sync>(
         &mut self,
         to: &ActorId,
         kind: RequestKind,
-        extra: Value,
+        params: &P,
         limit: Duration,
     ) -> Result<Packet> {
-        self.send(to, kind, extra, limit).await?;
+        self.send(to, kind, params, limit).await?;
         self.wait_for(limit, "rdp reply", |packet| packet.is_from(to))
             .await
     }
@@ -129,7 +123,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin + Send> Connection<S> {
         limit: Duration,
     ) -> Result<Packet> {
         let request = evaluation.request(code);
-        self.send(console, RequestKind::EvaluateJsAsync, request, limit)
+        self.send(console, RequestKind::EvaluateJsAsync, &request, limit)
             .await?;
         let ack = self
             .wait_for(limit, "rdp evaluation ack", |packet| {

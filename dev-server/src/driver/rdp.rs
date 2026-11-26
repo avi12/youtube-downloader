@@ -17,7 +17,7 @@
 
 mod background;
 mod connection;
-mod message;
+pub mod message;
 mod packet;
 mod timings;
 
