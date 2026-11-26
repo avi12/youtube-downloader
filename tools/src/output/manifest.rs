@@ -165,7 +165,8 @@ fn glob_matches(glob: &str, text: &str) -> bool {
 }
 
 fn is_host_matching(pattern_host: &str, host: &str) -> bool {
-    if pattern_host == ANY_HOST {
+    let is_any_host = pattern_host == ANY_HOST;
+    if is_any_host {
         return !host.is_empty();
     }
     let Some(base) = pattern_host.strip_prefix(ANY_SUBDOMAIN_PREFIX) else {
@@ -175,7 +176,8 @@ fn is_host_matching(pattern_host: &str, host: &str) -> bool {
 }
 
 fn is_scheme_matching(pattern_scheme: &str, scheme: &str) -> bool {
-    if pattern_scheme == ANY_HOST {
+    let is_any_scheme = pattern_scheme == ANY_HOST;
+    if is_any_scheme {
         return ANY_WEB_SCHEMES.contains(&scheme);
     }
     pattern_scheme == scheme

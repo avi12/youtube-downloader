@@ -49,7 +49,8 @@ pub fn relativize(root: &Path, watches: &[RelPath], event_path: &Path) -> Option
     let event_parts = normalized_components(event_path);
     for watch in watches {
         let watch_parts = normalized_components(&root.join(watch.as_str()));
-        if event_parts == watch_parts {
+        let is_watched_path = event_parts == watch_parts;
+        if is_watched_path {
             return Some(watch.clone());
         }
         let Some(rest) = event_parts

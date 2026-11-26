@@ -85,7 +85,8 @@ impl<H: Host, D: BrowserDriver, W: Workspace> Orchestrator<H, D, W> {
             return ControlFlow::Continue(());
         }
         *failed_probes += 1;
-        if *failed_probes < LIVENESS_MAX_FAILURES {
+        let is_still_within_allowance = *failed_probes < LIVENESS_MAX_FAILURES;
+        if is_still_within_allowance {
             return ControlFlow::Continue(());
         }
         tracing::info!("The browser is no longer reachable - shutting down dev server");

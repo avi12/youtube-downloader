@@ -116,7 +116,8 @@ impl Finder {
         }
         let member = member_of(callee)?;
         let method = member_property_name(member)?;
-        if method == EVENT_LISTENER_METHOD {
+        let is_event_listener_call = method == EVENT_LISTENER_METHOD;
+        if is_event_listener_call {
             return Some(SideEffectRule::EventListener);
         }
         let event_name = member_of(member.object())

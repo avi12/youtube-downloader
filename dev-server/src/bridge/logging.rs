@@ -35,7 +35,8 @@ struct MessageVisitor {
 
 impl Visit for MessageVisitor {
     fn record_debug(&mut self, field: &Field, value: &dyn Debug) {
-        if field.name() == MESSAGE_FIELD {
+        let is_message_field = field.name() == MESSAGE_FIELD;
+        if is_message_field {
             // Writing into a String cannot fail
             let _ = write!(self.text, "{value:?}");
         }
@@ -53,7 +54,8 @@ impl<S: Subscriber> Layer<S> for BridgeLogLayer {
         let mut visitor = MessageVisitor::default();
         event.record(&mut visitor);
         let level = *event.metadata().level();
-        let log = if level <= Level::WARN {
+        let is_warning_or_worse = level <= Level::WARN;
+        let log = if is_warning_or_worse {
             format!("{level} {visitor}")
         } else {
             visitor.to_string()

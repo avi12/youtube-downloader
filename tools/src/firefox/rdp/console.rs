@@ -121,7 +121,8 @@ pub(in crate::firefox) async fn run(args: ConsoleArgs) -> Result<()> {
         let Ok(packet) = message.parse::<ResourcesPacket>() else {
             continue;
         };
-        if packet.kind.as_deref() != Some(RESOURCES_AVAILABLE) {
+        let is_other_packet = packet.kind.as_deref() != Some(RESOURCES_AVAILABLE);
+        if is_other_packet {
             continue;
         }
         let lines = packet

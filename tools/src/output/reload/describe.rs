@@ -66,24 +66,29 @@ pub(crate) fn describe_extension_reload(
         }
     }
     let mut outcomes = Vec::new();
-    if result.reinjected_tab_count > 0 {
+    let has_reinjected_tabs = result.reinjected_tab_count > 0;
+    if has_reinjected_tabs {
         let names = describe_content_scripts(&plan.isolated_content_scripts);
         let count = result.reinjected_tab_count;
         outcomes.push(format!(
             "hot-swapped content script {names} in {count} tab(s), page state kept"
         ));
     }
-    if result.replayed_handshake_count > 0 {
+    let has_replayed_handshakes = result.replayed_handshake_count > 0;
+    if has_replayed_handshakes {
         let count = result.replayed_handshake_count;
         outcomes.push(format!("re-sent {count} download panel handshake(s)"));
     }
-    if result.reinjected_tab_count > 0 && !plan.changed_isolated_style_sheets.is_empty() {
+    let has_swapped_style_sheets =
+        result.reinjected_tab_count > 0 && !plan.changed_isolated_style_sheets.is_empty();
+    if has_swapped_style_sheets {
         let files = plan.changed_isolated_style_sheets.join(", ");
         outcomes.push(format!(
             "CSS rules deleted from {files} since a tab was loaded stay applied in it until it reloads"
         ));
     }
-    if result.stale_tab_count > 0 {
+    let has_stale_tabs = result.stale_tab_count > 0;
+    if has_stale_tabs {
         let count = result.stale_tab_count;
         let names = describe_content_scripts(&plan.main_world_content_scripts);
         outcomes.push(format!(

@@ -104,7 +104,8 @@ impl ChromeTarget {
                 Ok(evaluation) => evaluation.into_value().ok(),
                 Err(_) => None,
             };
-            if name.as_ref().and_then(Value::as_str) != Some(wanted.as_str()) {
+            let is_other_extension = name.as_ref().and_then(Value::as_str) != Some(wanted.as_str());
+            if is_other_extension {
                 return false;
             }
         }
@@ -122,10 +123,10 @@ impl ChromeTarget {
     async fn live_service_worker(&self, stale: Option<&CdpTarget>) -> Option<CdpTarget> {
         for target in self.list_targets().await {
             let is_stale = stale.is_some_and(|old| old.id == target.id);
-            if is_extension_service_worker(&target)
+            let is_wanted_worker = is_extension_service_worker(&target)
                 && !is_stale
-                && self.is_own_service_worker(&target).await
-            {
+                && self.is_own_service_worker(&target).await;
+            if is_wanted_worker {
                 return Some(target);
             }
         }
@@ -135,7 +136,12 @@ impl ChromeTarget {
     /// Waits for the worker a fresh extension start brings up.
     async fn find_service_worker(&self, stale: Option<&CdpTarget>) -> Result<CdpTarget> {
         let deadline = Instant::now() + SERVICE_WORKER_WAIT;
-        while Instant::now() < deadline {
+        loop {
+            let is_within_deadline = Instant::now() < deadline;
+            if !is_within_deadline {
+                break;
+            }
+
             if let Some(worker) = self.live_service_worker(stale).await {
                 return Ok(worker);
             }

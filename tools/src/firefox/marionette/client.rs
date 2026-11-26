@@ -113,7 +113,8 @@ impl Marionette {
             let [_, answered, error, result] = items.as_slice() else {
                 continue;
             };
-            if answered.as_u64() != Some(id) {
+            let is_other_reply = answered.as_u64() != Some(id);
+            if is_other_reply {
                 continue;
             }
             if !error.is_null() {

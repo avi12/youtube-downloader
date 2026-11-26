@@ -96,7 +96,12 @@ async fn is_closed_soon(client: &mut Client) -> bool {
 
 async fn wait_for_clients(handle: &HmrHandle, count: usize) -> Result<()> {
     tokio::time::timeout(WAIT, async {
-        while handle.client_count() != count {
+        loop {
+            let is_awaiting_clients = handle.client_count() != count;
+            if !is_awaiting_clients {
+                break;
+            }
+
             tokio::time::sleep(Duration::from_millis(5)).await;
         }
     })

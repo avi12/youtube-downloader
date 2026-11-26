@@ -82,7 +82,8 @@ impl<S: AsyncRead + AsyncWrite + Unpin + Send> Connection<S> {
             .into_iter()
             .filter_map(|value| serde_json::from_value(value).ok())
         {
-            if self.queue.len() >= MAX_QUEUED_PACKETS {
+            let is_queue_full = self.queue.len() >= MAX_QUEUED_PACKETS;
+            if is_queue_full {
                 self.queue.pop_front();
             }
             self.queue.push_back(packet);

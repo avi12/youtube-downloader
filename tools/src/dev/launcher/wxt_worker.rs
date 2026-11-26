@@ -144,7 +144,9 @@ pub(super) async fn run_wxt_build(request: &WxtBuildRequest<'_>) -> Result<()> {
         _ => spawn(request).await?,
     };
     let outcome = converse(&mut worker, request).await;
-    if outcome.as_ref().is_ok() || matches!(outcome, Err(LauncherError::Invalid(_))) {
+    let is_final_outcome =
+        outcome.as_ref().is_ok() || matches!(outcome, Err(LauncherError::Invalid(_)));
+    if is_final_outcome {
         *slot = Some(worker);
     }
     outcome

@@ -34,10 +34,12 @@ impl ContentScriptUpdate {
         let Some(previous) = previous else {
             return Self::Unchanged;
         };
-        if previous.vendor != next.vendor {
+        let has_vendor_change = previous.vendor != next.vendor;
+        if has_vendor_change {
             return Self::PageReloaded;
         }
-        if previous.restart != next.restart {
+        let has_restart_change = previous.restart != next.restart;
+        if has_restart_change {
             return Self::Restarted;
         }
         Self::Unchanged

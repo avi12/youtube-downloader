@@ -43,7 +43,8 @@ impl<H: Host, D: BrowserDriver, W: Workspace> Orchestrator<H, D, W> {
                 ResourceEffect::Asset(public_path) => changed_resources.push(public_path),
             }
         }
-        if changed_keys == 0 && changed_resources.is_empty() {
+        let is_nothing_changed = changed_keys == 0 && changed_resources.is_empty();
+        if is_nothing_changed {
             tracing::info!(
                 "Resource change had no effective changes ({}ms) - nothing to apply",
                 started.elapsed().as_millis()

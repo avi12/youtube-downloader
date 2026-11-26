@@ -182,7 +182,8 @@ async fn skip_conflicted_pick(has_stashed: bool, detail: String) -> Result<Attem
     log(&format!("cherry-pick CONFLICT, skipping: {first_line}")).await;
     git(&["cherry-pick", "--abort"]).await?;
     let pop = pop_wip().await?;
-    if !pop.is_popped && has_stashed {
+    let is_stash_stranded = !pop.is_popped && has_stashed;
+    if is_stash_stranded {
         log("WARNING: stash pop failed after abort").await;
     }
     Ok(Attempt::conflict(Outcome::SkippedConflict, detail))
@@ -206,7 +207,8 @@ async fn attempt(sha: &str, has_stashed: bool, args: &Args) -> Result<Attempt, R
         return skip_conflicted_pick(has_stashed, detail).await;
     }
     let pop = pop_wip().await?;
-    if !pop.is_popped && has_stashed {
+    let is_stash_stranded = !pop.is_popped && has_stashed;
+    if is_stash_stranded {
         log(&format!("stash pop FAILED (conflict={})", pop.is_conflict)).await;
         return Ok(Attempt::conflict(Outcome::PopConflict, pop.output));
     }

@@ -42,7 +42,9 @@ impl PendingState {
         if matches!(class, PathClass::Env) {
             self.is_env_change = true;
         }
-        if matches!(class, PathClass::HmrSource) && !self.is_full_reload {
+        let is_incremental_hmr_change =
+            matches!(class, PathClass::HmrSource) && !self.is_full_reload;
+        if is_incremental_hmr_change {
             self.is_hmr_only = true;
             return;
         }

@@ -177,7 +177,8 @@ fn default_cdp_port(is_firefox: bool, platform: OsPlatform) -> u16 {
     if is_firefox {
         return CDP_PORT_FIREFOX;
     }
-    if platform == OsPlatform::Linux {
+    let is_linux = platform == OsPlatform::Linux;
+    if is_linux {
         return CDP_PORT_LINUX;
     }
     CDP_PORT_WINDOWS

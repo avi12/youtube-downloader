@@ -141,7 +141,8 @@ async fn download(platform: CftPlatform, version: &str, destination: &Path) -> R
         .args([url])
         .capture_checked()
         .await?;
-    let extraction = if platform == CftPlatform::Linux64 {
+    let is_linux_build = platform == CftPlatform::Linux64;
+    let extraction = if is_linux_build {
         Invocation::new(UNZIP_PROGRAM)
             .args(["-q", "-o"])
             .args([&archive])

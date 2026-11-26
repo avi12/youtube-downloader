@@ -85,7 +85,8 @@ async fn serve_websocket(stream: TcpStream, calls: CallLog, popup_tab: &'static 
             .unwrap()
             .push(format!("{tab} {method} {detail}"));
         let mut tree = json!({ "frame": { "id": "main", "url": "https://www.youtube.com/" } });
-        if tab == popup_tab {
+        let is_popup_tab = tab == popup_tab;
+        if is_popup_tab {
             tree["childFrames"] = json!([{ "frame": { "id": "popup-frame",
                 "url": "chrome-extension://abc/popup.html" } }]);
         }

@@ -133,15 +133,19 @@ impl ReloadReasoner {
             let Some(info) = self.infos.get(&current).cloned() else {
                 continue;
             };
-            if info.is_svelte || !visited.insert(current.clone()) {
+            let is_boundary_or_seen = info.is_svelte || !visited.insert(current.clone());
+            if is_boundary_or_seen {
                 continue;
             }
             if let Some(reason) = self.own_reason(&info)? {
-                return Ok(Some(if current == file_name {
-                    reason
-                } else {
-                    let via = info.source_id.as_deref().unwrap_or(&current);
-                    format!("{reason} (via {via})")
+                return Ok(Some({
+                    let is_target_file = current == file_name;
+                    if is_target_file {
+                        reason
+                    } else {
+                        let via = info.source_id.as_deref().unwrap_or(&current);
+                        format!("{reason} (via {via})")
+                    }
                 }));
             }
             pending.extend(self.importers.get(&current).cloned().unwrap_or_default());

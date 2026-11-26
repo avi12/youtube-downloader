@@ -286,7 +286,12 @@ impl Rdp {
     ) -> Vec<FrameTarget> {
         let deadline = Instant::now() + total;
         let mut targets = Vec::new();
-        while Instant::now() < deadline {
+        loop {
+            let is_within_deadline = Instant::now() < deadline;
+            if !is_within_deadline {
+                break;
+            }
+
             let Ok(message) = self.wait_from(watcher, per_wait).await else {
                 break;
             };

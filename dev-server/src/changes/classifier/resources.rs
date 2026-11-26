@@ -60,7 +60,8 @@ pub fn plan_resource_update(
     existing_output: Option<&[u8]>,
 ) -> Option<ResourceAction> {
     let output_path = public_output_path(path)?.to_owned();
-    if existing_output == Some(content) {
+    let is_unchanged = existing_output == Some(content);
+    if is_unchanged {
         return Some(ResourceAction::Unchanged);
     }
     if is_locale_file(path) {

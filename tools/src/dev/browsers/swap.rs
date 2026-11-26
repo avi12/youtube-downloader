@@ -59,7 +59,8 @@ async fn check_background(target: &dyn ReloadTarget, log: &LogFn, swapped: &Swap
     let Ok(running) = target.evaluate_in_background(RUNNING_VERSION).await else {
         return;
     };
-    if running.as_str() == Some(swapped.version.as_str()) {
+    let is_already_swapped = running.as_str() == Some(swapped.version.as_str());
+    if is_already_swapped {
         return;
     }
     log("The background restarted from the installed build - re-applying the swapped one");

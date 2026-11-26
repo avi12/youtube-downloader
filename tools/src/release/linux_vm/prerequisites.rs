@@ -60,7 +60,8 @@ async fn install_multipass() -> Result<(), ReleaseError> {
         .args(["--accept-source-agreements", "--accept-package-agreements"])
         .run_inherited_code()
         .await?;
-    if code != Some(0) && code != Some(WINGET_ALREADY_INSTALLED) {
+    let has_install_failed = code != Some(0) && code != Some(WINGET_ALREADY_INSTALLED);
+    if has_install_failed {
         eprintln!("WARNING: winget install returned {code:?} - verify Multipass install manually.");
     }
     Ok(())

@@ -25,7 +25,8 @@ pub(super) fn format_elapsed(elapsed_milliseconds: u64) -> String {
     let tenths =
         elapsed_milliseconds.saturating_add(HALF_TENTH_MILLISECONDS) / MILLISECONDS_PER_TENTH;
     let (seconds, fraction) = (tenths / TENTHS_PER_SECOND, tenths % TENTHS_PER_SECOND);
-    if fraction == 0 {
+    let is_whole_number = fraction == 0;
+    if is_whole_number {
         return format!("{seconds}s");
     }
     format!("{seconds}.{fraction}s")
@@ -38,7 +39,8 @@ struct MessageVisitor {
 
 impl Visit for MessageVisitor {
     fn record_debug(&mut self, field: &Field, value: &dyn Debug) {
-        if field.name() == MESSAGE_FIELD {
+        let is_message_field = field.name() == MESSAGE_FIELD;
+        if is_message_field {
             // Writing into a String cannot fail
             let _ = write!(self.text, "{value:?}");
         }
@@ -58,7 +60,8 @@ impl<S: Subscriber> Layer<S> for PrintLayer {
         let mut visitor = MessageVisitor::default();
         event.record(&mut visitor);
         let level = *event.metadata().level();
-        if level <= Level::WARN {
+        let is_warning_or_worse = level <= Level::WARN;
+        if is_warning_or_worse {
             log_event(&format!("{level} {visitor}"));
             return;
         }

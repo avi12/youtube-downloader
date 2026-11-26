@@ -70,7 +70,8 @@ async fn serve(respond: impl Fn(&Value) -> Vec<Value> + Send + 'static) -> Resul
             let mut decoder = PacketDecoder::default();
             let mut chunk = [0_u8; 4096];
             while let Ok(read) = stream.read(&mut chunk).await {
-                if read == 0 {
+                let is_end_of_stream = read == 0;
+                if is_end_of_stream {
                     break;
                 }
                 let Ok(packets) = decoder.push(chunk.get(..read).unwrap_or_default()) else {

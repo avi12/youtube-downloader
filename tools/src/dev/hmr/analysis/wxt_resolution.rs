@@ -176,7 +176,8 @@ fn resolve_posix(base: &str, relative: &str) -> String {
         match part {
             "." => {}
             ".." => {
-                if parts.len() > 1 {
+                let has_nested_segments = parts.len() > 1;
+                if has_nested_segments {
                     parts.pop();
                 }
             }
@@ -267,7 +268,9 @@ fn is_declared(code: &str, name: &str) -> Result<bool> {
 pub(crate) fn source_with_auto_imports(code: &str, auto_imports: &[AutoImport]) -> Result<String> {
     let mut imports = Vec::new();
     for auto_import in auto_imports {
-        if is_used(code, &auto_import.name) && !is_declared(code, &auto_import.name)? {
+        let is_missing_import =
+            is_used(code, &auto_import.name) && !is_declared(code, &auto_import.name)?;
+        if is_missing_import {
             imports.push(format!(
                 "import {{ {} as {} }} from \"{}\";",
                 auto_import.exported, auto_import.name, auto_import.source

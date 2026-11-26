@@ -35,7 +35,16 @@ const BASE: [(&str, &str); 6] = [
 fn changed(file: &str) -> BuildSnapshot {
     let files: Vec<(&str, &str)> = BASE
         .iter()
-        .map(|(name, hash)| (*name, if *name == file { "2" } else { *hash }))
+        .map(|(name, hash)| {
+            (*name, {
+                let is_changed_file = *name == file;
+                if is_changed_file {
+                    "2"
+                } else {
+                    *hash
+                }
+            })
+        })
         .collect();
     snapshot(&files, manifest())
 }

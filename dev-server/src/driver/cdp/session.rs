@@ -89,7 +89,8 @@ impl Session {
                 continue;
             };
             let reply: Reply = serde_json::from_str(text.as_str())?;
-            if reply.id != Some(id) {
+            let is_other_reply = reply.id != Some(id);
+            if is_other_reply {
                 continue;
             }
             if let Some(error) = reply.error {

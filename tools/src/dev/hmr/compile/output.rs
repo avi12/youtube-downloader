@@ -70,7 +70,8 @@ fn write_if_changed(output_directory: &Path, file_name: &str, bytes: &[u8]) -> R
     let mut written = WRITTEN_HASHES
         .lock()
         .unwrap_or_else(PoisonError::into_inner);
-    if written.get(file_name) == Some(&hash) {
+    let is_already_written = written.get(file_name) == Some(&hash);
+    if is_already_written {
         return Ok(());
     }
     let path = output_directory.join(file_name);
@@ -134,7 +135,9 @@ fn describe_modules(
         let Some(source_id) = paths.source_id_of(facade) else {
             continue;
         };
-        if !facade.ends_with(SVELTE_EXTENSION) || main_world_modules.contains(&source_id) {
+        let is_reloadable_facade =
+            !facade.ends_with(SVELTE_EXTENSION) || main_world_modules.contains(&source_id);
+        if is_reloadable_facade {
             continue;
         }
         let hash = versions.get(&chunk.file_name).cloned().unwrap_or_else(|| {

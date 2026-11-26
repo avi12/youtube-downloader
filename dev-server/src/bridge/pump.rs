@@ -78,7 +78,8 @@ impl Inbound {
                 }
             }
             Ok(InboundMessage::Notification(notification)) => {
-                if notification == Notification::Shutdown {
+                let is_shutdown = notification == Notification::Shutdown;
+                if is_shutdown {
                     self.shutdown.cancel();
                 }
                 let _ = self.notifier.try_send(notification);

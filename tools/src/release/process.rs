@@ -16,7 +16,8 @@ const WINDOWS_EXECUTABLE_EXTENSIONS: [&str; 4] = ["exe", "cmd", "bat", "com"];
 /// has none), else the bare name. Bun is an `.exe` when installed on its own and a `.cmd`
 /// shim when installed through npm, and a spawned process does not search `PATHEXT` for it.
 fn resolve_program(program: &str, search_path: &OsStr) -> OsString {
-    let candidates: Vec<String> = if cfg!(windows) && !program.contains('.') {
+    let needs_windows_extension = cfg!(windows) && !program.contains('.');
+    let candidates: Vec<String> = if needs_windows_extension {
         WINDOWS_EXECUTABLE_EXTENSIONS
             .iter()
             .map(|extension| format!("{program}.{extension}"))
@@ -191,7 +192,8 @@ impl Invocation {
     /// Runs to completion sharing this process's stdio; a non-zero exit is an error.
     pub(crate) async fn run_inherited(&self) -> Result<(), ProcessError> {
         let code = self.run_inherited_code().await?;
-        if code == Some(0) {
+        let is_success = code == Some(0);
+        if is_success {
             return Ok(());
         }
         Err(ProcessError::Failed {

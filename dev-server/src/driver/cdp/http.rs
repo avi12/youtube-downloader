@@ -66,7 +66,8 @@ pub(super) async fn get(port: Port, endpoint: Endpoint) -> Result<String> {
         stream.write_all(request.as_bytes()).await?;
         let mut raw = Vec::new();
         while !is_response_complete(&raw) {
-            if stream.read_buf(&mut raw).await? == 0 {
+            let is_closed = stream.read_buf(&mut raw).await? == 0;
+            if is_closed {
                 break;
             }
         }
@@ -105,7 +106,8 @@ fn body(raw: &[u8]) -> Result<String> {
         .lines()
         .next()
         .and_then(|line| line.split_whitespace().nth(1));
-    if status != Some(Status::Success.code()) {
+    let is_unsuccessful = status != Some(Status::Success.code());
+    if is_unsuccessful {
         return Err(Error::Protocol(format!(
             "unexpected HTTP status {status:?}"
         )));

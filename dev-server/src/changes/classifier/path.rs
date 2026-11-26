@@ -71,7 +71,8 @@ impl PathRules {
 /// assert_eq!(classify_path(&rules, &RelPath::new("src/lib/a.ts")), PathClass::Code);
 /// ```
 pub fn classify_path(rules: &PathRules, path: &RelPath) -> PathClass {
-    if rules.install_marker.as_ref() == Some(path) {
+    let is_install_marker = rules.install_marker.as_ref() == Some(path);
+    if is_install_marker {
         return PathClass::InstallMarker;
     }
     if rules

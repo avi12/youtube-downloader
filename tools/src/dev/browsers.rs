@@ -116,7 +116,8 @@ impl ApplyArgs {
     }
 
     fn target(&self) -> Result<Arc<dyn ReloadTarget>> {
-        if self.browser == Family::Chrome {
+        let is_chrome = self.browser == Family::Chrome;
+        if is_chrome {
             let chrome = ChromeTarget::new(Port::new(self.cdp_port)?);
             return Ok(Arc::new(match &self.extension_name {
                 Some(name) => chrome.with_extension_name(name.clone()),

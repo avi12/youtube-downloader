@@ -75,7 +75,8 @@ pub(super) async fn launch(launch: BrowserLaunch<'_>) -> Result<Child> {
     } = launch;
     let executable = ensure_chrome(&options.project_root, host.platform).await?;
     let mut extras: Vec<&str> = Vec::new();
-    if host.platform == OsPlatform::Linux {
+    let is_linux = host.platform == OsPlatform::Linux;
+    if is_linux {
         if detect_windows_dark_mode(host).await {
             extras.extend(WSL_DARK_MODE_ARGS);
         }

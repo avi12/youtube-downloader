@@ -41,7 +41,12 @@ impl Failure {
 
 async fn playable_within_window(browser: &Browser) -> bool {
     let deadline = Instant::now() + PLAYABLE_WINDOW;
-    while Instant::now() < deadline {
+    loop {
+        let is_within_deadline = Instant::now() < deadline;
+        if !is_within_deadline {
+            break;
+        }
+
         let Some(playability) = read_playability(browser).await else {
             sleep(PLAYABLE_POLL).await;
             continue;
@@ -68,7 +73,8 @@ pub(crate) async fn wait_for_playable(browser: &Browser) -> Result<(), Failure> 
             .as_ref()
             .and_then(|playability| playability.status.clone());
         let reason = last.and_then(|playability| playability.reason);
-        if i_attempt == MAX_RELOADS {
+        let is_last_attempt = i_attempt == MAX_RELOADS;
+        if is_last_attempt {
             return Err(Failure::because(format!(
                 "unplayable after {} attempts: {} / {}",
                 MAX_RELOADS + 1,
@@ -89,7 +95,12 @@ pub(crate) async fn wait_for_playable(browser: &Browser) -> Result<(), Failure> 
 /// Waits for the extension's Download button to mount, then clicks it.
 pub(crate) async fn click_when_mounted(browser: &Browser) -> Result<(), Failure> {
     let deadline = Instant::now() + BUTTON_WINDOW;
-    while Instant::now() < deadline {
+    loop {
+        let is_within_deadline = Instant::now() < deadline;
+        if !is_within_deadline {
+            break;
+        }
+
         if read_button_label(browser).await.is_some() {
             return click(browser).await;
         }
@@ -139,7 +150,12 @@ pub(crate) async fn poll_for_completion(
     before: &HashSet<u64>,
     deadline: Instant,
 ) -> Result<DownloadItem, Failure> {
-    while Instant::now() < deadline {
+    loop {
+        let is_within_deadline = Instant::now() < deadline;
+        if !is_within_deadline {
+            break;
+        }
+
         if let Some(done) = verdict(fresh_items(search_downloads(browser).await, before)) {
             return done;
         }

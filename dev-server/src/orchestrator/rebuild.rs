@@ -172,7 +172,8 @@ impl<H: Host, D: BrowserDriver, W: Workspace> Orchestrator<H, D, W> {
     /// without reloading anything.
     pub(super) async fn run_static_catch_up(&mut self) {
         self.static_bundle = self.static_bundle.without_deadline();
-        if !self.static_bundle.is_stale() || !self.pending.is_empty() {
+        let has_remaining_work = !self.static_bundle.is_stale() || !self.pending.is_empty();
+        if has_remaining_work {
             return;
         }
         let started = Instant::now();

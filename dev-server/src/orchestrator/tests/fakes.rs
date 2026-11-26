@@ -64,7 +64,8 @@ impl Host for FakeHost {
         ready({
             self.log.push("build");
             let mut disk = self.disk.lock().unwrap();
-            if disk.snapshots.len() > 1 {
+            let has_later_snapshot = disk.snapshots.len() > 1;
+            if has_later_snapshot {
                 disk.snapshots.pop_front();
             }
             let failure = self.build_failures.lock().unwrap().pop_front();

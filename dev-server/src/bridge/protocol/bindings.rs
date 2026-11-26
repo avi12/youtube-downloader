@@ -127,7 +127,8 @@ fn the_committed_bindings_match_the_wire_types() -> Result<()> {
     let fresh = generate(&scratch)?;
     fs::remove_dir_all(&scratch)?;
     let committed = read_tree(&committed_directory)?;
-    if committed == fresh {
+    let is_committed_current = committed == fresh;
+    if is_committed_current {
         return Ok(());
     }
     generate(&committed_directory)?;

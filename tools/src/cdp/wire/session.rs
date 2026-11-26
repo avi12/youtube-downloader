@@ -176,7 +176,8 @@ impl Session {
     async fn reply_to(&mut self, id: u64, method: Method) -> Result<Value> {
         loop {
             let frame = self.read_frame().await?;
-            if frame.id == Some(id) {
+            let is_reply_to_call = frame.id == Some(id);
+            if is_reply_to_call {
                 if let Some(error) = frame.error {
                     return Err(CdpError::Protocol(format!("{method:?}: {}", error.message)));
                 }

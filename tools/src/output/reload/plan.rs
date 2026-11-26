@@ -107,7 +107,8 @@ fn collect_strings(value: &Value, strings: &mut BTreeSet<String>) {
 /// Read only when the extension loads: the manifest, the files it names directly (icons, static
 /// DNR rules) and the locale catalogs.
 fn is_load_time_file(file: &str, manifest_strings: &BTreeSet<String>) -> bool {
-    if file == MANIFEST_FILE || file.starts_with(LOCALES_DIR_PREFIX) {
+    let is_full_reload_file = file == MANIFEST_FILE || file.starts_with(LOCALES_DIR_PREFIX);
+    if is_full_reload_file {
         return true;
     }
     let extension = Path::new(file).extension().and_then(|text| text.to_str());
@@ -212,7 +213,8 @@ fn plan_extension_reload(
         let names = describe_content_scripts(&main_world);
         other_reasons.push(format!("MAIN-world content script {names} changed"));
     }
-    if other_reasons.is_empty() && !is_background_changed {
+    let is_background_unaffected = other_reasons.is_empty() && !is_background_changed;
+    if is_background_unaffected {
         return Ok(None);
     }
     let mut reasons = Vec::new();
