@@ -1,39 +1,39 @@
 import { type InnertubeBrowseRequest, InnertubeClientName } from "@/lib/youtube/innertube";
 import { z } from "@/lib/zod";
-import { createShapeGuard } from "@/lib/zod-guard";
+import { createGuard } from "@/lib/zod-guard";
 import type { Prettify } from "@/types";
 
 const YT_MUSIC_BROWSE_URL = "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false";
 const YT_MUSIC_MOODS_AND_GENRES_BROWSE_ID = "FEmusic_moods_and_genres";
 const CONTENT_TYPE_JSON = "application/json";
 
-type MoodsAndGenresResponse = Prettify<{
-  contents?: {
-    singleColumnBrowseResultsRenderer?: {
-      tabs?: {
-        tabRenderer?: {
-          content?: {
-            sectionListRenderer?: {
-              contents?: {
-                gridRenderer?: {
-                  items?: {
-                    musicNavigationButtonRenderer?: {
-                      buttonText?: {
-                        runs?: { text: string }[];
-                      };
-                    };
-                  }[];
-                };
-              }[];
-            };
-          };
-        };
-      }[];
-    };
-  };
-}>;
+const genreItemSchema = z.object({
+  musicNavigationButtonRenderer: z.object({
+    buttonText: z.object({
+      runs: z.array(z.object({ text: z.string().optional() })).optional()
+    }).optional()
+  }).optional()
+});
 
-const isMoodsAndGenresResponse = createShapeGuard<MoodsAndGenresResponse>(z.looseObject({}));
+const genreSectionSchema = z.object({
+  gridRenderer: z.object({ items: z.array(genreItemSchema).optional() }).optional()
+});
+
+const genreTabSchema = z.object({
+  tabRenderer: z.object({
+    content: z.object({
+      sectionListRenderer: z.object({ contents: z.array(genreSectionSchema).optional() }).optional()
+    }).optional()
+  }).optional()
+});
+
+const isMoodsAndGenresResponse = createGuard(
+  z.object({
+    contents: z.object({
+      singleColumnBrowseResultsRenderer: z.object({ tabs: z.array(genreTabSchema).optional() }).optional()
+    }).optional()
+  })
+);
 
 const YT_MUSIC_CLIENT_VERSION = "1.20260408.01.00";
 let cachedYouTubeMusicGenres: Set<string> | null = null;
@@ -65,8 +65,8 @@ export async function fetchYouTubeMusicGenres() {
       return new Set<string>();
     }
 
-    const sections = data.contents?.singleColumnBrowseResultsRenderer?.tabs?.[0]
-      ?.tabRenderer?.content?.sectionListRenderer?.contents ?? [];
+    const [firstTab] = data.contents?.singleColumnBrowseResultsRenderer?.tabs ?? [];
+    const sections = firstTab?.tabRenderer?.content?.sectionListRenderer?.contents ?? [];
 
     const genres = new Set<string>();
     const items = sections.flatMap(section => section.gridRenderer?.items ?? []);

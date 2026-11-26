@@ -1,4 +1,4 @@
-import { isElement } from "@/lib/dom-guards";
+import { isAnchorElement, isElement } from "@/lib/dom-guards";
 import { extractVideoId } from "./grid-card";
 import { resolveVideoDownloadability } from "./video-downloadability.svelte";
 import { checkInterruptedDownload } from "@/layers/youtube/entrypoints/youtube.content/download/interrupted-downloads";
@@ -47,8 +47,8 @@ async function settleInterruptedState(videoId: string) {
 }
 
 function extractRowVideoId(elVideoItem: Element) {
-  const elVideoIdLink = elVideoItem.querySelector<HTMLAnchorElement>(SELECTOR_VIDEO_ID_LINK);
-  return elVideoIdLink ? getVideoIdFromUrl(elVideoIdLink.href) : extractVideoId(elVideoItem);
+  const elVideoIdLink = elVideoItem.querySelector(SELECTOR_VIDEO_ID_LINK);
+  return isAnchorElement(elVideoIdLink) ? getVideoIdFromUrl(elVideoIdLink.href) : extractVideoId(elVideoItem);
 }
 
 function placeItemContainer({ elVideoItem, elItemContainer }: {

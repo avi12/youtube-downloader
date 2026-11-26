@@ -7,22 +7,35 @@ import { playlistMetadataSignal } from "@/lib/ui/synced-stores.svelte";
 import { isPlayerResponse } from "@/lib/youtube/schemas";
 import { z } from "@/lib/zod";
 import { createGuard } from "@/lib/zod-guard";
-import { type PlayerResponse } from "@/types";
 
 const WATCH_FLEXY_TAG = "ytd-watch-flexy";
 const PLAYER_DATA_POLL_ATTEMPTS = 20;
 const PLAYER_DATA_POLL_INTERVAL_MS = 250;
 
-declare global {
-  interface HTMLElementTagNameMap {
-    "ytd-watch-flexy": HTMLElement & {
-      playerData: PlayerResponse | null;
-    };
-  }
-}
+const isWatchFlexy = createGuard(z.object({ playerData: z.unknown() }));
+
+const textRunsSchema = z.looseObject({
+  runs: z.array(z.looseObject({ text: z.string().optional() })).optional()
+});
+
+const isPlaylistPageData = createGuard(
+  z.looseObject({
+    header: z.looseObject({
+      playlistHeaderRenderer: z.looseObject({
+        title: z.looseObject({ simpleText: z.string().optional() }).optional(),
+        playlistId: z.string().optional(),
+        ownerText: textRunsSchema.optional()
+      }).optional()
+    }).optional(),
+    metadata: z.looseObject({
+      playlistMetadataRenderer: z.looseObject({ title: z.string().optional() }).optional()
+    }).optional()
+  })
+);
 
 export function extractPlaylistMetadata() {
-  const { header, metadata } = window.ytInitialData ?? {};
+  const data = window.ytInitialData;
+  const { header, metadata } = isPlaylistPageData(data) ? data : {};
   const hasNoPlaylistData = !header && !metadata;
   if (hasNoPlaylistData) {
     playlistMetadataSignal.value = null;
@@ -96,8 +109,9 @@ export async function handleNavigateSuccess(event: Event) {
   }
 
   for (let attempt = 0; attempt < PLAYER_DATA_POLL_ATTEMPTS; attempt++) {
-    const playerResponse = document.querySelector(WATCH_FLEXY_TAG)?.playerData ?? null;
-    const isReady = playerResponse?.videoDetails?.videoId === expectedVideoId;
+    const elWatchFlexy = document.querySelector(WATCH_FLEXY_TAG);
+    const playerResponse = isWatchFlexy(elWatchFlexy) ? elWatchFlexy.playerData : null;
+    const isReady = isPlayerResponse(playerResponse) && playerResponse.videoDetails?.videoId === expectedVideoId;
     if (isReady) {
       await buildAndDispatchVideoData({ playerResponse });
       return;

@@ -1,6 +1,7 @@
 import { registerDropdownFocusHandlers } from "./grid-dropdown-focus";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import type { Prettify, TpYtIronDropdownElement } from "@/types";
+import { isCreateDropdownPayload, isVideoIdPayload } from "#youtube/lib/messaging/payload-guards";
 
 const IRON_DROPDOWN_TAG = "tp-yt-iron-dropdown";
 const POPUP_CONTAINER_SELECTOR = "ytd-popup-container";
@@ -68,12 +69,20 @@ function closeGridDropdown(videoId: string) {
 
 export function registerGridDropdownHandlers() {
   crossWorldMessenger.onMessage(CrossWorldMessage.CreateDropdown, ({ data }) => {
+    if (!isCreateDropdownPayload(data)) {
+      return;
+    }
+
     createGridDropdown({
       contentId: data.contentId,
       positionTargetSelector: data.positionTargetSelector
     });
   });
   crossWorldMessenger.onMessage(CrossWorldMessage.CloseDropdown, ({ data }) => {
+    if (!isVideoIdPayload(data)) {
+      return;
+    }
+
     closeGridDropdown(data.videoId);
   });
   registerDropdownFocusHandlers();

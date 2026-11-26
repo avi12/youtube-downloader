@@ -9,8 +9,9 @@ import {
   DATA_SETTINGS_OPTIONS_ID_ATTR,
   isYtdSettingsOptionsRenderer
 } from "@/lib/ui/polymer-utils";
-import { isYtButtonViewModelElement } from "@/lib/youtube/schemas";
+import { isDownloadRequest, isYtButtonViewModelElement } from "@/lib/youtube/schemas";
 import { ButtonSize, ButtonState, ButtonStyle, ButtonType } from "@/types";
+import { isSettingsOptionsPayload, isVideoIdsPayload } from "#youtube/lib/messaging/payload-guards";
 
 const SNACKBAR_VIEW_BUTTON_ID = "ytdl-snackbar-view";
 const SETTINGS_OPTIONS_RENDERER_TAG = "ytd-settings-options-renderer";
@@ -20,6 +21,10 @@ export function registerCrossWorldHandlers() {
   registerSizeInputsHandler();
 
   crossWorldMessenger.onMessage(CrossWorldMessage.DownloadRequest, ({ data }) => {
+    if (!isDownloadRequest(data)) {
+      return;
+    }
+
     startDownload(applyDefaultFormat(data)).catch(() => {});
   });
 
@@ -47,6 +52,10 @@ export function registerCrossWorldHandlers() {
   });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.CancelDownload, ({ data }) => {
+    if (!isVideoIdsPayload(data)) {
+      return;
+    }
+
     for (const videoId of data.videoIds) {
       cancelActiveDownload(videoId);
     }
@@ -54,7 +63,12 @@ export function registerCrossWorldHandlers() {
 
   registerButtonDataHandler();
 
-  crossWorldMessenger.onMessage(CrossWorldMessage.SetSettingsOptionsData, ({ data: { selector, title } }) => {
+  crossWorldMessenger.onMessage(CrossWorldMessage.SetSettingsOptionsData, ({ data }) => {
+    if (!isSettingsOptionsPayload(data)) {
+      return;
+    }
+
+    const { selector, title } = data;
     const elPlaceholder = document.querySelector(selector);
     if (!elPlaceholder) {
       return;

@@ -5,13 +5,13 @@ import { registerGridTagger } from "./grid/grid-tagger";
 import { registerGridVideoDataHandler } from "./grid/grid-video-data";
 import { setupIframeSilencer } from "./iframe-silencer";
 import { setupAudioTrackWatcher, setupCaptionTrackWatcher } from "./player-watchers";
-import type { ShortsPageData } from "./video/capture-dispatch";
 import { cancelAllActiveDownloads } from "./video/download";
 import { extractPlaylistMetadata, handleNavigateSuccess } from "./video/playlist-metadata";
 import { extractAndDispatchVideoData } from "./video/capture-dispatch";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { initContentOptions } from "@/lib/ui/synced-stores.svelte";
 import type { PlayerResponse } from "@/types";
+import { isOptions } from "#youtube/lib/messaging/payload-guards";
 
 const EVENT_YT_NAVIGATE_FINISH = "yt-navigate-finish";
 const EVENT_YT_NAVIGATE_START = "yt-navigate-start";
@@ -21,34 +21,7 @@ const EVENT_LOAD = "load";
 declare global {
   interface Window {
     ytInitialPlayerResponse?: PlayerResponse;
-    ytInitialData?: ShortsPageData & {
-      currentVideoEndpoint?: {
-        watchEndpoint?: { videoId?: string };
-      };
-      contents?: {
-        twoColumnWatchNextResults?: {
-          results?: {
-            results?: {
-              contents?: {
-                videoPrimaryInfoRenderer?: {
-                  title?: { runs?: { text?: string }[] };
-                };
-              }[];
-            };
-          };
-        };
-      };
-      header?: {
-        playlistHeaderRenderer?: {
-          title?: { simpleText?: string };
-          playlistId?: string;
-          ownerText?: { runs?: { text?: string }[] };
-        };
-      };
-      metadata?: {
-        playlistMetadataRenderer?: { title?: string };
-      };
-    };
+    ytInitialData?: unknown;
   }
 }
 
@@ -90,7 +63,10 @@ export default defineContentScript({
 
     async function initializeOnLoad() {
       const options = await crossWorldMessenger.sendMessage(CrossWorldMessage.RequestOptions);
-      initContentOptions(options);
+      if (isOptions(options)) {
+        initContentOptions(options);
+      }
+
       await extractAndDispatchVideoData();
       extractPlaylistMetadata();
       setupAudioTrackWatcher();

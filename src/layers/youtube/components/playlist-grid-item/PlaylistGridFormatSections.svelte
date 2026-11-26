@@ -152,7 +152,7 @@
     const nextButton = required(outputButtons[iNext]);
     state.effectiveOutputMode = nextButton.mode;
     const elNext = outputElements.get(nextButton.id);
-    queueMicrotask(() => elNext?.querySelector<HTMLButtonElement>("button")?.focus());
+    queueMicrotask(() => elNext?.querySelector("button")?.focus());
   }
 
   $effect.pre(() => {

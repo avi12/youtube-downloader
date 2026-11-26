@@ -2,7 +2,7 @@ import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
 import { getMoviePlayer } from "@/lib/youtube/movie-player";
 
 function silenceIframeVideo() {
-  const elVideo = document.querySelector<HTMLVideoElement>("video");
+  const elVideo = document.querySelector("video");
   if (!elVideo) {
     return false;
   }

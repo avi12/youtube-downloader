@@ -1,4 +1,4 @@
-import { isElement } from "@/lib/dom-guards";
+import { isElement, isHtmlElement } from "@/lib/dom-guards";
 import { handlePlaylistVideoAdditions } from "./playlist-video-items";
 import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
 import PlaylistDownloader from "#youtube/components/playlist-downloader/PlaylistDownloader.svelte";
@@ -27,19 +27,19 @@ let headerReinjectObserver: MutationObserver | null = null;
 let headerHiddenObserver: ResizeObserver | null = null;
 
 function findPlaylistHeaderMount() {
-  for (const elFlex of document.querySelectorAll<HTMLElement>(SELECTOR_FLEXIBLE_ACTIONS)) {
+  for (const elFlex of document.querySelectorAll(SELECTOR_FLEXIBLE_ACTIONS)) {
     if (elFlex.getBoundingClientRect().height <= 0) {
       continue;
     }
 
-    const elHeadline = elFlex.closest<HTMLElement>(SELECTOR_PAGE_HEADER_HEADLINE);
-    if (elHeadline) {
+    const elHeadline = elFlex.closest(SELECTOR_PAGE_HEADER_HEADLINE);
+    if (isHtmlElement(elHeadline)) {
       return elHeadline;
     }
   }
 
-  for (const elHeader of document.querySelectorAll<HTMLElement>(SELECTOR_PLAYLIST_HEADER)) {
-    if (elHeader.getBoundingClientRect().height > 0) {
+  for (const elHeader of document.querySelectorAll(SELECTOR_PLAYLIST_HEADER)) {
+    if (isHtmlElement(elHeader) && elHeader.getBoundingClientRect().height > 0) {
       return elHeader;
     }
   }
@@ -97,9 +97,16 @@ export function cleanupPlaylistUi() {
 }
 
 function hideYtdlTooltip() {
-  document.querySelector<HTMLElement>(SELECTOR_YT_TOOLTIP_POPOVER)?.hidePopover?.();
-  for (const elButton of document.querySelectorAll<HTMLElement>(SELECTOR_YTDL_BUTTON)) {
+  hideTooltipPopover();
+  for (const elButton of document.querySelectorAll(SELECTOR_YTDL_BUTTON)) {
     elButton.dispatchEvent(new MouseEvent("mouseleave", MOUSE_LEAVE_OPTIONS));
+  }
+}
+
+function hideTooltipPopover() {
+  const elPopover = document.querySelector(SELECTOR_YT_TOOLTIP_POPOVER);
+  if (isHtmlElement(elPopover)) {
+    elPopover.hidePopover?.();
   }
 }
 
@@ -112,7 +119,8 @@ function makeTooltipHandlers() {
       return;
     }
 
-    const elButton = event.target.closest<HTMLElement>("yt-button-view-model");
+    const elClosest = event.target.closest("yt-button-view-model");
+    const elButton = isHtmlElement(elClosest) ? elClosest : null;
     const isLeavingYtdlButton = !elButton && elHoveredYtdlButton;
     if (isLeavingYtdlButton) {
       hideYtdlTooltip();
@@ -127,7 +135,7 @@ function makeTooltipHandlers() {
     }
 
     elHoveredYtdlButton = null;
-    document.querySelector<HTMLElement>(SELECTOR_YT_TOOLTIP_POPOVER)?.hidePopover?.();
+    hideTooltipPopover();
   }
 
   return {

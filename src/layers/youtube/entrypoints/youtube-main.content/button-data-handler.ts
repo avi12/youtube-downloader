@@ -2,6 +2,7 @@ import { CrossWorldMessage, crossWorldMessenger, dispatchButtonClick } from "@/l
 import { DATA_BUTTON_ID_ATTR } from "@/lib/ui/polymer-utils";
 import { isYtButtonViewModelElement } from "@/lib/youtube/schemas";
 import { ButtonStyle } from "@/types";
+import { isSetButtonDataPayload } from "#youtube/lib/messaging/payload-guards";
 
 const ATTR_CTA = "data-ytdl-cta";
 const ATTR_CLICK_BOUND = "data-ytdl-click-bound";
@@ -12,7 +13,12 @@ const INNER_BUTTON_TAG = "button";
 const buttonIdByElement = new WeakMap<HTMLElement, string>();
 
 export function registerButtonDataHandler() {
-  crossWorldMessenger.onMessage(CrossWorldMessage.SetButtonData, ({ data: { selector, data: buttonData, a11y } }) => {
+  crossWorldMessenger.onMessage(CrossWorldMessage.SetButtonData, ({ data }) => {
+    if (!isSetButtonDataPayload(data)) {
+      return;
+    }
+
+    const { selector, data: buttonData, a11y } = data;
     const elButton = document.querySelector(selector);
     if (!isYtButtonViewModelElement(elButton)) {
       return;

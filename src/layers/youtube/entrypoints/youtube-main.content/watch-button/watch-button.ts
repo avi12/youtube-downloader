@@ -12,6 +12,7 @@ import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-wo
 import { CONTENT_OPTIONS, initContentOptions } from "@/lib/ui/synced-stores.svelte";
 import { type VideoData } from "@/types";
 import { mount, unmount } from "svelte";
+import { isOptions } from "#youtube/lib/messaging/payload-guards";
 
 const DOWNLOAD_GROUP_SELECTOR = "[data-ytdl-download-group]";
 const PANEL_CONTENT_ID_SELECTOR = "[id^='ytdl-panel-content']";
@@ -24,6 +25,10 @@ let containerSearchAbort: AbortController | null = null;
 let elCurrentNativeDownload: HTMLElement | null = null;
 
 crossWorldMessenger.onMessage(CrossWorldMessage.OptionsUpdate, ({ data }) => {
+  if (!isOptions(data)) {
+    return;
+  }
+
   initContentOptions(data);
   elCurrentNativeDownload?.classList.toggle(NATIVE_HIDDEN_CLASS, !data.isShowNativeDownload);
 });

@@ -7,7 +7,9 @@ import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-wo
 import { videoDataStore } from "@/lib/ui/synced-stores.svelte";
 import { createLogger, LogScope } from "@/lib/utils/logger";
 import { z } from "@/lib/zod";
+import { createGuard } from "@/lib/zod-guard";
 import { getMoviePlayer } from "@/lib/youtube/movie-player";
+import { isPlayerResponse } from "@/lib/youtube/schemas";
 import { buildVideoData } from "@/lib/youtube/youtube-api";
 import { type PlayerResponse, type YtdlCaptureState } from "@/types";
 import { PlayabilityStatus } from "@/types/youtube";
@@ -49,8 +51,37 @@ function flushPendingChunks() {
   pendingChunks.length = 0;
 }
 
+const isWatchInitialData = createGuard(
+  z.looseObject({
+    currentVideoEndpoint: z.looseObject({
+      watchEndpoint: z.looseObject({ videoId: z.string().optional() }).optional()
+    }).optional(),
+    contents: z.looseObject({
+      twoColumnWatchNextResults: z.looseObject({
+        results: z.looseObject({
+          results: z.looseObject({
+            contents: z.array(
+              z.looseObject({
+                videoPrimaryInfoRenderer: z.looseObject({
+                  title: z.looseObject({
+                    runs: z.array(z.looseObject({ text: z.string().optional() })).optional()
+                  }).optional()
+                }).optional()
+              })
+            ).optional()
+          }).optional()
+        }).optional()
+      }).optional()
+    }).optional()
+  })
+);
+
 function readInitialDataTitle(videoId: string) {
   const data = window.ytInitialData;
+  if (!isWatchInitialData(data)) {
+    return "";
+  }
+
   const isMatchingVideoId = data?.currentVideoEndpoint?.watchEndpoint?.videoId === videoId;
   if (!isMatchingVideoId) {
     return "";
@@ -85,7 +116,9 @@ export const shortsPageDataSchema = z.looseObject({
   }).optional()
 });
 
-export type ShortsPageData = z.infer<typeof shortsPageDataSchema>;
+type ShortsPageData = z.infer<typeof shortsPageDataSchema>;
+
+const isShortsPageData = createGuard(shortsPageDataSchema);
 
 function readShortsDisplayTitle(pageData: ShortsPageData | undefined) {
   const metadataItems = pageData?.overlay?.reelPlayerOverlayRenderer?.playerOverlay
@@ -234,8 +267,8 @@ const PollOutcome = {
 type PollOutcome = (typeof PollOutcome)[keyof typeof PollOutcome];
 
 async function tryDispatchOnce(isDownloadIframe: boolean) {
-  const playerResponse = window.ytInitialPlayerResponse ?? null;
-  const hasVideoId = !!playerResponse?.videoDetails?.videoId;
+  const playerResponse: unknown = window.ytInitialPlayerResponse;
+  const hasVideoId = isPlayerResponse(playerResponse) && !!playerResponse.videoDetails?.videoId;
   if (!hasVideoId) {
     return PollOutcome.Wait;
   }
@@ -261,7 +294,7 @@ async function tryDispatchOnce(isDownloadIframe: boolean) {
   sessionStorage.removeItem(IFRAME_RELOAD_COUNT_KEY);
   await buildAndDispatchVideoData({
     playerResponse,
-    shortsPageData: window.ytInitialData
+    shortsPageData: isShortsPageData(window.ytInitialData) ? window.ytInitialData : undefined
   });
   return PollOutcome.Ready;
 }

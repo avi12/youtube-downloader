@@ -9,6 +9,7 @@ import {
 import type { MoviePlayerElement } from "@/lib/youtube/movie-player";
 import { isTrackDescriptor } from "@/lib/youtube/schemas";
 import type { Prettify } from "@/types";
+import { isString } from "#youtube/lib/value-guards";
 
 const AD_PLAYER_CLASSES = ["ad-showing", "ad-interrupting"];
 const AUDIO_TRACK_ID_PATTERN = /^[a-z]{2,3}(-[A-Za-z0-9]+)?\.\d+$/;
@@ -71,8 +72,7 @@ export function setupAudioTrackWatcher() {
 
   for (const bus of buses) {
     bus.subscribe(PLAYER_EVENT_INTERNAL_AUDIO_FORMAT_CHANGE, trackId => {
-      const isStringTrackId = typeof trackId === "string";
-      if (isStringTrackId) {
+      if (isString(trackId)) {
         reportTrack(trackId);
       }
     });

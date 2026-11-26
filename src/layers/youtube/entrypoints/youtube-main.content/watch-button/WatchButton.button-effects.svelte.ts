@@ -26,10 +26,10 @@ export function createButtonElementEffects({
     }
 
     getElDownloadButton()
-      ?.querySelector<HTMLButtonElement>("button")
+      ?.querySelector("button")
       ?.classList.add(SEGMENTED_START_CLASS);
     getElChevronButton()
-      ?.querySelector<HTMLButtonElement>("button")
+      ?.querySelector("button")
       ?.classList.add(SEGMENTED_END_CLASS);
   }
 

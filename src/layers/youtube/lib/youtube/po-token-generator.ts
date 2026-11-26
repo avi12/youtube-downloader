@@ -11,6 +11,7 @@ import {
 import { getYtcfg, YtcfgKey } from "@/lib/youtube/ytcfg";
 import { z } from "@/lib/zod";
 import { createGuard } from "@/lib/zod-guard";
+import { isFunction } from "#youtube/lib/value-guards";
 
 const isChallengeResponse = createGuard(
   z.looseObject({
@@ -94,14 +95,12 @@ export async function generatePoToken(videoId: string) {
   const integrityTokenBytes = base64ToUint8Array(integrityData[0]);
 
   const [signalFunction] = webPoSignalOutput;
-  const isSignalFunctionMissing = typeof signalFunction !== "function";
-  if (isSignalFunctionMissing) {
+  if (!isFunction(signalFunction)) {
     throw new Error("WebPo signal function not available");
   }
 
   const mintFunction = await signalFunction(integrityTokenBytes);
-  const isMintFunctionMissing = typeof mintFunction !== "function";
-  if (isMintFunctionMissing) {
+  if (!isFunction(mintFunction)) {
     throw new Error("Mint function not available");
   }
 

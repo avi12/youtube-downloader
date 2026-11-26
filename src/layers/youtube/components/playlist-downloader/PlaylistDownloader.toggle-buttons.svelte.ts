@@ -105,7 +105,7 @@ export function createPlaylistToggleButtons(state: CreatePlaylistToggleButtonsPa
       const nextButton = required(group[iNext]);
       nextButton.onClick(state);
       const elNext = elements.get(nextButton.id);
-      queueMicrotask(() => elNext?.querySelector<HTMLButtonElement>("button")?.focus());
+      queueMicrotask(() => elNext?.querySelector("button")?.focus());
     };
   }
 

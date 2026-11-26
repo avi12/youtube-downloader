@@ -11,7 +11,10 @@ import { required } from "@/lib/required";
 // The body is run through `substituteBodyTokens` so the BG can embed
 // `__YTDL_VISITOR_DATA__` as a placeholder for ytcfg.VISITOR_DATA, which must be
 // read from MAIN-world page context (not available in extension contexts).
+import { isIframeElement } from "@/lib/dom-guards";
 import { sabrFetchBridge } from "@/lib/messaging/sabr-fetch-bridge";
+import { isPageSabrFetchRequest } from "#youtube/lib/messaging/payload-guards";
+import { isString } from "#youtube/lib/value-guards";
 import { base64ToUint8Array, uint8ToBase64 } from "@/lib/utils/binary";
 import { createLogger, LogScope } from "@/lib/utils/logger";
 import { isYtcfg } from "@/lib/youtube/schemas";
@@ -29,7 +32,7 @@ function readVisitorData() {
   }
 
   const value = isYtcfg(ytcfg) ? ytcfg.get?.("VISITOR_DATA") : undefined;
-  return typeof value === "string" ? value : "";
+  return isString(value) ? value : "";
 }
 
 function copyToArrayBuffer(view: Uint8Array) {
@@ -50,8 +53,8 @@ function substituteBodyTokens(bodyBytes: Uint8Array) {
 }
 
 function getPristineFetch() {
-  const elExisting = document.querySelector<HTMLIFrameElement>(`iframe[${PRISTINE_IFRAME_ATTR}]`);
-  if (elExisting?.contentWindow?.fetch) {
+  const elExisting = document.querySelector(`iframe[${PRISTINE_IFRAME_ATTR}]`);
+  if (isIframeElement(elExisting) && elExisting.contentWindow?.fetch) {
     return elExisting.contentWindow.fetch.bind(elExisting.contentWindow);
   }
 
@@ -69,7 +72,12 @@ export default defineContentScript({
   world: "MAIN",
   runAt: "document_start",
   main() {
-    sabrFetchBridge.onMessage("pageSabrFetch", async ({ data: { url, method, bodyBase64, headers } }) => {
+    sabrFetchBridge.onMessage("pageSabrFetch", async ({ data }) => {
+      if (!isPageSabrFetchRequest(data)) {
+        return null;
+      }
+
+      const { url, method, bodyBase64, headers } = data;
       const rawBodyBytes = bodyBase64 ? base64ToUint8Array(bodyBase64) : null;
       const bodyBuffer = rawBodyBytes ? substituteBodyTokens(rawBodyBytes) : null;
 

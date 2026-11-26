@@ -1,5 +1,10 @@
 <script lang="ts" module>
+  import { z } from "@/lib/zod";
+  import { createGuard } from "@/lib/zod-guard";
+
   let selectInstanceCounter = 0;
+
+  const isEscKeyHost = createGuard(z.object({ noCancelOnEscKey: z.boolean().optional() }));
 </script>
 
 <script lang="ts">
@@ -88,8 +93,8 @@
 
     elPopover = elTarget;
 
-    type IronDropdownElement = HTMLElement & { noCancelOnEscKey?: boolean };
-    const elIronDropdown = elTarget.closest<IronDropdownElement>(POLYMER_IRON_DROPDOWN_SELECTOR);
+    const elClosestDropdown = elTarget.closest(POLYMER_IRON_DROPDOWN_SELECTOR);
+    const elIronDropdown = isEscKeyHost(elClosestDropdown) ? elClosestDropdown : null;
 
     function openPopup() {
       if (elTrigger) {

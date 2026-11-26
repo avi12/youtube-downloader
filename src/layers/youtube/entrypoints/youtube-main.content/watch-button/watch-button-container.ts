@@ -1,5 +1,6 @@
 import { WatchButtonLayout } from "./watch-button-types";
 import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
+import { isHtmlElement } from "@/lib/dom-guards";
 
 const ACTIONS_CONTAINER_SELECTORS = {
   [WatchButtonLayout.Watch]: [
@@ -15,7 +16,11 @@ const ACTIONS_CONTAINER_SELECTORS = {
 
 function findFirstVisibleActionsContainer(layout: WatchButtonLayout) {
   for (const selector of ACTIONS_CONTAINER_SELECTORS[layout]) {
-    for (const elButton of document.querySelectorAll<HTMLElement>(selector)) {
+    for (const elButton of document.querySelectorAll(selector)) {
+      if (!isHtmlElement(elButton)) {
+        continue;
+      }
+
       const isVisible = elButton.offsetWidth > 0 && elButton.offsetHeight > 0;
       if (isVisible) {
         return elButton;

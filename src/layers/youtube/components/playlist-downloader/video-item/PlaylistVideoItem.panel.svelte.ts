@@ -7,6 +7,7 @@ import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-wo
 import type { VideoData } from "@/types";
 import type { mount} from "svelte";
 import { unmount } from "svelte";
+import { isContentIdPayload } from "#youtube/lib/messaging/payload-guards";
 
 const PANEL_ABOVE_OVERLAP_PX = 4;
 const IRON_OVERLAY_OPENED_EVENT = "iron-overlay-opened";
@@ -70,7 +71,7 @@ export function createPanelManager({
     const panelContentId = requestDropdownCreation(videoId);
 
     unsubscribeDropdownReady = crossWorldMessenger.onMessage(CrossWorldMessage.DropdownReady, ({ data }) => {
-      const isThisPanel = data.contentId === panelContentId;
+      const isThisPanel = isContentIdPayload(data) && data.contentId === panelContentId;
       if (!isThisPanel) {
         return;
       }

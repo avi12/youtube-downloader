@@ -81,7 +81,7 @@ export function buildClickHandler({ videoData, elDropdown, state }: BuildClickHa
       if (isNowOpen) {
         event.stopPropagation();
         elDropdown.open();
-        required(elChevronButton).querySelector<HTMLButtonElement>("button")?.blur();
+        required(elChevronButton).querySelector("button")?.blur();
       } else {
         elDropdown.close();
       }

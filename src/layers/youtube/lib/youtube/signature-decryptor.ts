@@ -1,3 +1,4 @@
+import { isScriptElement } from "@/lib/dom-guards";
 import { required } from "@/lib/required";
 import { applyTransforms, findAndExtractOperations } from "./signature-parser";
 import type { TransformOp } from "./signature-parser";
@@ -14,9 +15,13 @@ type DecryptorState = Prettify<{
 let cachedState: DecryptorState | null = null;
 
 function getPlayerJsUrl() {
-  const elScripts = document.querySelectorAll<HTMLScriptElement>("script[src*='/player/']");
+  const elScripts = document.querySelectorAll("script[src*='/player/']");
 
   for (const elScript of elScripts) {
+    if (!isScriptElement(elScript)) {
+      continue;
+    }
+
     const isPlayerScript = /player_ias|base\.js/.test(elScript.src);
     if (isPlayerScript) {
       return elScript.src;
