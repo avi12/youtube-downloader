@@ -1,15 +1,10 @@
 // Guards for payloads that cross worlds, where page scripts can forge anything
 import { z } from "@/lib/zod";
-import { createGuard } from "@/lib/zod-guard";
-import { AudioCodecPreference, DownloadType, DynamicRangePreference, ProgressType, VideoCodecPreference } from "@/types";
+import { createGuard, tolerated } from "@/lib/zod-guard";
+import { DownloadType, ProgressType } from "@/types";
+import { codecPreferencesSchema, videoMetadataSchema } from "@/types/settings-types";
 
 const anyNumberSchema = z.union([z.number(), z.nan()]);
-
-const codecPreferencesSchema = z.looseObject({
-  videoCodec: z.enum(VideoCodecPreference),
-  audioCodec: z.enum(AudioCodecPreference),
-  dynamicRange: z.enum(DynamicRangePreference)
-});
 
 const videoIdPayloadSchema = z.looseObject({ videoId: z.string() });
 
@@ -37,12 +32,6 @@ export const isStreamErrorPayload = createGuard(
 // Stripping objects, since a loose one would walk every index of the byte arrays
 const bytesSchema = z.lazy(() => z.instanceof(Uint8Array)).nullable();
 
-const videoMetadataSchema = z.looseObject({
-  title: z.string(),
-  artist: z.string(),
-  isMusic: z.boolean()
-});
-
 export const isStreamDataPayload = createGuard(
   z.object({
     downloadType: z.enum(DownloadType),
@@ -68,10 +57,10 @@ export const isDownloadAnnouncement = createGuard(
   videoIdPayloadSchema.extend({
     type: z.enum(DownloadType),
     filenameOutput: z.string(),
-    title: z.string().optional(),
-    channel: z.string().optional(),
-    thumbnailUrl: z.string().optional(),
-    lengthSeconds: z.number().optional()
+    title: tolerated(z.string()),
+    channel: tolerated(z.string()),
+    thumbnailUrl: tolerated(z.string()),
+    lengthSeconds: tolerated(z.number())
   })
 );
 

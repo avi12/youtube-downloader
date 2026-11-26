@@ -1,7 +1,8 @@
-import type { ProcessStreamEndData } from "@/lib/messaging/offscreen-messaging";
+import { processStreamEndSchema } from "@/lib/messaging/offscreen-messaging";
 import { z } from "@/lib/zod";
-import { createShapeGuard } from "@/lib/zod-guard";
-import type { DownloadRequest, Prettify, VideoMetadata } from "@/types";
+import { createGuard } from "@/lib/zod-guard";
+import { downloadRequestSchema } from "@/types/domain-types";
+import { videoMetadataSchema } from "@/types/settings-types";
 
 /** Sent by a download-worker iframe to the offscreen page that hosts it */
 export enum WorkerMessageKind {
@@ -19,11 +20,6 @@ export enum FrameCommandKind {
   Start = "start",
   Cancel = "cancel"
 }
-
-// Shared types owned by `@/types` and the messaging layer: only what routing relies on is checked
-const sharedPayloadSchema = z.looseObject({
-  videoId: z.string()
-});
 
 const chunkSchema = z.object({
   type: z.literal(WorkerMessageKind.Chunk),
@@ -44,7 +40,7 @@ const streamEndSchema = z.object({
 const completeSchema = z.object({
   type: z.literal(WorkerMessageKind.Complete),
   videoId: z.string(),
-  streamEnd: sharedPayloadSchema,
+  streamEnd: processStreamEndSchema,
   videoBuffer: z.instanceof(ArrayBuffer).nullable(),
   audioBuffers: z.array(z.instanceof(ArrayBuffer).nullable())
 });
@@ -53,7 +49,7 @@ const needsDirectUrlSchema = z.object({
   type: z.literal(WorkerMessageKind.NeedsDirectUrl),
   videoId: z.string(),
   tabId: z.number(),
-  request: sharedPayloadSchema
+  request: downloadRequestSchema
 });
 
 const needsFallbackSchema = needsDirectUrlSchema.extend({
@@ -72,45 +68,34 @@ const errorSchema = z.object({
   error: z.string()
 });
 
-export type WorkerMessage =
-  | z.infer<typeof chunkSchema>
-  | z.infer<typeof streamEndSchema>
-  | Prettify<z.infer<typeof completeSchema> & { streamEnd: ProcessStreamEndData }>
-  | Prettify<z.infer<typeof needsDirectUrlSchema> & { request: DownloadRequest }>
-  | Prettify<z.infer<typeof needsFallbackSchema> & { request: DownloadRequest }>
-  | z.infer<typeof discardStreamsSchema>
-  | z.infer<typeof errorSchema>;
+const workerMessageSchema = z.discriminatedUnion("type", [
+  chunkSchema,
+  streamEndSchema,
+  completeSchema,
+  needsDirectUrlSchema,
+  needsFallbackSchema,
+  discardStreamsSchema,
+  errorSchema
+]);
 
-export const isWorkerMessage = createShapeGuard<WorkerMessage>(
-  z.discriminatedUnion("type", [
-    chunkSchema,
-    streamEndSchema,
-    completeSchema,
-    needsDirectUrlSchema,
-    needsFallbackSchema,
-    discardStreamsSchema,
-    errorSchema
-  ])
-);
+export type WorkerMessage = z.infer<typeof workerMessageSchema>;
+
+export const isWorkerMessage = createGuard(workerMessageSchema);
 
 const startCommandSchema = z.object({
   type: z.literal(FrameCommandKind.Start),
-  request: sharedPayloadSchema,
+  request: downloadRequestSchema,
   tabId: z.number(),
-  enrichedMetadata: z.looseObject({}).nullish()
+  // Untagged beats not downloaded
+  enrichedMetadata: videoMetadataSchema.nullable().catch(null)
 });
 
 const cancelCommandSchema = z.object({
   type: z.literal(FrameCommandKind.Cancel)
 });
 
-export type FrameCommand =
-  | Prettify<Omit<z.infer<typeof startCommandSchema>, "request" | "enrichedMetadata"> & {
-    request: DownloadRequest;
-    enrichedMetadata: VideoMetadata | null;
-  }>
-  | z.infer<typeof cancelCommandSchema>;
+const frameCommandSchema = z.discriminatedUnion("type", [startCommandSchema, cancelCommandSchema]);
 
-export const isFrameCommand = createShapeGuard<FrameCommand>(
-  z.discriminatedUnion("type", [startCommandSchema, cancelCommandSchema])
-);
+export type FrameCommand = z.infer<typeof frameCommandSchema>;
+
+export const isFrameCommand = createGuard(frameCommandSchema);

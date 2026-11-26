@@ -1,13 +1,9 @@
 import { musicSearchResponseSchema } from "./music-search-types";
 import { z } from "@/lib/zod";
-import { createGuard, createShapeGuard } from "@/lib/zod-guard";
-import {
-  type DownloadRequest,
-  DownloadType,
-  type PlayerResponse,
-  type VideoData,
-  type YtButtonViewModelElement
-} from "@/types";
+import { createGuard, createLazyGuard } from "@/lib/zod-guard";
+import { DownloadType, type YtButtonViewModelElement } from "@/types";
+import { downloadRequestSchema, videoDataSchema } from "@/types/domain-types";
+import { playerResponseSchema } from "@/types/youtube-player-response";
 
 export const isDownloadType = createGuard(z.enum(DownloadType));
 
@@ -175,28 +171,11 @@ export const ytInitialDataPlaylistSchema = z.looseObject({
   }).optional()
 });
 
-const playerResponseShapeSchema = z.looseObject({
-  playabilityStatus: z.looseObject({
-    status: z.string()
-  })
-});
+export const isPlayerResponse = createGuard(playerResponseSchema);
 
-export const isPlayerResponse = createShapeGuard<PlayerResponse>(playerResponseShapeSchema);
+export const isVideoData = createGuard(videoDataSchema);
 
-export const isVideoData = createShapeGuard<VideoData>(
-  z.looseObject({
-    videoId: z.string()
-  })
-);
-
-export const isDownloadRequest = createShapeGuard<DownloadRequest>(
-  z.looseObject({
-    videoId: z.string(),
-    videoItag: z.number(),
-    audioItag: z.number(),
-    filenameOutput: z.string()
-  })
-);
+export const isDownloadRequest = createGuard(downloadRequestSchema);
 
 export const isMusicSearchResponse = createGuard(musicSearchResponseSchema);
 
@@ -214,8 +193,10 @@ export const isTpYtPaperInputElement = createGuard(tpYtPaperInputSchema);
 const YT_BUTTON_VIEW_MODEL_TAG = "YT-BUTTON-VIEW-MODEL";
 
 // Lazy: `HTMLElement` doesn't exist when WXT imports the entrypoints in Node
-export const isYtButtonViewModelElement = createShapeGuard<YtButtonViewModelElement>(
-  z.lazy(() => z.instanceof(HTMLElement).refine(element => element.tagName === YT_BUTTON_VIEW_MODEL_TAG))
+export const isYtButtonViewModelElement = createLazyGuard(
+  () => z.custom<YtButtonViewModelElement>(
+    value => value instanceof HTMLElement && value.tagName === YT_BUTTON_VIEW_MODEL_TAG
+  )
 );
 
 const iconNamedElementSchema = z.looseObject({
@@ -234,7 +215,9 @@ const ytLockupViewModelElementSchema = z.looseObject({
 
 export type YtLockupViewModelElement = HTMLElement & z.infer<typeof ytLockupViewModelElementSchema>;
 
-export const isYtLockupViewModelElement = createShapeGuard<YtLockupViewModelElement>(ytLockupViewModelElementSchema);
+export const isYtLockupViewModelElement = createGuard(
+  z.custom<YtLockupViewModelElement>(value => ytLockupViewModelElementSchema.safeParse(value).success)
+);
 
 export type YtInitialDataPlaylist = z.infer<typeof ytInitialDataPlaylistSchema>;
 export type BrowseContinuationResponse = z.infer<typeof browseContinuationResponseSchema>;

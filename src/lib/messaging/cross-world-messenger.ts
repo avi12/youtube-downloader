@@ -1,3 +1,9 @@
+import { isButtonClickPayload } from "@/lib/messaging/cross-world-schemas";
+import type {
+  AudioTrackChangedPayload,
+  ButtonClickPayload,
+  CaptionTrackChangedPayload
+} from "@/lib/messaging/cross-world-schemas";
 import type { DownloadAnnouncement } from "@/lib/messaging/messaging";
 import type { DownloadPlanParams } from "@/lib/youtube/download-plan";
 import type { SizeInputs } from "@/lib/youtube/output-size";
@@ -117,17 +123,14 @@ export interface PageMessengerSchema {
   [CrossWorldMessage.StartBackgroundDownload](data: { requestJson: string }): void;
   [CrossWorldMessage.OptionsUpdate](data: Options): void;
   [CrossWorldMessage.RequestOptions](): Options;
-  [CrossWorldMessage.AudioTrackChanged](data: { trackId: string }): void;
-  [CrossWorldMessage.CaptionTrackChanged](data: {
-    languageCode: string;
-    vssId: string;
-  }): void;
+  [CrossWorldMessage.AudioTrackChanged](data: AudioTrackChangedPayload): void;
+  [CrossWorldMessage.CaptionTrackChanged](data: CaptionTrackChangedPayload): void;
   [CrossWorldMessage.OpenSnackbar](): void;
   [CrossWorldMessage.SetSettingsOptionsData](data: {
     selector: string;
     title: string;
   }): void;
-  [CrossWorldMessage.ButtonClick](data: { buttonId: string }): void;
+  [CrossWorldMessage.ButtonClick](data: ButtonClickPayload): void;
   [CrossWorldMessage.DownloadBlobUrl](data: {
     blobUrl: string;
     filename: string;
@@ -162,6 +165,10 @@ function fanoutButtonClick(buttonId: string) {
 }
 
 crossWorldMessenger.onMessage(CrossWorldMessage.ButtonClick, ({ data }) => {
+  if (!isButtonClickPayload(data)) {
+    return;
+  }
+
   fanoutButtonClick(data.buttonId);
 });
 

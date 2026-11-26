@@ -1,5 +1,6 @@
 import { WorkerMessageType } from "./mux-worker-types";
-import type { ResponseHandlerMap, WorkerCommandMap, WorkerCommandType, WorkerResponse } from "./worker-port-types";
+import { INVALID_WORKER_RESPONSE_MESSAGE, isWorkerResponse } from "./worker-port-types";
+import type { ResponseHandlerMap, WorkerCommandMap, WorkerCommandType } from "./worker-port-types";
 
 export interface HostWorkerPort {
   send<T extends WorkerCommandType>(
@@ -17,8 +18,14 @@ export function createHostWorkerPort() {
 
   let responseHandlers: ResponseHandlerMap = {};
 
-  port1.onmessage = function onPortMessage(event: MessageEvent<WorkerResponse>) {
+  port1.onmessage = function onPortMessage(event: MessageEvent<unknown>) {
     const message = event.data;
+    // Fails the pending job, which would otherwise wait forever
+    if (!isWorkerResponse(message)) {
+      responseHandlers[WorkerMessageType.Error]?.({ message: INVALID_WORKER_RESPONSE_MESSAGE });
+      return;
+    }
+
     switch (message.type) {
       case WorkerMessageType.Ready:
         responseHandlers[WorkerMessageType.Ready]?.();

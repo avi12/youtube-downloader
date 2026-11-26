@@ -1,11 +1,41 @@
+import { z } from "@/lib/zod";
+import { tolerated, uncheckedArray } from "@/lib/zod-guard";
 import type {
   AdaptiveFormatItem,
   DownloadRequest,
-  DownloadType,
   Prettify,
   SabrConfig,
   VideoMetadata
 } from "@/types";
+import { DownloadType } from "@/types/download-enums";
+import { videoMetadataSchema } from "@/types/settings-types";
+
+export const processStreamEndSchema = z.looseObject({
+  type: z.enum(DownloadType),
+  videoId: z.string(),
+  filenameOutput: z.string(),
+  videoMimeType: z.string(),
+  audioMimeType: z.string(),
+  audioTrackLabels: uncheckedArray(z.string()),
+  audioTrackLanguages: tolerated(z.array(z.string())),
+  defaultAudioTrackIndex: tolerated(z.number()),
+  subtitleTracks: tolerated(
+    z.array(
+      z.looseObject({
+        dataBase64: z.string(),
+        label: z.string(),
+        languageCode: z.string()
+      })
+    )
+  ),
+  tabId: z.number(),
+  playlistId: tolerated(z.string()),
+  playlistTitle: tolerated(z.string()),
+  playlistTotalCount: tolerated(z.number()),
+  metadata: tolerated(videoMetadataSchema.nullable()),
+  quality: tolerated(z.string()),
+  sourceUrl: tolerated(z.string())
+});
 
 export const OffscreenMessageType = {
   ProcessStreamChunk: "processStreamChunk",
@@ -30,28 +60,7 @@ export interface OffscreenProtocolMap {
     chunkBase64: string;
     tabId: number;
   };
-  [OffscreenMessageType.ProcessStreamEnd]: {
-    type: DownloadType;
-    videoId: string;
-    filenameOutput: string;
-    videoMimeType: string;
-    audioMimeType: string;
-    audioTrackLabels: string[];
-    audioTrackLanguages?: string[];
-    defaultAudioTrackIndex?: number;
-    subtitleTracks?: {
-      dataBase64: string;
-      label: string;
-      languageCode: string;
-    }[];
-    tabId: number;
-    playlistId?: string;
-    playlistTitle?: string;
-    playlistTotalCount?: number;
-    metadata?: VideoMetadata | null;
-    quality?: string;
-    sourceUrl?: string;
-  };
+  [OffscreenMessageType.ProcessStreamEnd]: ProcessStreamEndData;
   [OffscreenMessageType.CancelProcessing]: {
     videoIds: string[];
   };
@@ -108,7 +117,7 @@ export type OffscreenHandler<T extends OffscreenMessageType> = (data: OffscreenP
 export type HandlerMap = { [T in OffscreenMessageType]?: OffscreenHandler<T> };
 
 export type ProcessStreamChunkData = Prettify<OffscreenProtocolMap[typeof OffscreenMessageType.ProcessStreamChunk]>;
-export type ProcessStreamEndData = Prettify<OffscreenProtocolMap[typeof OffscreenMessageType.ProcessStreamEnd]>;
+export type ProcessStreamEndData = Prettify<z.infer<typeof processStreamEndSchema>>;
 
 const OFFSCREEN_PORT_NAME = "ytdl-offscreen";
 

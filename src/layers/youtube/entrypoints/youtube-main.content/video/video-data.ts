@@ -30,8 +30,8 @@ export async function buildVideoMetadata(videoId: string) {
     return null;
   }
 
-  const { playerResponse } = cached;
-  const { videoDetails, microformat } = playerResponse;
+  const videoDetails = cached.playerResponse?.videoDetails;
+  const microformat = cached.playerResponse?.microformat;
 
   const renderer = microformat?.playerMicroformatRenderer;
   const description = videoDetails?.shortDescription ?? "";

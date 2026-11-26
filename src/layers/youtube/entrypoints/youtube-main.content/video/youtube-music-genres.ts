@@ -7,31 +7,33 @@ const YT_MUSIC_BROWSE_URL = "https://music.youtube.com/youtubei/v1/browse?pretty
 const YT_MUSIC_MOODS_AND_GENRES_BROWSE_ID = "FEmusic_moods_and_genres";
 const CONTENT_TYPE_JSON = "application/json";
 
-const genreItemSchema = z.object({
-  musicNavigationButtonRenderer: z.object({
-    buttonText: z.object({
-      runs: z.array(z.object({ text: z.string().optional() })).optional()
+const genreItemSchema = z.looseObject({
+  musicNavigationButtonRenderer: z.looseObject({
+    buttonText: z.looseObject({
+      runs: z.array(z.looseObject({ text: z.string().optional() })).optional()
     }).optional()
   }).optional()
 });
 
-const genreSectionSchema = z.object({
-  gridRenderer: z.object({ items: z.array(genreItemSchema).optional() }).optional()
+const genreSectionSchema = z.looseObject({
+  gridRenderer: z.looseObject({ items: z.array(genreItemSchema).optional() }).optional()
 });
 
-const genreTabSchema = z.object({
-  tabRenderer: z.object({
-    content: z.object({
-      sectionListRenderer: z.object({ contents: z.array(genreSectionSchema).optional() }).optional()
+const genreTabSchema = z.looseObject({
+  tabRenderer: z.looseObject({
+    content: z.looseObject({
+      sectionListRenderer: z.looseObject({ contents: z.array(genreSectionSchema).optional() }).optional()
     }).optional()
   }).optional()
+});
+
+const genreContentsSchema = z.looseObject({
+  singleColumnBrowseResultsRenderer: z.looseObject({ tabs: z.array(genreTabSchema).optional() }).optional()
 });
 
 const isMoodsAndGenresResponse = createGuard(
-  z.object({
-    contents: z.object({
-      singleColumnBrowseResultsRenderer: z.object({ tabs: z.array(genreTabSchema).optional() }).optional()
-    }).optional()
+  z.looseObject({
+    contents: genreContentsSchema.optional()
   })
 );
 
@@ -65,8 +67,10 @@ export async function fetchYouTubeMusicGenres() {
       return new Set<string>();
     }
 
-    const [firstTab] = data.contents?.singleColumnBrowseResultsRenderer?.tabs ?? [];
-    const sections = firstTab?.tabRenderer?.content?.sectionListRenderer?.contents ?? [];
+    const contents: z.infer<typeof genreContentsSchema> | undefined = data.contents;
+    const tabs: z.infer<typeof genreTabSchema>[] = contents?.singleColumnBrowseResultsRenderer?.tabs ?? [];
+    const sections: z.infer<typeof genreSectionSchema>[] =
+      tabs[0]?.tabRenderer?.content?.sectionListRenderer?.contents ?? [];
 
     const genres = new Set<string>();
     const items = sections.flatMap(section => section.gridRenderer?.items ?? []);

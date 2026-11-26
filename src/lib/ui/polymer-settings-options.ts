@@ -6,7 +6,7 @@ export const DATA_SETTINGS_OPTIONS_ID_ATTR = "data-ytdl-settings-id";
 let settingsOptionsIdCounter = 0;
 
 export const isYtdSettingsOptionsRenderer = createGuard(
-  z.object({
+  z.looseObject({
     tagName: z.literal("YTD-SETTINGS-OPTIONS-RENDERER"),
     set: z.function({
       input: [z.string(), z.unknown()],

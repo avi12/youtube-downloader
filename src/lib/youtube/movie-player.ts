@@ -2,7 +2,7 @@ import { required } from "@/lib/required";
 import type { CaptionEventBus, MoviePlayerElement } from "./movie-player-types";
 import { captionEventBusSchema, isCaptionBusContext, playerCaptionTrackDataSchema } from "./schemas";
 import { z } from "@/lib/zod";
-import { createGuard, createShapeGuard } from "@/lib/zod-guard";
+import { createGuard, createLazyGuard } from "@/lib/zod-guard";
 
 export {
   ACTIVE_AUDIO_ATTR,
@@ -12,7 +12,7 @@ export {
 } from "./movie-player-types";
 
 // The player's methods are all optional, so being an HTML element is all there is to check
-const isMoviePlayer = createShapeGuard<MoviePlayerElement>(z.lazy(() => z.instanceof(HTMLElement)));
+const isMoviePlayer = createLazyGuard(() => z.custom<MoviePlayerElement>(value => value instanceof HTMLElement));
 
 export function getMoviePlayer() {
   const elPlayer = document.querySelector("#movie_player");

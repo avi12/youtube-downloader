@@ -1,6 +1,7 @@
 import { required } from "@/lib/required";
 import { getActivePlayerCaption } from "./panel-init-caption";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
+import { isAudioTrackChangedPayload, isCaptionTrackChangedPayload } from "@/lib/messaging/cross-world-schemas";
 import { AUTO_DUB_TRACK_SUFFIX } from "@/lib/youtube/download-plan";
 import { ACTIVE_AUDIO_ATTR } from "@/lib/youtube/movie-player";
 import { getCurrentVideoAudioLanguage, normalizeLanguageCode } from "@/lib/youtube/video-helpers";
@@ -23,6 +24,10 @@ export const PLAYER_ACTIVE_CAPTION = $state<{
 });
 
 crossWorldMessenger.onMessage(CrossWorldMessage.CaptionTrackChanged, ({ data }) => {
+  if (!isCaptionTrackChangedPayload(data)) {
+    return;
+  }
+
   PLAYER_ACTIVE_CAPTION.vssId = data.vssId || null;
   PLAYER_ACTIVE_CAPTION.languageCode = data.languageCode || null;
 });
@@ -40,6 +45,10 @@ export const PLAYER_ACTIVE_AUDIO = $state<{
 });
 
 crossWorldMessenger.onMessage(CrossWorldMessage.AudioTrackChanged, ({ data }) => {
+  if (!isAudioTrackChangedPayload(data)) {
+    return;
+  }
+
   PLAYER_ACTIVE_AUDIO.trackId = data.trackId || null;
   PLAYER_ACTIVE_AUDIO.langCode = data.trackId ? normalizeLanguageCode(data.trackId) : null;
   PLAYER_ACTIVE_AUDIO.isAutoDubbed = data.trackId.endsWith(AUTO_DUB_TRACK_SUFFIX);

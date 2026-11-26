@@ -12,7 +12,7 @@ const WATCH_FLEXY_TAG = "ytd-watch-flexy";
 const PLAYER_DATA_POLL_ATTEMPTS = 20;
 const PLAYER_DATA_POLL_INTERVAL_MS = 250;
 
-const isWatchFlexy = createGuard(z.object({ playerData: z.unknown() }));
+const isWatchFlexy = createGuard(z.looseObject({ playerData: z.unknown() }));
 
 const textRunsSchema = z.looseObject({
   runs: z.array(z.looseObject({ text: z.string().optional() })).optional()

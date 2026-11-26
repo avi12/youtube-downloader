@@ -66,7 +66,7 @@ type AnnounceDownloadParams = Prettify<{
   videoData: VideoData;
 }>;
 async function announceDownload({ params, videoData }: AnnounceDownloadParams) {
-  const { videoDetails } = videoData.playerResponse;
+  const videoDetails = videoData.playerResponse?.videoDetails;
   await crossWorldMessenger.sendMessage(CrossWorldMessage.AnnounceDownload, {
     videoId: params.videoId,
     type: params.type,

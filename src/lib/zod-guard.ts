@@ -9,18 +9,17 @@ export function createGuard<Schema extends z.ZodType>(schema: Schema) {
 }
 
 /**
- * A guard for a hand-written type YouTube owns. The schema checks only the fields the extension relies on, so real
- * data is never rejected over the rest
+ * An optional field that never fails the object around it: a value YouTube shapes differently is typed by the schema
+ * but let through untouched, so one odd branch can't reject a whole response. Only for guards, never `.parse`
  */
-export function createShapeGuard<Value>(schema: z.ZodType) {
-  return (value: unknown): value is Value => schema.safeParse(value).success;
+export function tolerated<Schema extends z.ZodType>(schema: Schema) {
+  return schema.optional().catch(undefined);
 }
 
-/** A page method called for its effect, with no arguments; zod checks only that it is a function */
-export const VOID_METHOD_SCHEMA = z.function({
-  input: [],
-  output: z.void()
-});
+/** A required array whose items are typed by the schema but not checked, so one odd item can't reject the rest */
+export function uncheckedArray<Schema extends z.ZodType>(_itemSchema: Schema) {
+  return z.custom<z.infer<Schema>[]>(Array.isArray);
+}
 
 /**
  * A guard whose schema is built on first use. For classes that exist only in a browser (`Element`, `CSSStyleRule`): a
