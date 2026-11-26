@@ -41,7 +41,8 @@ fn or_absent<T>(outcome: io::Result<T>) -> io::Result<Option<T>> {
 }
 
 fn segment_index(path: &Path) -> Option<u64> {
-    if path.extension()? != SEGMENT_EXTENSION {
+    let is_other_file = path.extension()? != SEGMENT_EXTENSION;
+    if is_other_file {
         return None;
     }
 

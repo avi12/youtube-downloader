@@ -101,12 +101,14 @@ impl Shared {
 
     async fn wait_for_downloads_to_end(&self) {
         let mut failed_checks = 0;
-        while failed_checks < MAX_FAILED_CHECKS {
+        let mut can_retry = true;
+        while can_retry {
             match self.check_downloads(DOWNLOADS_WAIT).await {
                 Ok(Downloads::Ended) => return,
                 Ok(Downloads::Running) => failed_checks = 0,
                 Err(_) => {
                     failed_checks += 1;
+                    can_retry = failed_checks < MAX_FAILED_CHECKS;
                     tokio::time::sleep(FAILED_CHECK_RETRY_DELAY).await;
                 }
             }
