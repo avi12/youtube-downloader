@@ -29,7 +29,8 @@ mod resources;
 pub use install::{hash_installed_lockfile, InstallGate};
 pub use outputs::{
     classify_changed_outputs, hash_main_world_content_scripts, hash_script_outputs,
-    main_world_script_files, read_script_outputs, ScriptOutputs,
+    main_world_script_files, read_script_outputs, ContentScriptWorld, ManifestContentScript,
+    ScriptOutputs,
 };
 pub use path::{classify_path, is_path_in_entrypoint, PathClass, PathRules};
 pub use pending::{plan_rebuild, PendingState, RebuildPlan};

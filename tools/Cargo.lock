@@ -1540,6 +1540,7 @@ dependencies = [
  "tokio-util",
  "tracing",
  "tracing-subscriber",
+ "ts-rs",
 ]
 
 [[package]]

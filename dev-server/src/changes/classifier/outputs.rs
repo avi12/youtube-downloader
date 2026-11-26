@@ -3,7 +3,7 @@
 use std::collections::BTreeMap;
 use std::path::Path;
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::bridge::protocol::ChangedOutputs;
 use crate::changes::{read_optional, MANIFEST_FILE_NAME};
@@ -26,25 +26,34 @@ struct ManifestBackground {
     scripts: Vec<String>,
 }
 
-/// The JavaScript world a content script runs in.
-#[derive(Deserialize, PartialEq, Eq)]
-enum ContentScriptWorld {
-    /// The page's own world.
-    #[serde(rename = "MAIN")]
+/// The JavaScript world a content script runs in; anything but `MAIN` is isolated.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts-bindings", derive(ts_rs::TS))]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum ContentScriptWorld {
+    /// The page's world.
     Main,
-    /// `ISOLATED` or any other world.
+    /// The extension's own world.
+    #[default]
     #[serde(other)]
-    Other,
+    Isolated,
 }
 
-#[derive(Deserialize)]
-struct ManifestContentScript {
-    world: Option<ContentScriptWorld>,
-    #[serde(default)]
+/// One `content_scripts` entry of a built manifest; keys not listed here are the browser's.
+#[derive(Debug, Default, Deserialize)]
+#[serde(default)]
+pub struct ManifestContentScript {
+    /// The URL patterns it runs on.
+    pub matches: Vec<String>,
+    /// Its script files.
     #[serde(rename = "js")]
-    scripts: Vec<String>,
-    #[serde(default)]
-    css: Vec<String>,
+    pub scripts: Vec<String>,
+    /// Its style files.
+    pub css: Vec<String>,
+    /// The world it runs in.
+    pub world: ContentScriptWorld,
+    /// Whether it also runs in subframes.
+    pub all_frames: bool,
 }
 
 impl ManifestContentScript {
@@ -196,7 +205,7 @@ pub fn main_world_script_files(manifest_json: &str) -> Result<Vec<RelPath>> {
     Ok(manifest
         .content_scripts
         .into_iter()
-        .filter(|script| script.world == Some(ContentScriptWorld::Main))
+        .filter(|script| script.world == ContentScriptWorld::Main)
         .flat_map(ManifestContentScript::into_files)
         .collect())
 }

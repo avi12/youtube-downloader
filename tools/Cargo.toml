@@ -44,6 +44,7 @@ regex = "1"
 
 [dev-dependencies]
 # Exports the plan types as TypeScript declarations under bindings/ for the launcher
+ytdl-dev-hot = { path = "../dev-server", features = ["ts-bindings"] }
 ts-rs = { version = "12.0.1", features = ["serde-json-impl", "no-serde-warnings"] }
 
 # avi12-lint:begin rust-config (generated from rust-config-avi12; edit avi12-rust.local.toml)
