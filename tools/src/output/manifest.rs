@@ -58,6 +58,7 @@ struct GeckoSettings {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(test, derive(ts_rs::TS), ts(export))]
 #[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
 pub(crate) struct ContentScriptEntry {
     pub(crate) names: Vec<String>,
     pub(crate) world: ContentScriptWorld,

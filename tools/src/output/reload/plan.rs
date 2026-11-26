@@ -32,6 +32,7 @@ const STALE_BACKGROUND_REASON: &str =
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(test, derive(ts_rs::TS), ts(export))]
 #[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
 pub(crate) struct PageRefreshPlan {
     /// HTML entrypoints whose page changed (popup, offscreen, download-worker).
     pub(crate) page_names: Vec<String>,
@@ -49,6 +50,7 @@ impl PageRefreshPlan {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(test, derive(ts_rs::TS), ts(export))]
 #[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
 pub(crate) struct ExtensionReloadPlan {
     pub(crate) reasons: Vec<String>,
     /// Changed MAIN-world scripts that cannot be swapped: their tabs are reported as stale.
@@ -96,6 +98,7 @@ impl ExtensionReloadPlan {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(test, derive(ts_rs::TS), ts(export))]
 #[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
 pub(crate) struct BackgroundSwapPlan {
     pub(crate) background_files: Vec<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -108,6 +111,7 @@ pub(crate) struct BackgroundSwapPlan {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(test, derive(ts_rs::TS), ts(export))]
 #[serde(tag = "kind", rename_all = "kebab-case")]
+#[serde(deny_unknown_fields)]
 pub(crate) enum ReloadPlan {
     /// Nothing changed.
     None,

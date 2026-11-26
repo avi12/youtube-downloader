@@ -39,6 +39,7 @@ struct WorkerRequest<'request> {
 
 #[derive(Deserialize)]
 #[serde(tag = "type", rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
 enum WorkerReply {
     Done,
     Failed { message: String },

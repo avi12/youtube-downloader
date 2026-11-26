@@ -19,6 +19,7 @@ const BROWSER_METADATA_DIR_PREFIX: &str = "_metadata/";
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(test, derive(ts_rs::TS), ts(export))]
 #[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
 pub(crate) struct BuildSnapshot {
     pub(crate) file_hashes: BTreeMap<String, String>,
     #[cfg_attr(test, ts(type = "unknown"))]

@@ -9,6 +9,7 @@ use crate::output::manifest::describe_content_scripts;
 /// A tab reloaded because in-place re-injection failed.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(test, derive(ts_rs::TS), ts(export))]
+#[serde(deny_unknown_fields)]
 pub(crate) struct FailedInjection {
     pub(crate) url: String,
     pub(crate) message: String,
@@ -18,6 +19,7 @@ pub(crate) struct FailedInjection {
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(test, derive(ts_rs::TS), ts(export))]
 #[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
 pub(crate) struct TabUpdateResult {
     pub(crate) stale_tab_count: usize,
     pub(crate) reinjected_tab_count: usize,
@@ -57,6 +59,7 @@ impl PageAction {
 /// One refreshed extension page.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(test, derive(ts_rs::TS), ts(export))]
+#[serde(deny_unknown_fields)]
 pub(crate) struct RefreshedPage {
     pub(crate) name: String,
     pub(crate) action: PageAction,
@@ -219,5 +222,21 @@ mod tests {
             describe_page_refresh(&plan, &pages),
             "popup, mux-worker.js changed - popup reloaded; extension and YouTube tabs untouched"
         );
+    }
+}
+
+#[cfg(test)]
+mod parsing_tests {
+    use super::*;
+
+    #[test]
+    fn the_tab_update_snippet_result_parses_strictly() -> serde_json::Result<()> {
+        let reply = r#"{"staleTabCount":1,"reinjectedTabCount":2,"swappedTabCount":0,
+            "replayedHandshakeCount":3,"failedInjections":[{"url":"u","message":"m"}]}"#;
+        let result: TabUpdateResult = serde_json::from_str(reply)?;
+        assert_eq!(result.failed_injections.len(), 1);
+        let unknown = r#"{"name":"popup","action":"reloaded","extra":1}"#;
+        assert!(serde_json::from_str::<RefreshedPage>(unknown).is_err());
+        Ok(())
     }
 }

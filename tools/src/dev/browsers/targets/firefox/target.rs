@@ -52,6 +52,7 @@ pub(crate) struct FirefoxTarget {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
 struct ViewRefresh {
     name: String,
     is_closed: bool,
