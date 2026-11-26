@@ -1,16 +1,12 @@
 import { botGuardVmEntrySchema, trustedResourceUrlSchema } from "@/lib/youtube/schemas";
+import type { z } from "@/lib/zod";
+import { createGuard } from "@/lib/zod-guard";
 import type { Prettify } from "@/types";
 
 const VM_POLL_INTERVAL_MS = 500;
 const VM_POLL_MAX_ATTEMPTS = 60;
 
-interface BotGuardVmEntry {
-  a: (...args: unknown[]) => [((inputs: unknown[]) => string | null)?] | null | undefined;
-}
-
-function isBotGuardVmEntry(value: unknown): value is BotGuardVmEntry {
-  return botGuardVmEntrySchema.safeParse(value).success;
-}
+const isBotGuardVmEntry = createGuard(botGuardVmEntrySchema);
 
 export function getBotGuardVm(name: string) {
   const globals: Record<string, unknown> = globalThis;
@@ -30,9 +26,7 @@ async function loadInterpreterScript(interpreterUrl: string) {
 
 type EnsureBotGuardVmParams = Prettify<{
   globalName: string;
-  interpreterUrlRaw: string | {
-    privateDoNotAccessOrElseTrustedResourceUrlWrappedValue: string;
-  } | undefined;
+  interpreterUrlRaw: unknown;
 }>;
 export async function ensureBotGuardVm({ globalName, interpreterUrlRaw }: EnsureBotGuardVmParams) {
   const isVmAlreadyLoaded = Boolean(getBotGuardVm(globalName));
@@ -61,7 +55,7 @@ export async function ensureBotGuardVm({ globalName, interpreterUrlRaw }: Ensure
 export type SignalFunction = (input: Uint8Array) => Promise<(input: Uint8Array) => Promise<Uint8Array>>;
 
 type InitBotGuardVmParams = Prettify<{
-  botGuardEntry: BotGuardVmEntry;
+  botGuardEntry: z.infer<typeof botGuardVmEntrySchema>;
   program: string;
   webPoSignalOutput: SignalFunction[];
 }>;

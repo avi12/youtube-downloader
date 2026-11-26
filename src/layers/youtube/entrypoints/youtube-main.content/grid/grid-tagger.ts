@@ -1,3 +1,4 @@
+import { isElement } from "@/lib/dom-guards";
 import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
 import { isYtLockupViewModelElement } from "@/lib/youtube/schemas";
 import type { Prettify } from "@/types";
@@ -60,7 +61,7 @@ export function registerGridTagger() {
   const observer = new MutationObserver(mutations => {
     for (const mutation of mutations) {
       for (const elNode of mutation.addedNodes) {
-        if (!(elNode instanceof Element)) {
+        if (!isElement(elNode)) {
           continue;
         }
 

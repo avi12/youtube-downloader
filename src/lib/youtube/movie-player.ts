@@ -1,6 +1,8 @@
 import { required } from "@/lib/required";
 import type { CaptionEventBus, MoviePlayerElement, PlayerCaptionTrackData } from "./movie-player-types";
-import { captionBusContextSchema, captionEventBusSchema, playerCaptionTrackDataSchema } from "./schemas";
+import { captionEventBusSchema, isCaptionBusContext, playerCaptionTrackDataSchema } from "./schemas";
+import { z } from "@/lib/zod";
+import { createGuard, createShapeGuard } from "@/lib/zod-guard";
 
 export {
   ACTIVE_AUDIO_ATTR,
@@ -13,27 +15,22 @@ export function getMoviePlayer() {
   return document.querySelector<MoviePlayerElement>("#movie_player");
 }
 
-export function isPlayerCaptionTrackData(value: unknown): value is PlayerCaptionTrackData {
-  return playerCaptionTrackDataSchema.safeParse(value).success;
-}
+export const isPlayerCaptionTrackData = createShapeGuard<PlayerCaptionTrackData>(playerCaptionTrackDataSchema);
 
-type GetOptionFn = (module: string, option: string) => unknown;
-
-function isGetOptionFn(value: unknown): value is GetOptionFn {
-  return typeof value === "function";
-}
-
-function isCaptionEventBus(value: unknown): value is CaptionEventBus {
-  return captionEventBusSchema.safeParse(value).success;
-}
+const getOptionSchema = z.function({
+  input: [z.string(), z.string()],
+  output: z.unknown()
+});
+const isGetOption = createGuard(getOptionSchema);
+const isCaptionEventBus = createGuard(captionEventBusSchema);
 
 export function capturePlayerCaptionBuses(player: MoviePlayerElement) {
   let proto: MoviePlayerElement | null = player;
-  let rawGetOption: GetOptionFn | null = null;
+  let rawGetOption: z.infer<typeof getOptionSchema> | null = null;
 
   while (proto) {
     const desc = Object.getOwnPropertyDescriptor(proto, "getOption");
-    if (isGetOptionFn(desc?.value)) {
+    if (isGetOption(desc?.value)) {
       rawGetOption = desc.value;
       break;
     }
@@ -75,13 +72,12 @@ export function capturePlayerCaptionBuses(player: MoviePlayerElement) {
     });
   }
 
-  const ctxResult = captionBusContextSchema.safeParse(internalCtx);
-  if (!ctxResult.success) {
+  if (!isCaptionBusContext(internalCtx)) {
     return [];
   }
 
   const buses: CaptionEventBus[] = [];
-  const { state = {} } = ctxResult.data;
+  const { state = {} } = internalCtx;
   for (const value of Object.values(state)) {
     if (isCaptionEventBus(value)) {
       buses.push(value);

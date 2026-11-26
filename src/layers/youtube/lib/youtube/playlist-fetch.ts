@@ -1,13 +1,12 @@
 import {
   browseContinuationResponseSchema,
-  type PlaylistContinuationEntry,
   playlistContinuationEntrySchema,
-  type PlaylistVideoEntry,
   playlistVideoEntrySchema,
   type YtInitialDataPlaylist,
   ytInitialDataPlaylistSchema
 } from "@/lib/youtube/schemas";
 import { buildPlaylistUrl } from "@/lib/youtube/youtube-url";
+import { createGuard } from "@/lib/zod-guard";
 import type { Prettify } from "@/types";
 
 const BROWSE_URL = "https://www.youtube.com/youtubei/v1/browse?prettyPrint=false";
@@ -32,13 +31,8 @@ export type PlaylistContents = Prettify<{
   owner: string;
 }>;
 
-function isPlaylistVideoEntry(entry: unknown): entry is PlaylistVideoEntry {
-  return playlistVideoEntrySchema.safeParse(entry).success;
-}
-
-function isContinuationEntry(entry: unknown): entry is PlaylistContinuationEntry {
-  return playlistContinuationEntrySchema.safeParse(entry).success;
-}
+const isPlaylistVideoEntry = createGuard(playlistVideoEntrySchema);
+const isContinuationEntry = createGuard(playlistContinuationEntrySchema);
 
 type ParsedEntries = Prettify<{
   videoIds: string[];

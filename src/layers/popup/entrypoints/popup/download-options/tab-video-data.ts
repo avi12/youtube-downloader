@@ -1,5 +1,5 @@
 import type { MoviePlayerElement } from "@/lib/youtube/movie-player-types";
-import { playerResponseSchema } from "@/lib/youtube/schemas";
+import { isPlayerResponse } from "@/lib/youtube/schemas";
 import { buildVideoData } from "@/lib/youtube/youtube-api";
 import { YtcfgKey } from "@/lib/youtube/ytcfg";
 import type { Prettify } from "@/types";
@@ -59,13 +59,13 @@ export async function readTabVideoData({ tabId, videoId }: ReadTabVideoDataParam
     return null;
   }
 
-  const parsed = playerResponseSchema.safeParse(JSON.parse(snapshot.playerResponseJson));
-  if (!parsed.success) {
+  const playerResponse: unknown = JSON.parse(snapshot.playerResponseJson);
+  if (!isPlayerResponse(playerResponse)) {
     return null;
   }
 
   return buildVideoData({
-    playerResponse: parsed.data,
+    playerResponse,
     clientVersion: snapshot.clientVersion,
     clientName: snapshot.clientName
   });

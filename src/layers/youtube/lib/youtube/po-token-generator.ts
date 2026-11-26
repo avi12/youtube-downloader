@@ -6,20 +6,21 @@ import {
   InnertubeClientName,
   InnertubeEngagementType,
   type InnertubeGenerateItRequest,
-  type InnertubeGenerateItResponse
+  isInnertubeGenerateItResponse
 } from "@/lib/youtube/innertube";
 import { getYtcfg, YtcfgKey } from "@/lib/youtube/ytcfg";
-import type { Prettify } from "@/types";
+import { z } from "@/lib/zod";
+import { createGuard } from "@/lib/zod-guard";
 
-type ChallengeResponse = Prettify<{
-  bgChallenge?: {
-    program: string;
-    globalName: string;
-    interpreterUrl: string | {
-      privateDoNotAccessOrElseTrustedResourceUrlWrappedValue: string;
-    };
-  };
-}>;
+const isChallengeResponse = createGuard(
+  z.looseObject({
+    bgChallenge: z.looseObject({
+      program: z.string().optional(),
+      globalName: z.string().optional(),
+      interpreterUrl: z.unknown()
+    }).nullish()
+  })
+);
 
 const WAA_API_KEY = "AIzaSyDyT5W0Jh49F30Pqqtyfdf7pDLFKLJoAnw";
 const ATT_GET_URL = "https://www.youtube.com/youtubei/v1/att/get?prettyPrint=false";
@@ -50,8 +51,9 @@ export async function generatePoToken(videoId: string) {
     } satisfies InnertubeAttGetRequest)
   });
 
-  const challengeData: ChallengeResponse = await challengeResponse.json();
-  const { program, globalName, interpreterUrl: interpreterUrlRaw } = challengeData.bgChallenge ?? {};
+  const challengeData: unknown = await challengeResponse.json();
+  const challenge = isChallengeResponse(challengeData) ? challengeData.bgChallenge : null;
+  const { program, globalName, interpreterUrl: interpreterUrlRaw } = challenge ?? {};
   const isChallengeDataMissing = !program || !globalName;
   if (isChallengeDataMissing) {
     throw new Error("No BotGuard challenge data received");
@@ -84,9 +86,8 @@ export async function generatePoToken(videoId: string) {
     body: JSON.stringify([requestKey, snapshotResponse] satisfies InnertubeGenerateItRequest)
   });
 
-  const integrityData: InnertubeGenerateItResponse = await integrityResponse.json();
-  const isIntegrityTokenMissing = !integrityData[0];
-  if (isIntegrityTokenMissing) {
+  const integrityData: unknown = await integrityResponse.json();
+  if (!isInnertubeGenerateItResponse(integrityData)) {
     throw new Error("No integrity token received");
   }
 

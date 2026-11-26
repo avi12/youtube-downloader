@@ -1,4 +1,6 @@
 import type { InnertubeContentPlaybackContext, InnertubeContext } from "./innertube-client";
+import { z } from "@/lib/zod";
+import { createGuard } from "@/lib/zod-guard";
 import type { Prettify } from "@/types";
 
 export {
@@ -58,7 +60,8 @@ export type InnertubeSearchRequest = Prettify<{
 
 export type InnertubeGenerateItRequest = readonly [requestKey: string, snapshotResponse: string];
 
-export type InnertubeGenerateItResponse = readonly [integrityToken: string, ...rest: unknown[]];
+// The integrity token, followed by fields the extension ignores
+export const isInnertubeGenerateItResponse = createGuard(z.tuple([z.string().min(1)], z.unknown()));
 
 export type InnertubeBrowseRequest = Prettify<{
   browseId: `FE${string}` | `UC${string}` | `VL${string}` | `MPLA${string}` | `MPRE${string}` | (string & {});

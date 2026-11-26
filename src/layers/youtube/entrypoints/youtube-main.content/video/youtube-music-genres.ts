@@ -1,5 +1,6 @@
 import { type InnertubeBrowseRequest, InnertubeClientName } from "@/lib/youtube/innertube";
 import { z } from "@/lib/zod";
+import { createShapeGuard } from "@/lib/zod-guard";
 import type { Prettify } from "@/types";
 
 const YT_MUSIC_BROWSE_URL = "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false";
@@ -32,10 +33,7 @@ type MoodsAndGenresResponse = Prettify<{
   };
 }>;
 
-const moodsAndGenresResponseShapeSchema = z.looseObject({});
-const moodsAndGenresResponseSchema = z.custom<MoodsAndGenresResponse>(
-  value => moodsAndGenresResponseShapeSchema.safeParse(value).success
-);
+const isMoodsAndGenresResponse = createShapeGuard<MoodsAndGenresResponse>(z.looseObject({}));
 
 const YT_MUSIC_CLIENT_VERSION = "1.20260408.01.00";
 let cachedYouTubeMusicGenres: Set<string> | null = null;
@@ -62,7 +60,11 @@ export async function fetchYouTubeMusicGenres() {
       } satisfies InnertubeBrowseRequest)
     });
 
-    const data = moodsAndGenresResponseSchema.parse(await response.json());
+    const data: unknown = await response.json();
+    if (!isMoodsAndGenresResponse(data)) {
+      return new Set<string>();
+    }
+
     const sections = data.contents?.singleColumnBrowseResultsRenderer?.tabs?.[0]
       ?.tabRenderer?.content?.sectionListRenderer?.contents ?? [];
 

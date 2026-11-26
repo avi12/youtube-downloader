@@ -7,7 +7,7 @@ import {
   isPlayerCaptionTrackData
 } from "@/lib/youtube/movie-player";
 import type { MoviePlayerElement } from "@/lib/youtube/movie-player";
-import { trackDescriptorSchema } from "@/lib/youtube/schemas";
+import { isTrackDescriptor } from "@/lib/youtube/schemas";
 import type { Prettify } from "@/types";
 
 const AD_PLAYER_CLASSES = ["ad-showing", "ad-interrupting"];
@@ -34,9 +34,8 @@ function readActiveAudioTrackId(player: MoviePlayerElement | null) {
   }
 
   for (const value of Object.values(track)) {
-    const parsed = trackDescriptorSchema.safeParse(value);
-    if (parsed.success) {
-      return parsed.data.id;
+    if (isTrackDescriptor(value)) {
+      return value.id;
     }
   }
 

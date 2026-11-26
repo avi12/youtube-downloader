@@ -2,7 +2,7 @@ import { cancelDownloadsLocally } from "@/layers/youtube/entrypoints/youtube.con
 import { uncancelStreamTransfer } from "@/layers/youtube/entrypoints/youtube.content/download/stream-transfer";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
-import { downloadRequestSchema } from "@/lib/youtube/schemas";
+import { isDownloadRequest } from "@/lib/youtube/schemas";
 
 export function registerDownloadProgressHandlers() {
   crossWorldMessenger.onMessage(CrossWorldMessage.CancelDownload, ({ data }) => {
@@ -10,12 +10,12 @@ export function registerDownloadProgressHandlers() {
   });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.StartBackgroundDownload, ({ data }) => {
-    const parsed = downloadRequestSchema.safeParse(JSON.parse(data.requestJson));
-    if (!parsed.success) {
+    const request: unknown = JSON.parse(data.requestJson);
+    if (!isDownloadRequest(request)) {
       return;
     }
 
-    sendMessage(MessageType.StartBackgroundDownload, parsed.data).catch(() => {});
+    sendMessage(MessageType.StartBackgroundDownload, request).catch(() => {});
   });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.AnnounceDownload, ({ data }) => {

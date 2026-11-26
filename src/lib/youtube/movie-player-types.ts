@@ -1,3 +1,5 @@
+import type { captionEventBusSchema, playerCaptionTrackDataSchema } from "./schemas";
+import type { z } from "@/lib/zod";
 import type { PlayerResponse, Prettify } from "@/types";
 
 export interface MoviePlayerElement extends HTMLElement {
@@ -68,15 +70,11 @@ export interface MoviePlayerElement extends HTMLElement {
   }) => void;
 }
 
-export type PlayerCaptionTrackData = Prettify<{
-  languageCode: string;
+export type PlayerCaptionTrackData = Prettify<z.infer<typeof playerCaptionTrackDataSchema> & {
   displayName: string;
-  vss_id: string;
 }>;
 
-export interface CaptionEventBus {
-  subscribe: (topic: string, handler: (data: unknown) => void) => void;
-}
+export type CaptionEventBus = z.infer<typeof captionEventBusSchema>;
 
 export const ACTIVE_CAPTION_ATTR = "data-ytdl-caption";
 export const ACTIVE_AUDIO_ATTR = "data-ytdl-audio";

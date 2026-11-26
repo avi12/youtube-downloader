@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isHtmlElement, isInputElement } from "@/lib/dom-guards";
   import { required } from "@/lib/required";
   import type { createPlaylistGridItemState } from "./PlaylistGridItem.state.svelte";
   import { onButtonClick } from "@/lib/messaging/cross-world-messenger";
@@ -6,7 +7,7 @@
   import { toInlineLabeledOption } from "@/lib/utils/choices";
   import { listContainerChoices } from "@/lib/utils/containers";
   import { VIDEO_QUALITIES } from "@/lib/youtube/options-defaults";
-  import { isTpYtPaperInputElement } from "@/lib/youtube/schemas";
+  import { isDownloadType, isTpYtPaperInputElement } from "@/lib/youtube/schemas";
   import {
     ButtonSize,
     ButtonState,
@@ -120,7 +121,7 @@
 
   function createOutputAttacher(button: OutputButton) {
     return (elButton: Element) => {
-      if (!(elButton instanceof HTMLElement)) {
+      if (!isHtmlElement(elButton)) {
         return;
       }
 
@@ -184,8 +185,7 @@
   const audioExtOptions = listContainerChoices("audio").map(toInlineLabeledOption);
 
   function handleZipNameInput(event: Event) {
-    const isInputElement = event.target instanceof HTMLInputElement;
-    if (isInputElement) {
+    if (isInputElement(event.target)) {
       state.effectiveZipName = event.target.value;
       return;
     }
@@ -208,7 +208,11 @@
     id="playlist-grid-download-type-{playlistId}"
     disabled={state.isWorking}
     label="Download type"
-    onchange={value => (state.effectiveDownloadType = value as DownloadType)}
+    onchange={value => {
+      if (isDownloadType(value)) {
+        state.effectiveDownloadType = value;
+      }
+    }}
     options={downloadTypeOptions}
     value={state.effectiveDownloadType}
   />

@@ -14,7 +14,7 @@ import { required } from "@/lib/required";
 import { sabrFetchBridge } from "@/lib/messaging/sabr-fetch-bridge";
 import { base64ToUint8Array, uint8ToBase64 } from "@/lib/utils/binary";
 import { createLogger, LogScope } from "@/lib/utils/logger";
-import { ytcfgSchema } from "@/lib/youtube/schemas";
+import { isYtcfg } from "@/lib/youtube/schemas";
 
 const log = createLogger(LogScope.PageSabrFetch);
 
@@ -28,8 +28,7 @@ function readVisitorData() {
     return "";
   }
 
-  const parsed = ytcfgSchema.safeParse(ytcfg);
-  const value = parsed.success ? parsed.data.get?.("VISITOR_DATA") : undefined;
+  const value = isYtcfg(ytcfg) ? ytcfg.get?.("VISITOR_DATA") : undefined;
   return typeof value === "string" ? value : "";
 }
 

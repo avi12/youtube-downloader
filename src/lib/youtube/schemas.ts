@@ -1,38 +1,63 @@
 import type { MusicSearchResponse } from "./music-search-types";
 import { z } from "@/lib/zod";
-import type {
-  DownloadRequest,
-  PlayerResponse,
-  TpYtPaperInputElement,
-  VideoData,
-  YtButtonViewModelElement
+import { createGuard, createShapeGuard } from "@/lib/zod-guard";
+import {
+  type DownloadRequest,
+  DownloadType,
+  type PlayerResponse,
+  type TpYtPaperInputElement,
+  type VideoData,
+  type YtButtonViewModelElement
 } from "@/types";
+
+export const isDownloadType = createGuard(z.enum(DownloadType));
 
 export const playerCaptionTrackDataSchema = z.looseObject({
   languageCode: z.string(),
   vss_id: z.string()
 });
 
-export const captionBusContextSchema = z.looseObject({
-  state: z.record(z.string(), z.unknown()).optional()
-});
+export const isCaptionBusContext = createGuard(
+  z.looseObject({
+    state: z.record(z.string(), z.unknown()).optional()
+  })
+);
 
 export const captionEventBusSchema = z.looseObject({
-  subscribe: z.function()
+  subscribe: z.function({
+    input: [
+      z.string(),
+      z.function({
+        input: [z.unknown()],
+        output: z.void()
+      })
+    ],
+    output: z.void()
+  })
+});
+
+const botGuardSnapshotSchema = z.function({
+  input: [z.array(z.unknown())],
+  output: z.string().nullable()
 });
 
 export const botGuardVmEntrySchema = z.looseObject({
-  a: z.function()
+  a: z.function({
+    input: z.array(z.unknown()),
+    output: z.tuple([botGuardSnapshotSchema.optional()]).nullish()
+  })
 });
 
 export const trustedResourceUrlSchema = z.looseObject({
   privateDoNotAccessOrElseTrustedResourceUrlWrappedValue: z.string()
 });
 
-export const trackDescriptorSchema = z.looseObject({
-  id: z.string(),
-  isAutoDubbed: z.unknown()
-});
+export const isTrackDescriptor = createGuard(
+  z.looseObject({
+    id: z.string(),
+    isAutoDubbed: z.unknown()
+  })
+);
 
 export const playlistVideoEntrySchema = z.looseObject({
   playlistVideoRenderer: z.looseObject({
@@ -64,9 +89,14 @@ const lockupCardDataSchema = z.looseObject({
   videoRenderer: videoRendererSchema.optional()
 });
 
-export const ytcfgSchema = z.looseObject({
-  get: z.custom<(key: string) => unknown>(value => typeof value === "function").optional()
-});
+export const isYtcfg = createGuard(
+  z.looseObject({
+    get: z.function({
+      input: [z.string()],
+      output: z.unknown()
+    }).optional()
+  })
+);
 
 const continuationItemListSchema = z.looseObject({
   continuationItems: z.array(z.unknown()).optional()
@@ -151,50 +181,42 @@ const playerResponseShapeSchema = z.looseObject({
   })
 });
 
-export const playerResponseSchema = z.custom<PlayerResponse>(
-  value => playerResponseShapeSchema.safeParse(value).success
+export const isPlayerResponse = createShapeGuard<PlayerResponse>(playerResponseShapeSchema);
+
+export const isVideoData = createShapeGuard<VideoData>(
+  z.looseObject({
+    videoId: z.string()
+  })
 );
 
-export function isPlayerResponse(value: unknown): value is PlayerResponse {
-  return playerResponseSchema.safeParse(value).success;
-}
-
-const videoDataShapeSchema = z.looseObject({
-  videoId: z.string()
-});
-
-export const videoDataSchema = z.custom<VideoData>(value => videoDataShapeSchema.safeParse(value).success);
-
-const downloadRequestShapeSchema = z.looseObject({
-  videoId: z.string(),
-  videoItag: z.number(),
-  audioItag: z.number(),
-  filenameOutput: z.string()
-});
-
-export const downloadRequestSchema = z.custom<DownloadRequest>(
-  value => downloadRequestShapeSchema.safeParse(value).success
+export const isDownloadRequest = createShapeGuard<DownloadRequest>(
+  z.looseObject({
+    videoId: z.string(),
+    videoItag: z.number(),
+    audioItag: z.number(),
+    filenameOutput: z.string()
+  })
 );
 
-export const musicSearchResponseSchema = z.custom<MusicSearchResponse>(
-  value => z.looseObject({}).safeParse(value).success
+export const isMusicSearchResponse = createShapeGuard<MusicSearchResponse>(z.looseObject({}));
+
+export const isTpYtPaperInputElement = createShapeGuard<TpYtPaperInputElement>(
+  z.looseObject({
+    updateStyles: z.function({
+      input: [z.record(z.string(), z.string())],
+      output: z.void()
+    }),
+    label: z.string(),
+    value: z.string()
+  })
 );
-
-const tpYtPaperInputSchema = z.looseObject({
-  updateStyles: z.custom<(styles: Record<string, string>) => void>(value => typeof value === "function"),
-  label: z.string(),
-  value: z.string()
-});
-
-export function isTpYtPaperInputElement(value: unknown): value is TpYtPaperInputElement {
-  return tpYtPaperInputSchema.safeParse(value).success;
-}
 
 const YT_BUTTON_VIEW_MODEL_TAG = "YT-BUTTON-VIEW-MODEL";
 
-export function isYtButtonViewModelElement(value: unknown): value is YtButtonViewModelElement {
-  return value instanceof HTMLElement && value.tagName === YT_BUTTON_VIEW_MODEL_TAG;
-}
+// Lazy: `HTMLElement` doesn't exist when WXT imports the entrypoints in Node
+export const isYtButtonViewModelElement = createShapeGuard<YtButtonViewModelElement>(
+  z.lazy(() => z.instanceof(HTMLElement).refine(element => element.tagName === YT_BUTTON_VIEW_MODEL_TAG))
+);
 
 const iconNamedElementSchema = z.looseObject({
   data: z.looseObject({ iconName: z.string() })
@@ -210,12 +232,7 @@ const ytLockupViewModelElementSchema = z.looseObject({
 
 export type YtLockupViewModelElement = HTMLElement & z.infer<typeof ytLockupViewModelElementSchema>;
 
-export function isYtLockupViewModelElement(value: unknown): value is YtLockupViewModelElement {
-  return ytLockupViewModelElementSchema.safeParse(value).success;
-}
+export const isYtLockupViewModelElement = createShapeGuard<YtLockupViewModelElement>(ytLockupViewModelElementSchema);
 
-export type PlayerCaptionTrackData = z.infer<typeof playerCaptionTrackDataSchema>;
 export type YtInitialDataPlaylist = z.infer<typeof ytInitialDataPlaylistSchema>;
 export type BrowseContinuationResponse = z.infer<typeof browseContinuationResponseSchema>;
-export type PlaylistVideoEntry = z.infer<typeof playlistVideoEntrySchema>;
-export type PlaylistContinuationEntry = z.infer<typeof playlistContinuationEntrySchema>;
