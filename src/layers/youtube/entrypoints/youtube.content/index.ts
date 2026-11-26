@@ -1,3 +1,4 @@
+import { isDownloadFrame } from "@/lib/youtube/download-frame";
 import { listenForKeepalive } from "./download/keepalive";
 import { registerBackgroundMessageHandlers } from "./handlers/background";
 import { registerCrossWorldHandlers } from "./handlers/cross-world";
@@ -16,13 +17,11 @@ import { initContentOptions } from "@/lib/ui/synced-stores.svelte";
 import { INITIAL_OPTIONS as defaultOptions } from "@/lib/youtube/video-helpers";
 import { forwardSabrCredentialsWithRetry, listenForSabrBodyReady } from "#youtube/lib/youtube/sabr/credentials";
 
-const YTDL_IFRAME_QUERY_PARAM = "ytdl=1";
-
 export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
   allFrames: true,
   async main(context) {
-    const isDownloadIframe = self !== top && location.search.includes(YTDL_IFRAME_QUERY_PARAM);
+    const isDownloadIframe = isDownloadFrame();
     const isUnrelatedIframe = self !== top && !isDownloadIframe;
     if (isUnrelatedIframe) {
       return;

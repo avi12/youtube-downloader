@@ -1,3 +1,4 @@
+import { isDownloadFrame } from "@/lib/youtube/download-frame";
 import { injectSegmentedDownloadButton } from "@/layers/youtube/entrypoints/youtube-main.content/watch-button/watch-button";
 import { WatchButtonLayout } from "@/layers/youtube/entrypoints/youtube-main.content/watch-button/watch-button-types";
 import { getPageRoute, PageRoute, WATCH_PATHNAME } from "./page-route";
@@ -196,18 +197,8 @@ async function announceWhilePlaying(videoId: string) {
 const PLAYBACK_NUDGE_INTERVAL_MS = 1000;
 const PLAYER_RESPONSE_POLL_ATTEMPTS = 20;
 const PLAYER_RESPONSE_POLL_INTERVAL_MS = 250;
-const IFRAME_DOWNLOAD_PARAM = "ytdl";
 const MAX_IFRAME_UNPLAYABLE_RELOADS = 5;
 const IFRAME_RELOAD_COUNT_KEY = "__ytdlIframeUnplayableReloads";
-
-function isInDownloadIframe() {
-  const isNestedFrame = self !== top;
-  if (!isNestedFrame) {
-    return false;
-  }
-
-  return new URLSearchParams(location.search).get(IFRAME_DOWNLOAD_PARAM) === "1";
-}
 
 function readReloadCount() {
   const stored = Number(sessionStorage.getItem(IFRAME_RELOAD_COUNT_KEY));
@@ -274,7 +265,7 @@ export async function extractAndDispatchVideoData() {
     return;
   }
 
-  const isDownloadIframe = isInDownloadIframe();
+  const isDownloadIframe = isDownloadFrame();
   for (let attempt = 0; attempt < PLAYER_RESPONSE_POLL_ATTEMPTS; attempt++) {
     const outcome = await tryDispatchOnce(isDownloadIframe);
     const isTerminal = outcome === PollOutcome.Ready || outcome === PollOutcome.RetriedAsync;

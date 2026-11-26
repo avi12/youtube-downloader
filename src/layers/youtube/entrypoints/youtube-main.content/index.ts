@@ -1,3 +1,4 @@
+import { isDownloadFrame } from "@/lib/youtube/download-frame";
 import { registerCrossWorldHandlers } from "./cross-world-handlers";
 import { registerGridDropdownHandlers } from "./grid/grid-dropdown";
 import { registerGridTagger } from "./grid/grid-tagger";
@@ -12,7 +13,6 @@ import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-wo
 import { initContentOptions } from "@/lib/ui/synced-stores.svelte";
 import type { PlayerResponse } from "@/types";
 
-const YTDL_IFRAME_QUERY_PARAM = "ytdl=1";
 const EVENT_YT_NAVIGATE_FINISH = "yt-navigate-finish";
 const EVENT_YT_NAVIGATE_START = "yt-navigate-start";
 const EVENT_PAGEHIDE = "pagehide";
@@ -57,7 +57,7 @@ export default defineContentScript({
   world: "MAIN",
   allFrames: true,
   async main() {
-    const isUnrelatedIframe = self !== top && !location.search.includes(YTDL_IFRAME_QUERY_PARAM);
+    const isUnrelatedIframe = self !== top && !isDownloadFrame();
     if (isUnrelatedIframe) {
       return;
     }
