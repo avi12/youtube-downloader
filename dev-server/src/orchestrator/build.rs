@@ -5,13 +5,13 @@ use std::future::Future;
 
 use tokio::time::sleep;
 
-use super::schedule::StaticBundle;
-use super::{Orchestrator, BUILD_RETRY_DELAY, MAX_BUILD_ATTEMPTS};
 use crate::bridge::protocol::EntrypointLayout;
 use crate::bridge::Host;
 use crate::changes::workspace::Workspace;
 use crate::driver::BrowserDriver;
 use crate::error::{Error, Result};
+use crate::orchestrator::schedule::StaticBundle;
+use crate::orchestrator::{Orchestrator, BUILD_RETRY_DELAY, MAX_BUILD_ATTEMPTS};
 
 /// The error codes Windows file locks surface as while the browser holds extension files open.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

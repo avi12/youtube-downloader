@@ -6,7 +6,7 @@ use std::pin::Pin;
 
 use serde_json::Value;
 
-use super::error::Result;
+use crate::dev::browsers::error::Result;
 use crate::output::reload::{ExtensionReloadPlan, PageRefreshPlan, RefreshedPage, TabUpdateResult};
 
 /// A boxed future, so a target can sit behind `dyn ReloadTarget`.

@@ -3,8 +3,8 @@
 
 use serde::{Deserialize, Serialize};
 
-use super::plan::{BackgroundSwapPlan, ExtensionReloadPlan, PageRefreshPlan};
 use crate::output::manifest::describe_content_scripts;
+use crate::output::reload::plan::{BackgroundSwapPlan, ExtensionReloadPlan, PageRefreshPlan};
 
 /// A tab reloaded because in-place re-injection failed.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -147,7 +147,7 @@ pub(crate) fn describe_background_swap(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::output::reload::describe::*;
 
     fn reload_plan() -> ExtensionReloadPlan {
         ExtensionReloadPlan {

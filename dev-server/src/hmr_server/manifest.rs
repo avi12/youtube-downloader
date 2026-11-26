@@ -11,9 +11,9 @@ use std::path::PathBuf;
 use serde::Serialize;
 use serde_json::{Map, Value};
 
-use super::push::PushKind;
 use crate::changes::MANIFEST_FILE_NAME;
 use crate::error::{Error, Result};
+use crate::hmr_server::push::PushKind;
 
 /// The directory of the HMR modules and their manifest, inside the output directory.
 pub const HMR_DIRECTORY: &str = "hmr";

@@ -77,7 +77,7 @@ impl HmrHandle {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::hmr_server::handle::*;
 
     #[tokio::test(start_paused = true)]
     async fn a_broadcast_reaches_subscribers_and_stamps_the_push() {

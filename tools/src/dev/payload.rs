@@ -117,7 +117,7 @@ mod tests {
     use oxc_parser::Parser;
     use oxc_span::SourceType;
 
-    use super::*;
+    use crate::dev::payload::*;
 
     fn assert_parses(source: &str) {
         let allocator = Allocator::default();
@@ -164,7 +164,7 @@ mod tests {
 
 #[cfg(test)]
 mod seam_tests {
-    use super::*;
+    use crate::dev::payload::*;
     use crate::output::patches::hmr_names::{HMR_ENTRY_GLOBAL, HMR_RUNTIME_GLOBAL};
 
     #[test]

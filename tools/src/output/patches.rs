@@ -15,8 +15,8 @@ pub(crate) use sources::{recorder_source, replay_function_source};
 use self::hmr_names::{
     HMR_MANIFEST_FILE, HMR_OUT_SUBDIR, HMR_POPUP_LOADER_FILE, HMR_RUNTIME_FILE, YOUTUBE_ENTRY_NAME,
 };
-use super::error::{OutputError, Result};
-use super::manifest::{ExtensionManifest, MANIFEST_FILE};
+use crate::output::error::{OutputError, Result};
+use crate::output::manifest::{ExtensionManifest, MANIFEST_FILE};
 
 const YOUTUBE_WAR_MATCH: &str = "*://*.youtube.com/*";
 const CROSS_WORLD_RECORDER_FILE: &str = "dev/cross-world-recorder.js";
@@ -222,7 +222,7 @@ pub(crate) fn patch_built_output(output_dir: &Path, background_prelude: &str) ->
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::output::patches::*;
 
     #[test]
     fn only_module_scripts_are_stripped() {

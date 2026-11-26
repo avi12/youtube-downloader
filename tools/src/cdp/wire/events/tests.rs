@@ -2,7 +2,7 @@
 
 use serde_json::json;
 
-use super::*;
+use crate::cdp::wire::events::*;
 
 #[test]
 fn parses_and_renders_a_console_call() {

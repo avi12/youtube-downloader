@@ -134,7 +134,7 @@ pub(super) async fn stop_on_profile(platform: OsPlatform, profile: &Path) -> Res
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::output::profile::processes::*;
 
     fn process(pid: u32, command_line: &str) -> RunningProcess {
         RunningProcess {

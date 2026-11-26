@@ -189,7 +189,7 @@ pub(super) async fn ensure_chrome(project_root: &Path, os_platform: OsPlatform) 
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::dev::launcher::browser::cft::*;
 
     #[test]
     fn versions_compare_numerically() {

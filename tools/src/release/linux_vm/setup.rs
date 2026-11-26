@@ -4,9 +4,9 @@
 
 use std::path::{Path, PathBuf};
 
-use super::multipass;
-use super::portproxy;
-use super::{render, RootArgs, HOST_CDP_PORT, VM_NAME, VM_SOCAT_PORT};
+use crate::release::linux_vm::multipass;
+use crate::release::linux_vm::portproxy;
+use crate::release::linux_vm::{render, RootArgs, HOST_CDP_PORT, VM_NAME, VM_SOCAT_PORT};
 use crate::release::ReleaseError;
 
 const HOST_MOUNT: &str = "/host-repo";
@@ -78,7 +78,7 @@ pub(super) async fn run(args: RootArgs) -> Result<(), ReleaseError> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::release::linux_vm::setup::*;
 
     #[test]
     fn the_verbatim_prefix_is_removed() {

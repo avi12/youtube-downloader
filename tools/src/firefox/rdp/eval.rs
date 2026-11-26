@@ -6,7 +6,9 @@ use clap::Args;
 use serde::Deserialize;
 use serde_json::json;
 
-use super::client::{find_rdp_port, truncate, Rdp, RequestKind, DEFAULT_REPLY_TIMEOUT, ROOT_ACTOR};
+use crate::firefox::rdp::client::{
+    find_rdp_port, truncate, Rdp, RequestKind, DEFAULT_REPLY_TIMEOUT, ROOT_ACTOR,
+};
 use crate::firefox::{FirefoxError, Result};
 
 const EVAL_TIMEOUT: Duration = Duration::from_secs(30);
@@ -60,7 +62,7 @@ pub(in crate::firefox) async fn list() -> Result<()> {
         .parse::<ProcessList>()?;
 
     println!("\n== Tabs ==");
-    for tab in tabs.parse::<super::replies::TabList>()?.tabs {
+    for tab in tabs.parse::<crate::firefox::rdp::replies::TabList>()?.tabs {
         println!(
             "  {} | {} | {}",
             or_unknown(tab.actor.as_deref()),

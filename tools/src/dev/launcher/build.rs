@@ -8,10 +8,10 @@ use std::time::Duration;
 use serde_json::{json, Value};
 use tokio::time::sleep;
 
-use super::error::{LauncherError, Result};
-use super::log::log_event;
-use super::wxt_worker::{run_wxt_build, WxtBuildRequest};
 use crate::dev::hmr::{build_hmr, HmrBuild, HmrRequest};
+use crate::dev::launcher::error::{LauncherError, Result};
+use crate::dev::launcher::log::log_event;
+use crate::dev::launcher::wxt_worker::{run_wxt_build, WxtBuildRequest};
 use crate::dev::payload::{background_prelude_source, runtime_source, PayloadConfig};
 use crate::output::manifest::{ExtensionManifest, MANIFEST_FILE};
 use crate::output::options::DevOptions;
@@ -174,7 +174,7 @@ pub(super) async fn build_hmr_modules(options: &DevOptions, output_dir: &Path) -
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::dev::launcher::build::*;
 
     fn options(out_dir: Option<&str>) -> DevOptions {
         DevOptions {

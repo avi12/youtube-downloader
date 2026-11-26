@@ -11,8 +11,8 @@ mod updates;
 
 use self::environment::Environment;
 use self::updates::{render_updates_json, FIREFOX_GECKO_ID};
-use super::process::Invocation;
-use super::ReleaseError;
+use crate::release::process::Invocation;
+use crate::release::ReleaseError;
 
 const RELEASES_BASE: &str = "https://github.com/avi12/youtube-downloader/releases/download";
 const KEY_PATH_VARIABLE: &str = "CHROME_CRX_PRIVATE_KEY_PATH";
@@ -270,7 +270,7 @@ pub(super) async fn run(args: Args) -> Result<(), ReleaseError> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::release::package::*;
 
     #[test]
     fn xpi_url_points_at_the_tagged_release() {

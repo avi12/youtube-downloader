@@ -8,7 +8,7 @@ use tracing::field::{Field, Visit};
 use tracing::{Event, Level, Subscriber};
 use tracing_subscriber::layer::{Context, Layer, SubscriberExt};
 
-use super::error::{LauncherError, Result};
+use crate::dev::launcher::error::{LauncherError, Result};
 
 const MILLISECONDS_PER_TENTH: u64 = 100;
 const TENTHS_PER_SECOND: u64 = 10;
@@ -74,7 +74,7 @@ pub(super) fn install_log_layer() -> Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::dev::launcher::log::*;
 
     #[test]
     fn elapsed_time_keeps_one_decimal() {

@@ -1,4 +1,4 @@
-use super::*;
+use crate::firefox::rdp::client::*;
 
 #[test]
 fn the_rdp_port_skips_marionette_and_the_placeholder() {

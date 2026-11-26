@@ -80,7 +80,7 @@ pub fn is_youtube_tab(target: &CdpTarget) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::driver::cdp::target::*;
     use crate::error::Result;
 
     fn target(kind: TargetKind, url: &str, websocket: Option<&str>) -> CdpTarget {

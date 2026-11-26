@@ -7,7 +7,7 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 use tokio::time::Instant;
 
-use super::client::{find_rdp_port, Rdp, RequestKind};
+use crate::firefox::rdp::client::{find_rdp_port, Rdp, RequestKind};
 use crate::firefox::Result;
 
 const DEFAULT_DURATION_MS: u64 = 30_000;
@@ -138,7 +138,7 @@ pub(in crate::firefox) async fn run(args: ConsoleArgs) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::firefox::rdp::console::*;
 
     fn parse(value: Value) -> Resource {
         serde_json::from_value(value).unwrap_or_default()

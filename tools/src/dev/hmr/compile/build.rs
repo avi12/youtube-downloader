@@ -5,14 +5,14 @@ use std::path::PathBuf;
 
 use tokio::fs;
 
-use super::output::{finish_build, FinishInput};
-use super::protocol::{WorkerJob, MODE_DEVELOPMENT};
-use super::update::ContentScriptUpdate;
-use super::worker::{run_worker, Transforms, WorkerRole};
 use crate::dev::hmr::analysis::wxt_resolution::{
     entry_inputs, read_auto_imports, read_path_aliases, virtual_modules, PathAlias, VirtualModules,
 };
 use crate::dev::hmr::chunks::GraphCollector;
+use crate::dev::hmr::compile::output::{finish_build, FinishInput};
+use crate::dev::hmr::compile::protocol::{WorkerJob, MODE_DEVELOPMENT};
+use crate::dev::hmr::compile::update::ContentScriptUpdate;
+use crate::dev::hmr::compile::worker::{run_worker, Transforms, WorkerRole};
 use crate::dev::hmr::config::{BuildBrowser, ProjectPaths, HMR_OUT_SUBDIR, HMR_RUNTIME_GLOBAL};
 use crate::dev::hmr::error::Result;
 use ytdl_dev_hot::types::RelPath;

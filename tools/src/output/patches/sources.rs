@@ -1,6 +1,6 @@
 //! The JavaScript the dev server injects, as source text with `@@NAME@@` placeholders filled in.
 
-use super::hmr_names::HMR_ENTRY_GLOBAL;
+use crate::output::patches::hmr_names::HMR_ENTRY_GLOBAL;
 use serde_json::Value;
 
 pub(crate) const REQUEST_EVENT: &str = "@webext-core/messaging/custom-events";
@@ -174,7 +174,7 @@ pub(crate) fn content_script_loader(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::output::patches::sources::*;
 
     #[test]
     fn no_placeholder_survives() {

@@ -11,8 +11,8 @@ use serde_json::json;
 use tokio::fs;
 use ytdl_dev_hot::driver::cdp::{CdpTarget, TargetKind};
 
-use super::wire::EXTENSION_ID;
-use super::wire::{
+use crate::cdp::wire::EXTENSION_ID;
+use crate::cdp::wire::{
     browser_websocket_url, close_target, open_target, print_json, CdpError, Method, PortArg,
     Result, Session, Targets, Wanted,
 };

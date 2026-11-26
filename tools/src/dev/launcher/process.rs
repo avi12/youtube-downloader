@@ -5,7 +5,7 @@ use std::env;
 use std::net::{Ipv4Addr, TcpListener};
 use std::path::PathBuf;
 
-use super::error::Result;
+use crate::dev::launcher::error::Result;
 
 /// The first `name` found along `PATH`.
 pub(super) fn find_on_path(name: &str) -> Option<PathBuf> {

@@ -2,7 +2,7 @@
 
 use std::path::Path;
 
-use super::{HOST_CDP_PORT, VM_SOCAT_PORT, VNC_PORT};
+use crate::release::linux_vm::{HOST_CDP_PORT, VM_SOCAT_PORT, VNC_PORT};
 use crate::release::process::Invocation;
 use crate::release::ReleaseError;
 
@@ -84,7 +84,7 @@ pub(super) async fn apply(address: &str, forwards: &[Forward]) -> Result<(), Rel
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::release::linux_vm::portproxy::*;
 
     const TABLE: &str = "Listen on ipv4:             Connect to ipv4:\n\nAddress         Port        Address         Port\n--------------- ----------  --------------- ----------\n127.0.0.1       9234        10.0.0.5        9235\n";
 

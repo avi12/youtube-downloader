@@ -9,12 +9,12 @@ use tokio::time::Instant;
 use ytdl_dev_hot::driver::cdp::{CdpClient, CdpTarget, TargetKind};
 use ytdl_dev_hot::types::Port;
 
-use super::extensions_page::evaluate_on_extensions_page;
-use super::worlds::neutralize_orphaned_worlds_in_page;
 use crate::cdp::wire::{close_target, evaluate_on, Method, Session};
 use crate::dev::browsers::error::{BrowserError, Result};
 use crate::dev::browsers::scripts::{self, MANIFEST_NAME};
 use crate::dev::browsers::target::{BoxFuture, ReloadTarget};
+use crate::dev::browsers::targets::chrome::extensions_page::evaluate_on_extensions_page;
+use crate::dev::browsers::targets::chrome::worlds::neutralize_orphaned_worlds_in_page;
 use crate::output::manifest::matches_url_pattern;
 use crate::output::reload::{
     ExtensionReloadPlan, PageAction, PageRefreshPlan, RefreshedPage, TabUpdateResult,
@@ -315,7 +315,7 @@ impl ReloadTarget for ChromeTarget {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::dev::browsers::targets::chrome::target::*;
 
     #[test]
     fn the_extension_id_is_the_url_host() {

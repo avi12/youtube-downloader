@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 use serde_json::Value;
 use ts_rs::{Config, ExportError, TS};
 
-use super::{
+use crate::bridge::protocol::{
     ChangedOutputs, EntrypointLayout, HostRequest, HtmlEntrypoint, InboundMessage, LogLine,
     Notification, OutboundMessage, RebuildHmrResult, ReloadExtensionParams, RequestEnvelope,
     Response, SidecarConfig,

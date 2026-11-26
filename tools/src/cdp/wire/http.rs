@@ -8,7 +8,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 use tokio::time::timeout;
 
-use super::error::{CdpError, Result};
+use crate::cdp::wire::error::{CdpError, Result};
 
 const HTTP_TIMEOUT: Duration = Duration::from_secs(5);
 const GET_ATTEMPTS: usize = 3;
@@ -92,7 +92,7 @@ pub(crate) async fn close_target(port: u16, target_id: &str) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::cdp::wire::http::*;
 
     #[test]
     fn splits_status_and_body() {

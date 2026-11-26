@@ -6,8 +6,8 @@ use ytdl_dev_hot::types::Port;
 
 use crate::port::parse_port_number;
 
-use super::error::{CdpError, Result};
-use super::session::Session;
+use crate::cdp::wire::error::{CdpError, Result};
+use crate::cdp::wire::session::Session;
 
 /// The id of the extension under development.
 pub(crate) const EXTENSION_ID: &str = "iakmamcpgldfjjbeamagdkelogmokjpj";
@@ -107,7 +107,7 @@ pub(crate) async fn open_target(target: &CdpTarget) -> Result<Session> {
 mod tests {
     use ytdl_dev_hot::driver::cdp::TargetId;
 
-    use super::*;
+    use crate::cdp::wire::targets::*;
 
     fn target(kind: TargetKind, url: &str) -> CdpTarget {
         CdpTarget {

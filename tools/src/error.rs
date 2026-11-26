@@ -72,8 +72,8 @@ pub(crate) type Result<T> = std::result::Result<T, Error>;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::dev::{HmrError, LauncherError};
+    use crate::error::*;
 
     #[test]
     fn the_dev_errors_convert_and_exit_as_failures() {

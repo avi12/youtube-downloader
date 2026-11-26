@@ -57,7 +57,7 @@ async fn append_line(path: &Path, line: &str) -> std::io::Result<()> {
 mod tests {
     use std::time::Duration;
 
-    use super::*;
+    use crate::release::download::log::*;
 
     #[test]
     fn timestamp_is_iso_utc() {

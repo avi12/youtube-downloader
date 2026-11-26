@@ -9,7 +9,7 @@ use tokio::net::TcpStream;
 use tokio::time::timeout;
 use ytdl_dev_hot::driver::rdp::{encode_packet, PacketDecoder};
 
-use super::{FirefoxError, Result};
+use crate::firefox::{FirefoxError, Result};
 
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
 const READ_CHUNK_BYTES: usize = 8192;

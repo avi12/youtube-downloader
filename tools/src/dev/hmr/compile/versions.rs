@@ -203,7 +203,7 @@ impl ImportStamper {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::dev::hmr::compile::versions::*;
 
     fn chunk(code: &str, dependencies: &[&str], is_svelte: bool) -> HmrChunk {
         HmrChunk {

@@ -10,8 +10,10 @@ use serde_json::{json, Map, Value};
 use tokio::process::Command;
 use tokio::time::{timeout_at, Instant};
 
-use super::replies::{Addon, AddonList, FrameTarget, TabList, TargetReply, WatcherEvent};
 use crate::firefox::framed::Framed;
+use crate::firefox::rdp::replies::{
+    Addon, AddonList, FrameTarget, TabList, TargetReply, WatcherEvent,
+};
 use crate::firefox::{FirefoxError, Result};
 
 pub(crate) const ROOT_ACTOR: &str = "root";
@@ -228,7 +230,7 @@ impl Rdp {
         .await
     }
 
-    pub(crate) async fn tabs(&mut self) -> Result<Vec<super::replies::Tab>> {
+    pub(crate) async fn tabs(&mut self) -> Result<Vec<crate::firefox::rdp::replies::Tab>> {
         let reply = self
             .request(ROOT_ACTOR, RequestKind::ListTabs, json!({}))
             .await?;

@@ -12,9 +12,9 @@ use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
 use ytdl_dev_hot::driver::cdp::CdpTarget;
 
-use super::error::{CdpError, Result};
-use super::events::{Event, ExceptionDetails, ExecutionContext};
-use super::targets::open_target;
+use crate::cdp::wire::error::{CdpError, Result};
+use crate::cdp::wire::events::{Event, ExceptionDetails, ExecutionContext};
+use crate::cdp::wire::targets::open_target;
 
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
 const DEFAULT_REPLY_TIMEOUT: Duration = Duration::from_secs(30);

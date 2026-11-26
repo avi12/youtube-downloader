@@ -5,8 +5,8 @@ use std::time::Duration;
 use clap::{Args, Subcommand};
 use serde_json::json;
 
-use super::script;
-use super::wire::{
+use crate::cdp::script;
+use crate::cdp::wire::{
     evaluate_on, open_target, print_json, Method, PortArg, Result, Session, Targets, Wanted,
     EXTENSION_ID,
 };

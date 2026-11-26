@@ -7,9 +7,9 @@ use clap::{Args, Subcommand};
 use serde::Serialize;
 use serde_json::{json, Value};
 
-use super::client::{truncate, Rdp, RequestKind};
-use super::replies::FrameTarget;
 use crate::firefox::pause;
+use crate::firefox::rdp::client::{truncate, Rdp, RequestKind};
+use crate::firefox::rdp::replies::FrameTarget;
 use crate::firefox::{FirefoxError, Result};
 use crate::port::parse_port_number;
 

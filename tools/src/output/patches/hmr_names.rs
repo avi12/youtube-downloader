@@ -24,7 +24,7 @@ pub(crate) const YOUTUBE_ENTRY_NAME: &str = "youtube";
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::output::patches::hmr_names::*;
 
     #[test]
     fn manifest_path_joins_the_subdirectory_and_the_file() {

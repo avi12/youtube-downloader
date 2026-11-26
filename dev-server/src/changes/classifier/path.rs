@@ -5,7 +5,7 @@ use std::collections::HashSet;
 use crate::bridge::protocol::{HtmlEntrypoint, SidecarConfig};
 use crate::types::RelPath;
 
-use super::public_output_path;
+use crate::changes::classifier::public_output_path;
 
 /// What kind of edit a changed path is. Decides which latch it sets.
 #[derive(Debug, Clone, PartialEq, Eq)]

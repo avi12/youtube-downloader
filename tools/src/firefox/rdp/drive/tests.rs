@@ -1,4 +1,4 @@
-use super::*;
+use crate::firefox::rdp::drive::*;
 
 fn target(url: &str) -> FrameTarget {
     FrameTarget {

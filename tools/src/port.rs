@@ -18,7 +18,7 @@ pub(crate) fn parse_port(raw: &str) -> Result<Port, String> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::port::*;
 
     #[test]
     fn accepts_the_valid_range_only() {

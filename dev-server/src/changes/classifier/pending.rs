@@ -4,7 +4,7 @@ use std::collections::BTreeSet;
 
 use crate::types::RelPath;
 
-use super::PathClass;
+use crate::changes::classifier::PathClass;
 
 /// The latches of a debounce window, mirroring the TypeScript `pending*` variables.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]

@@ -7,7 +7,6 @@ use std::collections::BTreeSet;
 use serde_json::{json, Value};
 use tokio::time::Instant;
 
-use super::Orchestrator;
 use crate::bridge::Host;
 use crate::changes::classifier::{
     diff_locale_catalog, plan_resource_update, public_output_path, ResourceAction,
@@ -16,6 +15,7 @@ use crate::changes::classifier::{
 use crate::changes::workspace::Workspace;
 use crate::driver::BrowserDriver;
 use crate::error::Result;
+use crate::orchestrator::Orchestrator;
 use crate::types::RelPath;
 
 /// What applying one resource changed.

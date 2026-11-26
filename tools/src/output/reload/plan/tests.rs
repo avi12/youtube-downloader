@@ -1,6 +1,6 @@
 use serde_json::json;
 
-use super::*;
+use crate::output::reload::plan::*;
 
 fn snapshot(files: &[(&str, &str)], manifest: Value) -> BuildSnapshot {
     BuildSnapshot {

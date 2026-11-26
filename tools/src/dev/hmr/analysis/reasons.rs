@@ -4,7 +4,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 
-use super::side_effects::find_side_effect;
+use crate::dev::hmr::analysis::side_effects::find_side_effect;
 use crate::dev::hmr::chunks::{ChunkType, OutputChunk};
 use crate::dev::hmr::config::{without_query, ProjectPaths};
 use crate::dev::hmr::error::Result;

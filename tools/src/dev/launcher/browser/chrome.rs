@@ -2,8 +2,8 @@
 
 use tokio::process::Child;
 
-use super::cft::ensure_chrome;
-use super::BrowserLaunch;
+use crate::dev::launcher::browser::cft::ensure_chrome;
+use crate::dev::launcher::browser::BrowserLaunch;
 use crate::dev::launcher::error::Result;
 use crate::output::options::{DevOptions, HostEnvironment, OsPlatform};
 use crate::release::process::Invocation;
@@ -89,7 +89,7 @@ pub(super) async fn launch(launch: BrowserLaunch<'_>) -> Result<Child> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::dev::launcher::browser::chrome::*;
 
     #[test]
     fn the_registry_dark_theme_value_is_recognised() {

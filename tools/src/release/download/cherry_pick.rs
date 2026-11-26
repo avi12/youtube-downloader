@@ -11,9 +11,9 @@ use ytdl_dev_hot::driver::cdp::CdpClient;
 use ytdl_dev_hot::driver::BrowserDriver;
 use ytdl_dev_hot::types::Port;
 
-use super::log::log;
-use super::{verify, Args as VerifyArgs, Report};
 use crate::port::parse_port;
+use crate::release::download::log::log;
+use crate::release::download::{verify, Args as VerifyArgs, Report};
 use crate::release::process::{Captured, Invocation, ProcessError};
 use crate::release::ReleaseError;
 
@@ -274,7 +274,7 @@ pub(in crate::release) async fn run(args: Args) -> Result<(), ReleaseError> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::release::download::cherry_pick::*;
 
     #[test]
     fn commits_skip_comments_and_keep_the_first_word() {

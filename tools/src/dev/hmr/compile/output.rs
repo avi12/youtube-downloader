@@ -8,12 +8,12 @@ use std::sync::{Mutex, PoisonError};
 
 use base64::Engine;
 
-use super::update::{ContentScriptUpdate, RuntimeHashes};
-use super::versions::{
-    compute_final_versions, describe_chunks, hash_vendor_chunks, HmrChunk, ImportStamper,
-};
 use crate::dev::hmr::analysis::hot_sources::{describe_hot_sources, HotSourceInput};
 use crate::dev::hmr::chunks::{BuildOutput, ChunkType, GraphCollector, OutputChunk};
+use crate::dev::hmr::compile::update::{ContentScriptUpdate, RuntimeHashes};
+use crate::dev::hmr::compile::versions::{
+    compute_final_versions, describe_chunks, hash_vendor_chunks, HmrChunk, ImportStamper,
+};
 use crate::dev::hmr::config::{
     short_hash, BuildBrowser, HmrManifest, ManifestModule, ProjectPaths, HMR_MANIFEST_FILE,
     HMR_OUT_SUBDIR, HMR_POPUP_LOADER_FILE, HMR_RUNTIME_FILE, POPUP_ENTRY_NAME, YOUTUBE_ENTRY_NAME,

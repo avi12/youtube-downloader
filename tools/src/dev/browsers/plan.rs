@@ -3,9 +3,9 @@
 
 use std::path::Path;
 
-use super::error::Result;
-use super::swap::BackgroundSwapper;
-use super::target::ReloadTarget;
+use crate::dev::browsers::error::Result;
+use crate::dev::browsers::swap::BackgroundSwapper;
+use crate::dev::browsers::target::ReloadTarget;
 use crate::dev::hmr::ContentScriptUpdate;
 use crate::output::reload::{
     describe_background_swap, describe_extension_reload, describe_page_refresh, BackgroundSwapPlan,
@@ -95,7 +95,7 @@ pub(super) mod fake {
 
     use serde_json::Value;
 
-    use super::super::target::{BoxFuture, ReloadTarget};
+    use crate::dev::browsers::target::{BoxFuture, ReloadTarget};
     use crate::output::reload::{
         ExtensionReloadPlan, PageAction, PageRefreshPlan, RefreshedPage, TabUpdateResult,
     };
@@ -159,7 +159,9 @@ pub(super) mod fake {
         fn run_script_in_background<'a>(&'a self, script: &'a str) -> BoxFuture<'a, ()> {
             Box::pin(async move {
                 if self.is_failing {
-                    return Err(super::super::BrowserError::Protocol("down".to_owned()));
+                    return Err(crate::dev::browsers::BrowserError::Protocol(
+                        "down".to_owned(),
+                    ));
                 }
                 self.scripts.lock().unwrap().push(script.to_owned());
                 Ok(())
@@ -172,8 +174,8 @@ pub(super) mod fake {
 mod tests {
     use std::sync::Arc;
 
-    use super::fake::FakeTarget;
-    use super::*;
+    use crate::dev::browsers::plan::fake::FakeTarget;
+    use crate::dev::browsers::plan::*;
     use crate::output::reload::{ExtensionReloadPlan, PageRefreshPlan};
 
     fn reload_plan() -> ExtensionReloadPlan {

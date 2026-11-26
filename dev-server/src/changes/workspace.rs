@@ -221,7 +221,7 @@ impl Workspace for DiskWorkspace {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::changes::workspace::*;
 
     #[tokio::test]
     async fn a_missing_manifest_snapshots_as_empty() -> Result<()> {

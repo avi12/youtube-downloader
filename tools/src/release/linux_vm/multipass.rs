@@ -5,7 +5,7 @@ use std::path::Path;
 
 use serde::Deserialize;
 
-use super::VM_NAME;
+use crate::release::linux_vm::VM_NAME;
 use crate::release::process::Invocation;
 use crate::release::ReleaseError;
 
@@ -112,7 +112,7 @@ pub(super) async fn run_script(script: &str) -> Result<Option<i32>, ReleaseError
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::release::linux_vm::multipass::*;
 
     #[test]
     fn info_reads_state_address_and_mounts() {

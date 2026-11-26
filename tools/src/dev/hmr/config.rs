@@ -136,7 +136,7 @@ pub(crate) fn without_query(module_path: &str) -> &str {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::dev::hmr::config::*;
 
     #[test]
     fn source_ids_are_project_relative() {

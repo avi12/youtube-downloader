@@ -120,7 +120,7 @@ impl Browser {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::release::download::browser::*;
     use serde_json::json;
 
     fn target(kind: TargetKind, url: &str, socket: Option<&str>) -> CdpTarget {

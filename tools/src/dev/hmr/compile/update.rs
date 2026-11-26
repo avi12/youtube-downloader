@@ -59,7 +59,7 @@ impl ContentScriptUpdate {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::dev::hmr::compile::update::*;
 
     fn hashes(vendor: &str, restart: &str) -> RuntimeHashes {
         RuntimeHashes {

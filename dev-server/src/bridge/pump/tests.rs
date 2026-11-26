@@ -4,7 +4,7 @@ use tokio::io::{duplex, split, AsyncBufReadExt, AsyncWriteExt, BufReader, Duplex
 use tokio::io::{Lines, ReadHalf, WriteHalf};
 use tracing_subscriber::layer::SubscriberExt;
 
-use super::*;
+use crate::bridge::pump::*;
 use crate::bridge::Host;
 
 const WAIT: Duration = Duration::from_secs(5);

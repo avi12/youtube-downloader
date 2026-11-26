@@ -1,6 +1,6 @@
 //! Unit tests.
 
-use super::*;
+use crate::dev::hmr::analysis::side_effects::*;
 
 fn rule_of(source: &str) -> Option<SideEffectRule> {
     find_side_effect(source, "module.ts")

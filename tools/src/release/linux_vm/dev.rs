@@ -7,9 +7,9 @@ use std::time::Duration;
 use tokio::net::TcpStream;
 use tokio::time::sleep;
 
-use super::multipass::{self, VmDetails};
-use super::portproxy::{self, Forward};
-use super::{
+use crate::release::linux_vm::multipass::{self, VmDetails};
+use crate::release::linux_vm::portproxy::{self, Forward};
+use crate::release::linux_vm::{
     render, shell_quote, RootArgs, HOST_CDP_PORT, VM_CHROME_PORT, VM_NAME, VM_SOCAT_PORT,
     VM_WORK_DIR, VNC_PORT,
 };

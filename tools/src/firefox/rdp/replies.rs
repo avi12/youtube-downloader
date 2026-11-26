@@ -81,7 +81,7 @@ pub(crate) struct ProcessReply {
 mod tests {
     use serde_json::json;
 
-    use super::*;
+    use crate::firefox::rdp::replies::*;
 
     #[test]
     fn an_addon_carries_its_manifest_url() {

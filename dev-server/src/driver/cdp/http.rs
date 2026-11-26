@@ -120,7 +120,7 @@ fn body(raw: &[u8]) -> Result<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::driver::cdp::http::*;
 
     #[test]
     fn the_host_header_carries_the_port() {

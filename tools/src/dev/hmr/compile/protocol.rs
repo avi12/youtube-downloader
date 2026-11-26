@@ -61,7 +61,7 @@ pub(super) struct TransformResponse {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::dev::hmr::compile::protocol::*;
 
     #[test]
     fn a_request_line_parses() {

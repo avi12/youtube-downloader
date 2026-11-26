@@ -12,8 +12,8 @@ use std::sync::Arc;
 use tokio::process::Child;
 use ytdl_dev_hot::types::Port;
 
-use super::error::Result;
 use crate::dev::browsers::{ChromeTarget, FirefoxTarget, FirefoxTargetConfig, ReloadTarget};
+use crate::dev::launcher::error::Result;
 use crate::output::options::{BuildBrowser, DevOptions, HostEnvironment};
 
 /// What launching needs to know.

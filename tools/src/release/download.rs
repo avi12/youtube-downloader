@@ -17,8 +17,8 @@ use ytdl_dev_hot::types::Port;
 use self::browser::Browser;
 use self::flow::Failure;
 use self::page::{snapshot_download_ids, DownloadItem};
-use super::ReleaseError;
 use crate::port::parse_port;
+use crate::release::ReleaseError;
 
 const DEFAULT_TIMEOUT_SECONDS: u64 = 300;
 

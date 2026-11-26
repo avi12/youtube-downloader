@@ -225,7 +225,7 @@ async fn interrupted() {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::dev::launcher::*;
 
     #[test]
     fn watch_paths_name_the_sources_the_config_and_the_env_files() {

@@ -12,12 +12,12 @@ use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader, Lines};
 use tokio::process::{Child, ChildStdin, ChildStdout, Command};
 use tokio::sync::{mpsc, Mutex};
 
-use super::preserve_state::StatePatterns;
-use super::protocol::{
-    TransformRequest, TransformResponse, WorkerJob, WorkerMessage, MODE_DEVELOPMENT,
-};
 use crate::dev::hmr::analysis::wxt_resolution::{source_with_auto_imports, AutoImport};
 use crate::dev::hmr::chunks::BuildOutput;
+use crate::dev::hmr::compile::preserve_state::StatePatterns;
+use crate::dev::hmr::compile::protocol::{
+    TransformRequest, TransformResponse, WorkerJob, WorkerMessage, MODE_DEVELOPMENT,
+};
 use crate::dev::hmr::error::{HmrError, Result};
 
 const WORKER_SOURCE: &str = include_str!("../../../../assets/hmr/compile-worker.mjs");

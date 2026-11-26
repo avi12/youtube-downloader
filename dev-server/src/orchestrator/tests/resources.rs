@@ -2,7 +2,7 @@
 
 use serde_json::json;
 
-use super::harness::start;
+use crate::orchestrator::tests::harness::start;
 use crate::types::{ContentHash, RelPath};
 
 #[tokio::test(start_paused = true)]

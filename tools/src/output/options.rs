@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 use clap::{Args, ValueEnum};
 use serde::{Deserialize, Serialize};
 
-use super::error::{OutputError, Result};
+use crate::output::error::{OutputError, Result};
 use crate::port::parse_port_number;
 
 const CDP_PORT_WINDOWS: u16 = 9229;
@@ -234,7 +234,7 @@ fn lockfile_path(project_root: &Path) -> PathBuf {
 mod tests {
     use clap::Parser;
 
-    use super::*;
+    use crate::output::options::*;
 
     #[derive(Debug, Parser)]
     struct Wrapper {
@@ -297,7 +297,7 @@ mod tests {
 mod build_browser_tests {
     use clap::ValueEnum;
 
-    use super::*;
+    use crate::output::options::*;
 
     #[test]
     fn one_browser_enum_serves_clap_serde_and_the_build_name() {

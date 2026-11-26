@@ -7,11 +7,11 @@ use std::path::Path;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use super::snapshot::BuildSnapshot;
 use crate::output::error::Result;
 use crate::output::manifest::{
     describe_content_scripts, ContentScriptEntry, ExtensionManifest, MANIFEST_FILE,
 };
+use crate::output::reload::snapshot::BuildSnapshot;
 
 const LOCALES_DIR_PREFIX: &str = "_locales/";
 const HTML_SUFFIX: &str = ".html";

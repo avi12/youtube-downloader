@@ -11,7 +11,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::Path;
 
-use super::reasons::ReloadReasoner;
+use crate::dev::hmr::analysis::reasons::ReloadReasoner;
 use crate::dev::hmr::chunks::{ChunkType, GraphCollector, OutputChunk};
 use crate::dev::hmr::config::{
     short_hash, ManifestStyles, ProjectPaths, HMR_ENTRIES, HMR_OUT_SUBDIR,

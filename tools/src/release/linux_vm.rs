@@ -12,7 +12,7 @@ use std::path::PathBuf;
 
 use clap::{Args as ClapArgs, Subcommand};
 
-use super::ReleaseError;
+use crate::release::ReleaseError;
 
 const VM_NAME: &str = "ytdl-linux";
 /// Where the VM's CDP port is reachable on the host.
@@ -67,7 +67,7 @@ fn shell_quote(raw: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::release::linux_vm::*;
 
     #[test]
     fn placeholders_are_filled_and_crlf_is_normalised() {

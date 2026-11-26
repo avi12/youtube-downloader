@@ -9,8 +9,8 @@ use std::path::{Path, PathBuf};
 use serde_json::{json, Value};
 use tokio::process::Child;
 
-use super::marionette::install_temporary_addon;
-use super::{BrowserLaunch, FirefoxIdentity};
+use crate::dev::launcher::browser::marionette::install_temporary_addon;
+use crate::dev::launcher::browser::{BrowserLaunch, FirefoxIdentity};
 use crate::dev::launcher::error::{LauncherError, Result};
 use crate::dev::launcher::process::{find_on_path, free_port};
 use crate::output::manifest::ExtensionManifest;
@@ -124,7 +124,7 @@ pub(super) async fn launch(launch: BrowserLaunch<'_>) -> Result<(Child, FirefoxI
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::dev::launcher::browser::firefox::*;
 
     #[test]
     fn prefs_render_as_user_pref_lines() {

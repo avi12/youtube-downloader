@@ -6,8 +6,8 @@ use std::path::{Path, PathBuf};
 
 mod processes;
 
-use super::error::{OutputError, Result};
-use super::options::{BuildBrowser, DevOptions, HostEnvironment, OsPlatform};
+use crate::output::error::{OutputError, Result};
+use crate::output::options::{BuildBrowser, DevOptions, HostEnvironment, OsPlatform};
 
 const SEEDED_SENTINEL: &str = ".seeded";
 const CHROME_PROFILE_DIRECTORIES: [&str; 2] = ["Default", "Profile 1"];
@@ -182,7 +182,7 @@ pub(crate) async fn clean_leftover_instances(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::output::profile::*;
 
     const INI_WITH_INSTALL: &str = "[Profile0]\nName=old\nIsRelative=1\nPath=Profiles/old\nDefault=1\n\n[Install4F96D1932A9F858E]\nDefault=Profiles/live\nLocked=1\n";
 

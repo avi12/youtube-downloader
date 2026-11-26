@@ -9,9 +9,9 @@ use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 use tokio::net::TcpStream;
 use tokio::time::Instant;
 
-use super::message::{ActorId, Packet, PacketKind, RequestKind};
-use super::packet::{encode_packet, PacketDecoder};
 use crate::driver::net::{loopback, until, within};
+use crate::driver::rdp::message::{ActorId, Packet, PacketKind, RequestKind};
+use crate::driver::rdp::packet::{encode_packet, PacketDecoder};
 use crate::error::{Error, Result};
 use crate::types::Port;
 

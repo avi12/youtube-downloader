@@ -10,7 +10,7 @@ use tokio::net::TcpStream;
 use tokio_tungstenite::tungstenite::{Error as WebSocketError, Message};
 use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
 
-use super::frames::FrameTreeResult;
+use crate::driver::cdp::frames::FrameTreeResult;
 use crate::driver::net::within;
 use crate::error::{Error, Result};
 

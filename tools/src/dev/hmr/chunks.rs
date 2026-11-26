@@ -4,7 +4,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use serde::Deserialize;
 
-use super::config::ProjectPaths;
+use crate::dev::hmr::config::ProjectPaths;
 
 const CSS_EXTENSION: &str = ".css";
 
@@ -109,7 +109,7 @@ impl GraphCollector {
 mod tests {
     use std::path::Path;
 
-    use super::*;
+    use crate::dev::hmr::chunks::*;
 
     #[test]
     fn css_importers_keep_only_source_modules() {

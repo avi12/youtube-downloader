@@ -1,6 +1,6 @@
 use serde_json::json;
 
-use super::*;
+use crate::bridge::protocol::*;
 
 fn request_line(request: HostRequest) -> Result<String> {
     encode_line(&OutboundMessage::Request(RequestEnvelope {

@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use ytdl_dev_hot::changes::classifier::read_script_outputs;
 
-use super::error::{OutputError, Result};
+use crate::output::error::{OutputError, Result};
 
 pub(crate) const MANIFEST_FILE: &str = "manifest.json";
 const JS_EXTENSION: &str = ".js";
@@ -204,7 +204,7 @@ pub(crate) fn matches_url_pattern(url: &str, pattern: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::output::manifest::*;
 
     #[test]
     fn subdomain_wildcard_matches_bare_and_nested_hosts() {

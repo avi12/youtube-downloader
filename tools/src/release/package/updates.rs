@@ -59,7 +59,7 @@ pub(super) fn render_updates_json(version: &str, xpi_url: &str) -> Result<String
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::release::package::updates::*;
 
     #[test]
     fn updates_json_matches_the_amo_shape() {

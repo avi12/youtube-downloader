@@ -7,13 +7,13 @@ use std::ops::ControlFlow;
 use tokio::sync::mpsc;
 use tokio::time::{interval_at, sleep_until, Instant, MissedTickBehavior};
 
-use super::{Orchestrator, LIVENESS_MAX_FAILURES, LIVENESS_POLL};
 use crate::bridge::protocol::Notification;
 use crate::bridge::Host;
 use crate::changes::classifier::{classify_path, plan_rebuild, PathClass};
 use crate::changes::watcher::ChangeBatch;
 use crate::changes::workspace::Workspace;
 use crate::driver::BrowserDriver;
+use crate::orchestrator::{Orchestrator, LIVENESS_MAX_FAILURES, LIVENESS_POLL};
 use crate::types::RelPath;
 
 /// The channels the loop reads besides its own timers.

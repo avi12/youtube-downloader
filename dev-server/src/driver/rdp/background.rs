@@ -6,9 +6,9 @@ use std::time::Duration;
 use serde_json::json;
 use tokio::net::TcpStream;
 
-use super::connection::{Connection, Evaluation};
-use super::message::{ActorId, PacketKind, RequestKind, WatchedTargetType};
-use super::RdpClient;
+use crate::driver::rdp::connection::{Connection, Evaluation};
+use crate::driver::rdp::message::{ActorId, PacketKind, RequestKind, WatchedTargetType};
+use crate::driver::rdp::RdpClient;
 use crate::error::{Error, Result};
 
 /// The id of the browser's parent process, whose privileged console can wake an event page.

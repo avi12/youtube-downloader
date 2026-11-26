@@ -10,11 +10,11 @@ use tokio::sync::Mutex;
 use ytdl_dev_hot::bridge::protocol::{EntrypointLayout, RebuildHmrResult, ReloadExtensionParams};
 use ytdl_dev_hot::bridge::Host;
 
-use super::build::{build_hmr_modules, build_with_lock_retry};
-use super::error::Result;
-use super::log::{format_elapsed, log_event};
 use crate::dev::browsers::{apply_reload_plan, ApplyRequest, BackgroundSwapper, ReloadTarget};
 use crate::dev::hmr::ContentScriptUpdate;
+use crate::dev::launcher::build::{build_hmr_modules, build_with_lock_retry};
+use crate::dev::launcher::error::Result;
+use crate::dev::launcher::log::{format_elapsed, log_event};
 use crate::output::manifest::ExtensionManifest;
 use crate::output::options::DevOptions;
 use crate::output::reload::{

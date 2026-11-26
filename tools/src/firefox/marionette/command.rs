@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use clap::{Args, Subcommand};
 
-use super::client::{wrap_promise_expression, Marionette, DEFAULT_PORT};
+use crate::firefox::marionette::client::{wrap_promise_expression, Marionette, DEFAULT_PORT};
 use crate::firefox::{pause, Result};
 use crate::port::parse_port_number;
 

@@ -224,7 +224,7 @@ impl Invocation {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::release::process::*;
 
     #[test]
     fn command_line_joins_program_and_arguments() {
@@ -264,7 +264,7 @@ mod tests {
 
 #[cfg(test)]
 mod environment_tests {
-    use super::*;
+    use crate::release::process::*;
 
     #[test]
     fn an_environment_variable_reaches_the_command() {

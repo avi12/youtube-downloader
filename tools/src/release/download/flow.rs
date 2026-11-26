@@ -6,8 +6,8 @@ use std::time::Duration;
 use serde_json::json;
 use tokio::time::{sleep, Instant};
 
-use super::browser::{Browser, Wanted};
-use super::page::{
+use crate::release::download::browser::{Browser, Wanted};
+use crate::release::download::page::{
     click_download, read_button_label, read_playability, search_downloads, DownloadItem,
     DownloadState,
 };
@@ -169,7 +169,7 @@ pub(crate) async fn require_targets(browser: &Browser) -> Result<(), Failure> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::release::download::flow::*;
 
     fn item(id: u64, state: DownloadState) -> DownloadItem {
         DownloadItem {

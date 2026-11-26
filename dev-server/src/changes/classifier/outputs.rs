@@ -203,7 +203,7 @@ pub fn main_world_script_files(manifest_json: &str) -> Result<Vec<RelPath>> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::changes::classifier::outputs::*;
 
     #[test]
     fn firefox_scripts_array_is_read_as_background() -> Result<()> {

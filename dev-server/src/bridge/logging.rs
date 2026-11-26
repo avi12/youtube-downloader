@@ -72,7 +72,7 @@ pub fn install(layer: BridgeLogLayer) -> Result<()> {
 mod tests {
     use tracing::subscriber::with_default;
 
-    use super::*;
+    use crate::bridge::logging::*;
 
     #[test]
     fn an_event_becomes_a_log_line() {

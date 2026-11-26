@@ -80,7 +80,7 @@ impl Host for BridgeClient {
 mod tests {
     use serde_json::Value;
 
-    use super::*;
+    use crate::bridge::client::*;
     use crate::bridge::protocol::Response;
     use crate::bridge::BRIDGE_CHANNEL_CAPACITY;
 

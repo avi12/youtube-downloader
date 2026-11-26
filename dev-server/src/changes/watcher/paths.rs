@@ -66,7 +66,7 @@ pub fn relativize(root: &Path, watches: &[RelPath], event_path: &Path) -> Option
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::changes::watcher::paths::*;
 
     #[test]
     fn relativize_handles_directories_and_files() {

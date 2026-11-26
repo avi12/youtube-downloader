@@ -12,11 +12,11 @@ use tokio::task::JoinHandle;
 use tokio::time::sleep;
 use tokio_util::sync::CancellationToken;
 
-use super::fakes::{DiskState, FakeDriver, FakeFiles, FakeHost, Log};
 use crate::bridge::protocol::{Notification, SidecarConfig};
 use crate::changes::watcher::{ChangeBatch, ChangeEvent, ChangeKind};
 use crate::error::Result;
 use crate::hmr_server::HmrHandle;
+use crate::orchestrator::tests::fakes::{DiskState, FakeDriver, FakeFiles, FakeHost, Log};
 use crate::orchestrator::{run, Deps};
 use crate::types::RelPath;
 

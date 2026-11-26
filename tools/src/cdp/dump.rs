@@ -7,7 +7,7 @@ use serde_json::json;
 use tokio::task::JoinSet;
 use tokio::time::{timeout_at, Instant};
 
-use super::wire::{
+use crate::cdp::wire::{
     open_target, render, CdpError, Method, PortArg, Result, Session, Style, Targets, Wanted, DUMP,
     MONITOR, SW_LOGS,
 };

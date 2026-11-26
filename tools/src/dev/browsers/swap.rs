@@ -12,9 +12,9 @@ use std::time::Duration;
 use serde_json::Value;
 use ytdl_dev_hot::types::ContentHash;
 
-use super::error::Result;
-use super::scripts::RUNNING_VERSION;
-use super::target::ReloadTarget;
+use crate::dev::browsers::error::Result;
+use crate::dev::browsers::scripts::RUNNING_VERSION;
+use crate::dev::browsers::target::ReloadTarget;
 
 /// Under the 30 s after which an idle MV3 background is stopped.
 const GUARD_INTERVAL: Duration = Duration::from_secs(20);
@@ -131,8 +131,8 @@ impl BackgroundSwapper {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::dev::browsers::plan::fake::FakeTarget;
+    use crate::dev::browsers::swap::*;
 
     #[test]
     fn version_follows_the_script() {
@@ -168,7 +168,7 @@ mod tests {
 
 #[cfg(test)]
 mod version_tests {
-    use super::*;
+    use crate::dev::browsers::swap::*;
 
     #[test]
     fn a_version_is_the_shared_content_hash_prefix() {

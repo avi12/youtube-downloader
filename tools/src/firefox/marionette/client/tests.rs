@@ -2,7 +2,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
 use ytdl_dev_hot::driver::rdp::encode_packet;
 
-use super::*;
+use crate::firefox::marionette::client::*;
 
 #[test]
 fn watch_and_feed_pages_are_youtube_pages() {

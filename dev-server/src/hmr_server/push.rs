@@ -34,7 +34,7 @@ impl PushKind {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::hmr_server::push::*;
 
     #[test]
     fn payloads_keep_the_runtime_wire_shape() {

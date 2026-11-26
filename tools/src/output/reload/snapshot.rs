@@ -84,7 +84,7 @@ pub(crate) fn take_build_snapshot(output_dir: &Path) -> Result<BuildSnapshot> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::output::reload::snapshot::*;
 
     #[test]
     fn metadata_and_hmr_files_are_skipped() {

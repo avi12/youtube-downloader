@@ -39,7 +39,7 @@ impl FrameTreeResult {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::driver::cdp::frames::*;
     use crate::error::Result;
 
     #[test]

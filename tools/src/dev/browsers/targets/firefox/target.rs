@@ -10,10 +10,12 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use ytdl_dev_hot::types::Port;
 
-use super::background::{evaluate_in_background, run_script_in_background, BackgroundAddress};
 use crate::dev::browsers::error::Result;
 use crate::dev::browsers::scripts::{self, RUNTIME_RELOAD};
 use crate::dev::browsers::target::{BoxFuture, ReloadTarget};
+use crate::dev::browsers::targets::firefox::background::{
+    evaluate_in_background, run_script_in_background, BackgroundAddress,
+};
 use crate::output::reload::{
     ExtensionReloadPlan, PageAction, PageRefreshPlan, RefreshedPage, TabUpdateResult,
 };
@@ -152,7 +154,7 @@ impl ReloadTarget for FirefoxTarget {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::dev::browsers::targets::firefox::target::*;
 
     #[test]
     fn view_refreshes_become_page_actions() {

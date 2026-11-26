@@ -4,7 +4,7 @@ use std::collections::HashSet;
 
 use serde::{Deserialize, Serialize};
 
-use super::browser::{Browser, Wanted};
+use crate::release::download::browser::{Browser, Wanted};
 
 /// Runs in the service worker.
 const SEARCH_DOWNLOADS: &str = r"
@@ -146,7 +146,7 @@ pub(crate) async fn click_download(browser: &Browser) -> Option<ClickOutcome> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::release::download::page::*;
 
     #[test]
     fn playable_needs_ok_status_and_no_error_overlay() {

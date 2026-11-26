@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use tokio::time::Instant;
 
-use super::{HMR_INJECT_MAX_ATTEMPTS, HMR_INJECT_RETRY_DELAY, STATIC_CATCH_UP_IDLE};
+use crate::orchestrator::{HMR_INJECT_MAX_ATTEMPTS, HMR_INJECT_RETRY_DELAY, STATIC_CATCH_UP_IDLE};
 
 /// When the next HMR injection attempt is due: fast retries until the first one lands, then the
 /// steady re-injection cadence when the launcher asked for one. Port of `keepHmrInjected`.

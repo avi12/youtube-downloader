@@ -55,7 +55,7 @@ fn unquote(value: &str) -> &str {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::release::package::environment::*;
 
     #[test]
     fn env_file_skips_comments_and_strips_quotes() {

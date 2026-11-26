@@ -6,8 +6,8 @@ use std::time::Duration;
 use serde_json::json;
 use tokio::time::sleep;
 
-use super::fakes::snapshot;
-use super::harness::start;
+use crate::orchestrator::tests::fakes::snapshot;
+use crate::orchestrator::tests::harness::start;
 use crate::orchestrator::{PUSH_SETTLE, RELOAD_SETTLE};
 
 #[tokio::test(start_paused = true)]

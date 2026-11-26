@@ -6,14 +6,14 @@ use std::collections::BTreeSet;
 
 use tokio::time::Instant;
 
-use super::schedule::StaticBundle;
-use super::{Orchestrator, PUSH_SETTLE, RELOAD_SETTLE};
 use crate::bridge::protocol::{ChangedOutputs, ReloadExtensionParams};
 use crate::bridge::Host;
 use crate::changes::classifier::{classify_changed_outputs, RebuildPlan};
 use crate::changes::workspace::Workspace;
 use crate::driver::BrowserDriver;
 use crate::error::Result;
+use crate::orchestrator::schedule::StaticBundle;
+use crate::orchestrator::{Orchestrator, PUSH_SETTLE, RELOAD_SETTLE};
 use crate::types::BrowserKind;
 
 /// When a rebuild began, on the monotonic clock for the timing logs and in epoch milliseconds for

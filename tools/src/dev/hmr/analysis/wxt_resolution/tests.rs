@@ -1,6 +1,6 @@
 //! Unit tests.
 
-use super::*;
+use crate::dev::hmr::analysis::wxt_resolution::*;
 
 fn storage_import() -> AutoImport {
     AutoImport {

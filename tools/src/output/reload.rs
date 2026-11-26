@@ -14,7 +14,7 @@ pub(crate) use plan::{
 };
 pub(crate) use snapshot::{take_build_snapshot, BuildSnapshot};
 
-use super::error::{OutputError, Result};
+use crate::output::error::{OutputError, Result};
 
 /// Words a reload plan and its outcome in the one logged sentence of the dev server.
 pub(crate) fn describe_reload(

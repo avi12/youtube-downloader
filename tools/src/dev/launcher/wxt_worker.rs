@@ -13,7 +13,7 @@ use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader, Lines};
 use tokio::process::{Child, ChildStdin, ChildStdout, Command};
 use tokio::sync::Mutex;
 
-use super::error::{LauncherError, Result};
+use crate::dev::launcher::error::{LauncherError, Result};
 
 const WORKER_SOURCE: &str = include_str!("../../../assets/dev/wxt-build-worker.mjs");
 const WORKER_FILE: &str = "wxt-build-worker.mjs";

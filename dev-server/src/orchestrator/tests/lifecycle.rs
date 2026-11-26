@@ -6,7 +6,7 @@ use std::time::Duration;
 use serde_json::json;
 use tokio::time::{sleep, Instant};
 
-use super::harness::start;
+use crate::orchestrator::tests::harness::start;
 use crate::orchestrator::{InjectSchedule, HMR_INJECT_RETRY_DELAY, LIVENESS_POLL};
 
 #[tokio::test(start_paused = true)]

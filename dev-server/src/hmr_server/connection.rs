@@ -166,9 +166,9 @@ mod tests {
     use tokio::sync::mpsc;
     use tracing_subscriber::layer::SubscriberExt;
 
-    use super::*;
     use crate::bridge::logging::BridgeLogLayer;
     use crate::bridge::protocol::{LogLine, OutboundMessage};
+    use crate::hmr_server::connection::*;
     use crate::hmr_server::serve_listener_pinging;
 
     const WAIT: Duration = Duration::from_secs(5);

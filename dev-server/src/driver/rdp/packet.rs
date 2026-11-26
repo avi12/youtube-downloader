@@ -59,7 +59,7 @@ impl PacketDecoder {
 mod tests {
     use serde_json::json;
 
-    use super::*;
+    use crate::driver::rdp::packet::*;
 
     #[test]
     fn a_packet_split_across_reads_is_reassembled() -> Result<()> {

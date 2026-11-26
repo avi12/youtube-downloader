@@ -138,7 +138,7 @@ pub(super) fn page_refresh(plan: &PageRefreshPlan) -> serde_json::Result<String>
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::dev::browsers::scripts::*;
     use crate::output::manifest::ContentScriptWorld;
 
     fn plan() -> ExtensionReloadPlan {
@@ -189,7 +189,7 @@ mod tests {
 
 #[cfg(test)]
 mod reload_order_tests {
-    use super::*;
+    use crate::dev::browsers::scripts::*;
 
     #[test]
     fn the_extensions_page_reload_enables_developer_mode_first_and_verifies_after() {

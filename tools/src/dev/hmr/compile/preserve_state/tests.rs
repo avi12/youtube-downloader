@@ -1,6 +1,6 @@
 //! Unit tests.
 
-use super::*;
+use crate::dev::hmr::compile::preserve_state::*;
 
 const COMPONENT_ID: &str = "src/Panel.svelte";
 const MODULE_ID: &str = "src/store.svelte.ts";

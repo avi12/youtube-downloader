@@ -6,7 +6,7 @@ use tokio::sync::mpsc;
 use tokio::time::{interval, sleep_until, Instant, MissedTickBehavior};
 use tokio_util::sync::CancellationToken;
 
-use super::{ChangeBatch, ChangeEvent};
+use crate::changes::watcher::{ChangeBatch, ChangeEvent};
 
 /// Collects events and releases them once the paths have been quiet for the debounce window:
 /// every event restarts the window, a path seen twice keeps its first position and its last kind.
@@ -117,7 +117,7 @@ pub(super) async fn run_loop(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::changes::watcher::debounce::*;
     use crate::changes::watcher::ChangeKind;
     use crate::types::RelPath;
 
