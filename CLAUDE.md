@@ -1,5 +1,5 @@
 # Stack
-- pnpm
+- Bun
 - WXT extension framework
 - Svelte 5 (content scripts and popup)
 - TypeScript (100% type safety, let TypeScript infer return types)
@@ -55,7 +55,7 @@
 After each modification, lint with oxlint, ESLint, Stylelint, svelte-check, and `npx fallow audit`.
 
 # Dev server
-`pnpm dev` (the Rust `ytdl dev run` in `tools/`, with the sidecar in `dev-server/`) rebuild on any change under `src/` and apply the smallest update, keeping the open YouTube tabs. The Rust server keeps its Node workers warm, so a component edit hot-swaps in about 0.3s:
+`bun run dev` (the Rust `ytdl dev run` in `tools/`, with the sidecar in `dev-server/`) rebuild on any change under `src/` and apply the smallest update, keeping the open YouTube tabs. The Rust server keeps its Node workers warm, so a component edit hot-swaps in about 0.3s:
 - Popup/offscreen/worker change: reloads the open popup, closes the offscreen document (recreated on next use)
 - `youtube.content` change outside a component: the HMR runtime restarts the content script in place, with no extension or tab reload. Message handlers are dropped first (`disposeOnRestart` wraps each messenger), so tie any other registration to the content script context
 - Manifest change, or another ISOLATED content script: reloads the extension and re-injects `youtube.content` into open tabs in place

@@ -463,7 +463,7 @@ Anonymous usage telemetry goes through GA4's Measurement Protocol from the backg
 
 ### Development loop
 
-`pnpm dev` runs the Rust dev server (`ytdl dev run`, [`tools/src/dev/`](tools/src/dev)). Popup and content-script components hot-swap in place with their `$state` ([`tools/src/dev/hmr/`](tools/src/dev/hmr)). Anything else rebuilds, is compared with the previous build file by file by content hash ([`plan.rs`](tools/src/output/reload/plan.rs)), and gets the smallest update that keeps open YouTube tabs alive:
+`bun run dev` runs the Rust dev server (`ytdl dev run`, [`tools/src/dev/`](tools/src/dev)). Popup and content-script components hot-swap in place with their `$state` ([`tools/src/dev/hmr/`](tools/src/dev/hmr)). Anything else rebuilds, is compared with the previous build file by file by content hash ([`plan.rs`](tools/src/output/reload/plan.rs)), and gets the smallest update that keeps open YouTube tabs alive:
 
 | What changed | What the dev server does |
 | --- | --- |

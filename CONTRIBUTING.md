@@ -4,24 +4,24 @@ This guide gets you from `git clone` to a working dev loop and a mergeable PR. F
 
 ## Quick start
 
-Prerequisites: [Node](https://nodejs.org) 22+ and [pnpm](https://pnpm.io) (`corepack enable` is the easiest way to get it).
+Prerequisites: [Node](https://nodejs.org) 22+ and [Bun](https://bun.com) 1.4.5.
 
 ```sh
-pnpm install
-pnpm dev            # Chrome
-pnpm dev:firefox    # Firefox
+bun install
+bun run dev            # Chrome
+bun run dev:firefox    # Firefox
 ```
 
-`pnpm dev` runs the Rust dev server ([`tools/src/dev/`](tools/src/dev)): it production-builds the extension, launches one browser with it sideloaded, and on every file change under `src/` applies the smallest update - popup and content-script components hot-swap in place keeping their state, a background change restarts the background inside the running extension, other changes reload the extension and swap the content script into the open YouTube tabs in place, and only a change to a script that runs in the page itself (`youtube-main`) reloads the tabs. The browser stays open; each update is logged with what it did. No manual reloading.
+`bun run dev` runs the Rust dev server ([`tools/src/dev/`](tools/src/dev)): it production-builds the extension, launches one browser with it sideloaded, and on every file change under `src/` applies the smallest update - popup and content-script components hot-swap in place keeping their state, a background change restarts the background inside the running extension, other changes reload the extension and swap the content script into the open YouTube tabs in place, and only a change to a script that runs in the page itself (`youtube-main`) reloads the tabs. The browser stays open; each update is logged with what it did. No manual reloading.
 
 No `.env` is needed for development. [`.env.example`](.env.example) documents the variables used for release signing (Firefox AMO) and analytics.
 
 Other useful commands:
 
 ```sh
-pnpm build              # production build (Chrome)
-pnpm build:firefox      # production build (Firefox)
-pnpm pack               # zip the build for distribution
+bun run build              # production build (Chrome)
+bun run build:firefox      # production build (Firefox)
+bun run pack               # zip the build for distribution
 ```
 
 ## Orienting yourself
@@ -69,10 +69,10 @@ The most common newcomer confusion is which bus connects which runtimes. They ar
 Run these before pushing - all must pass:
 
 ```sh
-pnpm lint           # oxlint + ESLint, both with --fix
-pnpm stylelint      # CSS + Svelte styles, with --fix
-pnpm svelte-check
-pnpm compile        # tsrs --noEmit
+bun run lint           # oxlint + ESLint, both with --fix
+bun run stylelint      # CSS + Svelte styles, with --fix
+bun run svelte-check
+bun run compile        # tsrs --noEmit
 npx fallow audit    # dead code + complexity on your changed files
 ```
 
@@ -100,7 +100,7 @@ Some bugs only surface on Linux (e.g. Chrome sandbox restrictions, different CDP
 **Prerequisites (one-time, elevated)**
 
 ```sh
-pnpm install:hyperv-multipass
+bun run install:hyperv-multipass
 ```
 
 This enables Hyper-V and installs [Multipass](https://multipass.run). A reboot is required after the first run.
@@ -108,18 +108,18 @@ This enables Hyper-V and installs [Multipass](https://multipass.run). A reboot i
 **VM setup (one-time)**
 
 ```sh
-pnpm setup:linux-vm
+bun run setup:linux-vm
 ```
 
-Creates an Ubuntu 24.04 VM named `ytdl-linux`, mounts the repo read-only at `/host-repo` inside the VM, installs Node 22 / pnpm / bun / Chrome dependencies, and wires a `netsh portproxy` so the VM's CDP port is reachable at `localhost:9234` on Windows (used by the `chrome-devtools-mcp-linux` MCP server).
+Creates an Ubuntu 24.04 VM named `ytdl-linux`, mounts the repo read-only at `/host-repo` inside the VM, installs Node 22 / Bun / Chrome dependencies, and wires a `netsh portproxy` so the VM's CDP port is reachable at `localhost:9234` on Windows (used by the `chrome-devtools-mcp-linux` MCP server).
 
 **Daily dev**
 
 ```sh
-pnpm dev:linux
+bun run dev:linux
 ```
 
-Starts the VM if needed, refreshes the port proxy, syncs the current branch into the VM, and launches `pnpm dev` under Xvfb so Chrome runs headless. A VNC server also starts so you can visually inspect the browser via any VNC viewer pointed at `localhost:5900`.
+Starts the VM if needed, refreshes the port proxy, syncs the current branch into the VM, and launches `bun run dev` under Xvfb so Chrome runs headless. A VNC server also starts so you can visually inspect the browser via any VNC viewer pointed at `localhost:5900`.
 
 ## License of contributions
 

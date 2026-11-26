@@ -56,9 +56,9 @@ The Firefox bypass (routing player requests through the `ANDROID_VR` InnerTube c
 ## Contribute
 
 ```sh
-pnpm install
-pnpm dev            # Chrome - auto-rebuilds and reloads on every change
-pnpm dev:firefox    # Firefox
+bun install
+bun run dev            # Chrome - auto-rebuilds and reloads on every change
+bun run dev:firefox    # Firefox
 ```
 
 [CONTRIBUTING.md](CONTRIBUTING.md) covers the full dev workflow: quality gates, code style, common tasks (adding a setting, tracing a download bug), and the Linux VM setup for reproducing Linux-only Chrome bugs. [ARCHITECTURE.md](ARCHITECTURE.md) explains how the pieces fit together.
