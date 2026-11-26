@@ -24,7 +24,7 @@
         "eslint-plugin-svelte": "^3.23.1",
         "fallow": "^3.42.0",
         "globals": "^17.13.0",
-        "lint-config": "github:avi12/lint-config#v0.12.0",
+        "lint-config": "github:avi12/lint-config#v0.13.0",
         "oxfmt": "^0.80.0",
         "oxlint": "1.90.0",
         "postcss-html": "^2.0.0",
@@ -909,7 +909,7 @@
 
     "linkedom": ["linkedom@0.18.13", "", { "dependencies": { "css-select": "7.0.0", "cssom": "0.5.0", "html-escaper": "3.0.3", "htmlparser2": "10.1.0", "uhyphen": "0.2.0" }, "peerDependencies": { "canvas": ">= 2" }, "optionalPeers": ["canvas"] }, "sha512-ES/o9qotMpzpN2MHs+Iq/JcVoOj8Fa5wiQYrTdFpvAnwXL0g66XHHUc9WUMk6nAlBtGsFQ24ne+SYnvnaQ2FSw=="],
 
-    "lint-config": ["lint-config@github:avi12/lint-config#313c8d4", { "dependencies": { "@stylistic/eslint-plugin": "^5.10.0", "eslint-plugin-jsdoc": "^65.4.2", "eslint-plugin-perfectionist": "^5.12.1", "eslint-plugin-unused-imports": "^4.4.1" }, "peerDependencies": { "@biomejs/biome": ">=2.0.0", "eslint": "^9.20.0 || ^10.0.0", "eslint-plugin-svelte": "^3.0.0", "eslint-plugin-vue": "^10.0.0", "fallow": ">=2.103.0", "globals": "^17.13.0", "oxfmt": ">=0.78.0", "oxlint": ">=1.90.0", "postcss-html": "^1.8.1", "stylelint": "^17.0.0 || ^18.0.0", "stylelint-config-ccb": "^3.32.0", "svelte-eslint-parser": "^1.0.0", "typescript": ">=5.5", "typescript-eslint": "^8.72.1", "vue-eslint-parser": "^10.0.0" }, "optionalPeers": ["@biomejs/biome", "eslint", "eslint-plugin-svelte", "eslint-plugin-vue", "fallow", "globals", "oxfmt", "oxlint", "postcss-html", "stylelint", "stylelint-config-ccb", "svelte-eslint-parser", "typescript", "typescript-eslint", "vue-eslint-parser"], "bin": { "avi12-lint": "./packages/avi12-lint/bin/avi12-lint.js", "avi12-svelte-check": "./packages/avi12-lint/bin/svelte-check.js" } }, "avi12-lint-config-313c8d4", "sha512-nf/L3Jot0xbzMFrHDIERIRL9evUm0biIgeiA0EculZPcXDOz9W6e8TgNF0luWc0/ie/sxuEtuGsQDL6ziZhxVg=="],
+    "lint-config": ["lint-config@github:avi12/lint-config#fc12d77", { "dependencies": { "@stylistic/eslint-plugin": "^5.10.0", "eslint-plugin-jsdoc": "^65.4.2", "eslint-plugin-perfectionist": "^5.12.1", "eslint-plugin-unused-imports": "^4.4.1" }, "peerDependencies": { "@biomejs/biome": ">=2.0.0", "eslint": "^9.20.0 || ^10.0.0", "eslint-plugin-svelte": "^3.0.0", "eslint-plugin-vue": "^10.0.0", "fallow": ">=2.103.0", "globals": "^17.13.0", "oxfmt": ">=0.78.0", "oxlint": ">=1.90.0", "postcss-html": "^1.8.1", "stylelint": "^17.0.0 || ^18.0.0", "stylelint-config-ccb": "^3.32.0", "svelte-eslint-parser": "^1.0.0", "typescript": ">=5.5", "typescript-eslint": "^8.72.1", "vue-eslint-parser": "^10.0.0" }, "optionalPeers": ["@biomejs/biome", "eslint", "eslint-plugin-svelte", "eslint-plugin-vue", "fallow", "globals", "oxfmt", "oxlint", "postcss-html", "stylelint", "stylelint-config-ccb", "svelte-eslint-parser", "typescript", "typescript-eslint", "vue-eslint-parser"], "bin": { "avi12-lint": "./packages/avi12-lint/bin/avi12-lint.js", "avi12-svelte-check": "./packages/avi12-lint/bin/svelte-check.js" } }, "avi12-lint-config-fc12d77", "sha512-5ipr3kWrw8ae3SqphtYMw2JZ0zTnNOkKXawbH8a4eyp5O/DW/87YJoDXayt/YzbFuC+SSYEXhNaMJGLcrfumLg=="],
 
     "local-pkg": ["local-pkg@1.2.1", "", { "dependencies": { "mlly": "1.8.2", "pkg-types": "2.3.3", "quansync": "0.2.11" } }, "sha512-++gUqRDEvcnN6Zhqrr+y/CkVEHhlrR96vZn3nZZPYzMcBUyBtTKzB9NadClFIsIVSsu+3i9tfk/erqy9kAmt7Q=="],
 
