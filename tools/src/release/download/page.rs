@@ -88,13 +88,14 @@ pub(crate) struct DownloadItem {
 pub(crate) struct Playability {
     pub(crate) status: Option<String>,
     pub(crate) reason: Option<String>,
-    pub(crate) error_overlay: bool,
+    #[serde(rename = "errorOverlay")]
+    pub(crate) has_error_overlay: bool,
 }
 
 impl Playability {
     /// Whether the video plays.
     pub(crate) fn is_playable(&self) -> bool {
-        self.status.as_deref() == Some(PLAYABLE_STATUS) && !self.error_overlay
+        self.status.as_deref() == Some(PLAYABLE_STATUS) && !self.has_error_overlay
     }
 
     /// Whether the player reported a definite refusal.
@@ -107,7 +108,8 @@ impl Playability {
 
 #[derive(Debug, Deserialize)]
 pub(crate) struct ClickOutcome {
-    pub(crate) ok: bool,
+    #[serde(rename = "ok")]
+    pub(crate) is_ok: bool,
     pub(crate) reason: Option<String>,
 }
 
@@ -150,10 +152,10 @@ mod tests {
 
     #[test]
     fn playable_needs_ok_status_and_no_error_overlay() {
-        let playable = |status: Option<&str>, error_overlay| Playability {
+        let playable = |status: Option<&str>, has_error_overlay| Playability {
             status: status.map(str::to_owned),
             reason: None,
-            error_overlay,
+            has_error_overlay,
         };
         assert!(playable(Some("OK"), false).is_playable());
         assert!(!playable(Some("OK"), true).is_playable());

@@ -37,7 +37,8 @@ pub(crate) struct Args {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct Report {
-    pub(crate) ok: bool,
+    #[serde(rename = "ok")]
+    pub(crate) is_ok: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     reason: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -53,7 +54,7 @@ pub(crate) struct Report {
 impl Report {
     fn failure(failure: Failure, duration_ms: Option<u128>) -> Self {
         Self {
-            ok: false,
+            is_ok: false,
             reason: Some(failure.reason),
             filename: None,
             bytes: None,
@@ -64,7 +65,7 @@ impl Report {
 
     fn success(item: DownloadItem, duration_ms: u128) -> Self {
         Self {
-            ok: true,
+            is_ok: true,
             reason: None,
             filename: Some(item.filename),
             bytes: item.bytes_received,
@@ -109,7 +110,7 @@ pub(crate) async fn verify(args: &Args) -> Report {
 pub(super) async fn run(args: Args) -> Result<(), ReleaseError> {
     let report = verify(&args).await;
     println!("{}", report.to_json());
-    if report.ok {
+    if report.is_ok {
         return Ok(());
     }
     Err(ReleaseError::VerificationFailed(

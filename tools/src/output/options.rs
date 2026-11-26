@@ -112,8 +112,8 @@ pub(crate) struct OptionArgs {
     #[arg(long, env = "YTDL_PROJECT_ROOT", default_value = ".")]
     project_root: PathBuf,
     /// Target Firefox instead of Chrome
-    #[arg(long)]
-    firefox: bool,
+    #[arg(long = "firefox", id = "firefox")]
+    is_firefox: bool,
     /// Chrome remote debugging port
     #[arg(long, env = "YTDL_DEV_CDP_PORT", value_parser = parse_port_number)]
     cdp_port: Option<u16>,
@@ -134,8 +134,8 @@ pub(crate) struct OptionArgs {
     #[arg(long, env = "YTDL_DEV_START_URL")]
     start_url: Option<String>,
     /// Keep test browsers silent
-    #[arg(long, env = "YTDL_DEV_MUTE_AUDIO")]
-    mute_audio: bool,
+    #[arg(long = "mute-audio", id = "mute_audio", env = "YTDL_DEV_MUTE_AUDIO")]
+    should_mute_audio: bool,
 }
 
 /// The options after flags, environment and defaults are merged.
@@ -201,19 +201,19 @@ pub(crate) fn resolve_options(args: &OptionArgs, host: &HostEnvironment) -> Resu
     };
     let default_profile = project_root
         .join(USER_PROFILES_DIR)
-        .join(default_profile_name(args.firefox, platform_suffix));
+        .join(default_profile_name(args.is_firefox, platform_suffix));
     let profile_directory = args
         .profile_directory
         .as_ref()
         .map_or(default_profile, |directory| project_root.join(directory));
     Ok(DevOptions {
-        is_firefox: args.firefox,
-        is_audio_muted: args.mute_audio,
+        is_firefox: args.is_firefox,
+        is_audio_muted: args.should_mute_audio,
         is_wsl: host.is_wsl,
         profile_platform_suffix: platform_suffix.to_owned(),
         cdp_port: args
             .cdp_port
-            .unwrap_or_else(|| default_cdp_port(args.firefox, host.platform)),
+            .unwrap_or_else(|| default_cdp_port(args.is_firefox, host.platform)),
         marionette_port: args.marionette_port.unwrap_or(MARIONETTE_PORT_DEFAULT),
         profile_directory,
         out_directory: args.out_directory.clone(),

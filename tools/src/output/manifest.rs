@@ -42,7 +42,8 @@ struct RawContentScript {
     scripts: Vec<String>,
     css: Vec<String>,
     world: ContentScriptWorld,
-    all_frames: bool,
+    #[serde(rename = "all_frames")]
+    has_all_frames: bool,
 }
 
 /// One manifest content script with the WXT entrypoint name of each js file.
@@ -81,7 +82,7 @@ impl From<RawContentScript> for ContentScriptEntry {
             matches: raw.matches,
             scripts: raw.scripts,
             css: raw.css,
-            is_all_frames: raw.all_frames,
+            is_all_frames: raw.has_all_frames,
         }
     }
 }

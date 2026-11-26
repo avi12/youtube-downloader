@@ -59,7 +59,7 @@ async fn playable_within_window(browser: &Browser) -> bool {
 
 /// Reloads the watch tab until the player reports the video as playable.
 pub(crate) async fn wait_for_playable(browser: &Browser) -> Result<(), Failure> {
-    for attempt in 0..=MAX_RELOADS {
+    for i_attempt in 0..=MAX_RELOADS {
         if playable_within_window(browser).await {
             return Ok(());
         }
@@ -68,7 +68,7 @@ pub(crate) async fn wait_for_playable(browser: &Browser) -> Result<(), Failure> 
             .as_ref()
             .and_then(|playability| playability.status.clone());
         let reason = last.and_then(|playability| playability.reason);
-        if attempt == MAX_RELOADS {
+        if i_attempt == MAX_RELOADS {
             return Err(Failure::because(format!(
                 "unplayable after {} attempts: {} / {}",
                 MAX_RELOADS + 1,
@@ -78,7 +78,7 @@ pub(crate) async fn wait_for_playable(browser: &Browser) -> Result<(), Failure> 
         }
         eprintln!(
             "{}",
-            json!({ "note": "unplayable, reloading", "attempt": attempt, "status": status, "reason": reason })
+            json!({ "note": "unplayable, reloading", "attempt": i_attempt, "status": status, "reason": reason })
         );
         browser.reload_watch_tab().await;
         sleep(RELOAD_SETTLE).await;
@@ -102,7 +102,7 @@ async fn click(browser: &Browser) -> Result<(), Failure> {
     let Some(outcome) = click_download(browser).await else {
         return Err(Failure::because("click failed"));
     };
-    if outcome.ok {
+    if outcome.is_ok {
         return Ok(());
     }
     Err(Failure::because(

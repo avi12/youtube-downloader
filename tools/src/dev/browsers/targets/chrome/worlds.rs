@@ -48,14 +48,15 @@ struct ListenersReply {
 struct ListenerInfo {
     #[serde(rename = "type")]
     kind: String,
-    use_capture: bool,
+    #[serde(rename = "useCapture")]
+    should_use_capture: bool,
     handler: Option<RemoteObject>,
     original_handler: Option<RemoteObject>,
 }
 
 struct Listener {
     kind: String,
-    use_capture: bool,
+    should_use_capture: bool,
     handler_object_id: String,
 }
 
@@ -67,7 +68,7 @@ impl ListenerInfo {
             .and_then(|handler| handler.object_id)?;
         Some(Listener {
             kind: self.kind,
-            use_capture: self.use_capture,
+            should_use_capture: self.should_use_capture,
             handler_object_id,
         })
     }
@@ -121,7 +122,7 @@ async fn remove_world_listeners(session: &mut Session, object_id: &str) -> Resul
             "arguments": [
                 { "value": listener.kind },
                 { "objectId": listener.handler_object_id },
-                { "value": listener.use_capture },
+                { "value": listener.should_use_capture },
             ],
         });
         session

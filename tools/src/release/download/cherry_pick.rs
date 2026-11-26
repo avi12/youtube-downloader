@@ -177,43 +177,43 @@ impl Attempt {
     }
 }
 
-async fn skip_conflicted_pick(did_stash: bool, detail: String) -> Result<Attempt, ReleaseError> {
+async fn skip_conflicted_pick(has_stashed: bool, detail: String) -> Result<Attempt, ReleaseError> {
     let first_line = detail.split(" | ").next().unwrap_or_default();
     log(&format!("cherry-pick CONFLICT, skipping: {first_line}")).await;
     git(&["cherry-pick", "--abort"]).await?;
     let pop = pop_wip().await?;
-    if !pop.is_popped && did_stash {
+    if !pop.is_popped && has_stashed {
         log("WARNING: stash pop failed after abort").await;
     }
     Ok(Attempt::conflict(Outcome::SkippedConflict, detail))
 }
 
 async fn revert_pick() -> Result<(), ReleaseError> {
-    let did_stash = stash_wip().await?;
+    let has_stashed = stash_wip().await?;
     if !git_ok(&["reset", "--hard", "HEAD~1"]).await? {
         log("reset FAILED").await;
     }
-    if did_stash {
+    if has_stashed {
         pop_wip().await?;
     }
     Ok(())
 }
 
-async fn attempt(sha: &str, did_stash: bool, args: &Args) -> Result<Attempt, ReleaseError> {
+async fn attempt(sha: &str, has_stashed: bool, args: &Args) -> Result<Attempt, ReleaseError> {
     let (is_picked, detail) =
         first_error_lines(&["cherry-pick", sha], CONFLICT_DETAIL_LINES).await?;
     if !is_picked {
-        return skip_conflicted_pick(did_stash, detail).await;
+        return skip_conflicted_pick(has_stashed, detail).await;
     }
     let pop = pop_wip().await?;
-    if !pop.is_popped && did_stash {
+    if !pop.is_popped && has_stashed {
         log(&format!("stash pop FAILED (conflict={})", pop.is_conflict)).await;
         return Ok(Attempt::conflict(Outcome::PopConflict, pop.output));
     }
     let report = verify_pick(args).await;
     let text = report.to_json();
     log(&format!("verify stdout: {text}")).await;
-    if report.ok {
+    if report.is_ok {
         return Ok(Attempt::verified(Outcome::Verified, text));
     }
     log(&format!("verify FAILED for {sha} - reverting commit")).await;
@@ -222,15 +222,15 @@ async fn attempt(sha: &str, did_stash: bool, args: &Args) -> Result<Attempt, Rel
 }
 
 async fn pick(sha: &str, subject: String, args: &Args) -> Result<PickResult, ReleaseError> {
-    let did_stash = stash_wip().await?;
-    if did_stash {
+    let has_stashed = stash_wip().await?;
+    if has_stashed {
         log("stashed WIP").await;
     }
     let Attempt {
         outcome,
         detail,
         verify,
-    } = attempt(sha, did_stash, args).await?;
+    } = attempt(sha, has_stashed, args).await?;
     Ok(PickResult {
         sha: sha.to_owned(),
         subject,
@@ -250,10 +250,10 @@ pub(in crate::release) async fn run(args: Args) -> Result<(), ReleaseError> {
     let branch = git(&["rev-parse", "--abbrev-ref", "HEAD"]).await?.stdout;
     log(&format!("branch: {branch}")).await;
     let mut results = Vec::new();
-    for (index, sha) in commits.iter().enumerate() {
+    for (i_commit, sha) in commits.iter().enumerate() {
         let subject = git(&["log", "-1", "--format=%s", sha]).await?.stdout;
         log("---").await;
-        log(&format!("[{}/{total}] {sha} {subject}", index + 1)).await;
+        log(&format!("[{}/{total}] {sha} {subject}", i_commit + 1)).await;
         let result = pick(sha, subject, &args).await?;
         let is_halting = matches!(result.outcome, Outcome::PopConflict);
         results.push(result);
