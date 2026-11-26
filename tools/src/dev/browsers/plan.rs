@@ -181,6 +181,7 @@ mod tests {
         ExtensionReloadPlan {
             reasons: vec!["manifest.json changed".to_owned()],
             main_world_content_scripts: Vec::new(),
+            swappable_main_world_scripts: Vec::new(),
             isolated_content_scripts: Vec::new(),
             changed_isolated_style_sheets: Vec::new(),
         }

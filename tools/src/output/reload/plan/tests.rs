@@ -4,6 +4,7 @@ use super::*;
 
 fn snapshot(files: &[(&str, &str)], manifest: Value) -> BuildSnapshot {
     BuildSnapshot {
+        swappable_files: BTreeSet::new(),
         file_hashes: files
             .iter()
             .map(|(file, hash)| ((*file).to_owned(), (*hash).to_owned()))
@@ -229,6 +230,7 @@ fn merged_reloads_keep_every_reason_once() {
     let older = ExtensionReloadPlan {
         reasons: vec!["a".to_owned()],
         main_world_content_scripts: Vec::new(),
+        swappable_main_world_scripts: Vec::new(),
         isolated_content_scripts: Vec::new(),
         changed_isolated_style_sheets: vec!["old.css".to_owned()],
     };
@@ -240,4 +242,51 @@ fn merged_reloads_keep_every_reason_once() {
     let merged = older.merge(newer);
     assert_eq!(merged.reasons, ["a", "b"]);
     assert_eq!(merged.changed_isolated_style_sheets, ["old.css", "new.css"]);
+}
+
+/// Two MAIN-world scripts in one manifest entry, the first built to be swapped.
+fn shared_entry(hash: &str, matches: &str) -> BuildSnapshot {
+    let manifest = json!({"content_scripts": [
+        {"js": ["content-scripts/spoof.js", "content-scripts/mute.js"], "world": "MAIN", "matches": [matches]}
+    ]});
+    let files = [
+        ("content-scripts/spoof.js", hash),
+        ("content-scripts/mute.js", "1"),
+    ];
+    BuildSnapshot {
+        swappable_files: ["content-scripts/spoof.js".to_owned()].into(),
+        ..snapshot(&files, manifest)
+    }
+}
+
+fn reload_of(before: &BuildSnapshot, after: &BuildSnapshot) -> Result<ExtensionReloadPlan> {
+    let plan = plan_reload(before, after)?;
+    let ReloadPlan::ReloadExtension(reload) = plan else {
+        return Err(crate::output::error::OutputError::Invalid(format!(
+            "{plan:?}"
+        )));
+    };
+    Ok(reload)
+}
+
+#[test]
+fn a_swappable_script_change_leaves_no_tab_stale() -> Result<()> {
+    let reload = reload_of(&shared_entry("1", "*://a/*"), &shared_entry("2", "*://a/*"))?;
+    assert_eq!(reload.main_world_content_scripts, Vec::new());
+    let swapped: Vec<_> = reload
+        .swappable_main_world_scripts
+        .iter()
+        .flat_map(|entry| &entry.scripts)
+        .collect();
+    assert_eq!(swapped, ["content-scripts/spoof.js"]);
+    assert_eq!(reload.reasons, ["MAIN-world content script spoof changed"]);
+    Ok(())
+}
+
+#[test]
+fn a_changed_script_list_swaps_nothing() -> Result<()> {
+    let reload = reload_of(&shared_entry("1", "*://a/*"), &shared_entry("2", "*://b/*"))?;
+    assert_eq!(reload.swappable_main_world_scripts, Vec::new());
+    assert_ne!(reload.main_world_content_scripts, Vec::new());
+    Ok(())
 }

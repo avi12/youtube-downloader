@@ -3,4 +3,8 @@
 /**
  * Every output file's content hash, and the manifest it ships.
  */
-export type BuildSnapshot = { fileHashes: { [key in string]: string }, manifest: unknown, };
+export type BuildSnapshot = { fileHashes: { [key in string]: string }, manifest: unknown, 
+/**
+ * Page-world scripts built to replace their own run in an open tab.
+ */
+swappableFiles: Array<string>, };

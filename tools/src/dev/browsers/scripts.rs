@@ -70,6 +70,7 @@ pub(super) fn extension_id_by_name(name: &str) -> serde_json::Result<String> {
 struct TabUpdateConfig<'a> {
     main_world_patterns: Vec<&'a str>,
     isolated_content_scripts: &'a [ContentScriptEntry],
+    swappable_main_world_scripts: &'a [ContentScriptEntry],
 }
 
 #[derive(Serialize)]
@@ -119,8 +120,9 @@ pub(super) fn wait_until_downloads_end(limit: Duration) -> String {
     )
 }
 
-/// Counts the tabs a changed MAIN-world script matches, then re-injects every ISOLATED script into
-/// the complete, non-discarded tabs it matches and replays the handshakes it missed.
+/// Counts the tabs an unswappable MAIN-world change leaves stale, re-injects the swappable ones and
+/// every ISOLATED script into the complete, non-discarded tabs they match, and replays the
+/// handshakes the isolated scripts missed.
 pub(super) fn tab_update(plan: &ExtensionReloadPlan) -> serde_json::Result<String> {
     let config = TabUpdateConfig {
         main_world_patterns: unique(
@@ -129,6 +131,7 @@ pub(super) fn tab_update(plan: &ExtensionReloadPlan) -> serde_json::Result<Strin
                 .flat_map(|entry| &entry.matches),
         ),
         isolated_content_scripts: &plan.isolated_content_scripts,
+        swappable_main_world_scripts: &plan.swappable_main_world_scripts,
     };
     Ok(invoke(
         TAB_UPDATE,
@@ -188,6 +191,7 @@ mod tests {
         ExtensionReloadPlan {
             reasons: Vec::new(),
             main_world_content_scripts: vec![entry(ContentScriptWorld::Main, "*://a.com/*")],
+            swappable_main_world_scripts: Vec::new(),
             isolated_content_scripts: vec![entry(ContentScriptWorld::Isolated, "*://b.com/*")],
             changed_isolated_style_sheets: Vec::new(),
         }

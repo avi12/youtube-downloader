@@ -21,6 +21,9 @@ pub(crate) struct FailedInjection {
 pub(crate) struct TabUpdateResult {
     pub(crate) stale_tab_count: usize,
     pub(crate) reinjected_tab_count: usize,
+    /// Tabs whose swappable MAIN-world scripts replaced their earlier run.
+    #[serde(default)]
+    pub(crate) swapped_tab_count: usize,
     /// One-shot MAIN-to-ISOLATED messages re-sent to the fresh scripts.
     pub(crate) replayed_handshake_count: usize,
     pub(crate) failed_injections: Vec<FailedInjection>,
@@ -75,6 +78,13 @@ pub(crate) fn describe_extension_reload(
         let count = result.reinjected_tab_count;
         outcomes.push(format!(
             "hot-swapped content script {names} in {count} tab(s), page state kept"
+        ));
+    }
+    if result.swapped_tab_count > 0 {
+        let names = describe_content_scripts(&plan.swappable_main_world_scripts);
+        let count = result.swapped_tab_count;
+        outcomes.push(format!(
+            "swapped MAIN-world content script {names} in {count} tab(s), no tab reload"
         ));
     }
     if result.replayed_handshake_count > 0 {
@@ -164,6 +174,7 @@ mod tests {
         ExtensionReloadPlan {
             reasons: vec!["a changed".to_owned()],
             main_world_content_scripts: Vec::new(),
+            swappable_main_world_scripts: Vec::new(),
             isolated_content_scripts: Vec::new(),
             changed_isolated_style_sheets: Vec::new(),
         }

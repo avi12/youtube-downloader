@@ -6,9 +6,13 @@ import type { ContentScriptEntry } from "./ContentScriptEntry";
  */
 export type ExtensionReloadPlan = { reasons: Array<string>, 
 /**
- * MAIN-world scripts that changed: a page-world script cannot be swapped, so their tabs are reported as stale.
+ * Changed MAIN-world scripts that cannot be swapped: their tabs are reported as stale.
  */
 mainWorldContentScripts: Array<ContentScriptEntry>, 
+/**
+ * Changed MAIN-world scripts that replace their own run once re-injected.
+ */
+swappableMainWorldScripts: Array<ContentScriptEntry>, 
 /**
  * Every isolated script: the extension reload orphans them all.
  */

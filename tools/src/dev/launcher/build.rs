@@ -123,7 +123,7 @@ async fn build_extension(options: &DevOptions) -> Result<PathBuf> {
     let output_dir = output_dir_of(options);
     add_dev_permission(&output_dir)?;
     patch_manifest(&output_dir)?;
-    patch_built_output(&output_dir, &prelude)?;
+    patch_built_output(&output_dir, &options.project_root, &prelude)?;
     Ok(output_dir)
 }
 

@@ -63,6 +63,22 @@ impl ContentScriptEntry {
     pub(crate) fn is_main_world(&self) -> bool {
         self.world == ContentScriptWorld::Main
     }
+
+    /// This entry with only the scripts `is_kept` accepts, and their names.
+    pub(crate) fn with_scripts(&self, is_kept: impl Fn(&str) -> bool) -> Self {
+        let (names, scripts) = self
+            .names
+            .iter()
+            .zip(&self.scripts)
+            .filter(|(_, file)| is_kept(file))
+            .map(|(name, file)| (name.clone(), file.clone()))
+            .unzip();
+        Self {
+            names,
+            scripts,
+            ..self.clone()
+        }
+    }
 }
 
 impl From<RawContentScript> for ContentScriptEntry {

@@ -79,6 +79,9 @@ pub(crate) enum Command {
         /// A file holding the background prelude source
         #[arg(long)]
         prelude_file: PathBuf,
+        /// The project the build came from, whose sources decide which scripts can be swapped
+        #[arg(long, default_value = ".")]
+        project_root: PathBuf,
     },
     /// Print one of the JavaScript sources the dev server injects
     JsSource {
@@ -188,10 +191,14 @@ async fn execute(command: Command) -> OutputResult<()> {
             Ok(())
         }
         Command::PatchManifest { dir } => patches::patch_manifest(&dir),
-        Command::PatchOutput { dir, prelude_file } => {
+        Command::PatchOutput {
+            dir,
+            prelude_file,
+            project_root,
+        } => {
             let prelude = std::fs::read_to_string(&prelude_file)
                 .map_err(OutputError::with_path(&prelude_file))?;
-            patches::patch_built_output(&dir, &prelude)
+            patches::patch_built_output(&dir, &project_root, &prelude)
         }
         Command::JsSource { kind } => {
             let source = match kind {

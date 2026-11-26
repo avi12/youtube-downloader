@@ -1,6 +1,7 @@
 //! The JavaScript the dev server injects, as source text with `@@NAME@@` placeholders filled in.
 
 use super::hmr_names::HMR_ENTRY_GLOBAL;
+use super::main_world::SWAPPABLE_MARKER;
 use serde_json::Value;
 
 pub(crate) const REQUEST_EVENT: &str = "@webext-core/messaging/custom-events";
@@ -11,6 +12,8 @@ const RECORDS_GLOBAL: &str = "__ytdlDevCrossWorldRecords";
 const RAN_CONTENT_SCRIPTS_GLOBAL: &str = "__ytdlDevRanContentScripts";
 const REPLAY_ATTEMPTS: u32 = 20;
 const REPLAY_ANSWER_TIMEOUT_MS: u32 = 250;
+/// The runs of the swappable page-world scripts, each with the steps that undo it.
+const SWAPPABLE_RUNS_GLOBAL: &str = "__ytdlDevMainWorldRuns";
 /// Replayed messages get a fresh random id below this, like `@webext-core/messaging`'s own ids.
 const REPLAY_MESSAGE_ID_RANGE: u32 = 1_000_000_000;
 
@@ -31,6 +34,85 @@ const GUARD_TEMPLATE: &str = "if (!(@@RAN@@ ??= new Set()).has(@@NAME@@)) {
 @@SOURCE@@
 }
 ";
+
+/// Runs a page-world script after undoing its previous build's run: the listeners it added and the
+/// `document` properties and `window` accessors it defined. A script the run-once guard already ran
+/// is left alone, since nothing recorded how to undo it. The list of scripts that ran is shared with
+/// that guard, so a later build that is no longer swappable never runs beside this one.
+const SWAPPABLE_TEMPLATE: &str = r#"@@MARKER@@
+(() => {
+  const ran = (globalThis[@@RAN@@] ??= new Set());
+  const runs = (globalThis[@@RUNS@@] ??= new Map());
+  const previous = runs.get(@@NAME@@);
+  if (previous?.hash === @@HASH@@ || (!previous && ran.has(@@NAME@@))) {
+    return;
+  }
+
+  for (const undo of previous?.undoSteps.reverse() ?? []) {
+    undo();
+  }
+
+  const undoSteps = [];
+  ran.add(@@NAME@@);
+  runs.set(@@NAME@@, { hash: @@HASH@@, undoSteps });
+  const unwraps = [];
+  for (const owner of [EventTarget.prototype, window, document]) {
+    const own = Object.getOwnPropertyDescriptor(owner, "addEventListener");
+    if (!own) {
+      continue;
+    }
+
+    const add = owner.addEventListener;
+    Object.defineProperty(owner, "addEventListener", {
+      configurable: true,
+      enumerable: own.enumerable,
+      writable: true,
+      value(type, listener, options) {
+        const target = this ?? window;
+        add.call(target, type, listener, options);
+        undoSteps.push(() => target.removeEventListener(type, listener, options));
+      }
+    });
+    unwraps.push(() => Object.defineProperty(owner, "addEventListener", own));
+  }
+
+  const watched = [
+    { target: document, isTracked: () => true },
+    { target: window, isTracked: descriptor => Boolean(descriptor.get) }
+  ].map(item => ({ ...item, before: Object.getOwnPropertyDescriptors(item.target) }));
+  const isSame = (a, b) => a?.value === b?.value && a?.get === b?.get && a?.set === b?.set;
+  try {
+@@SOURCE@@
+  } finally {
+    for (const unwrap of unwraps) {
+      unwrap();
+    }
+
+    for (const { target, isTracked, before } of watched) {
+      for (const key of Reflect.ownKeys(target)) {
+        const after = Object.getOwnPropertyDescriptor(target, key);
+        const earlier = before[key];
+        if (!after?.configurable || !isTracked(after) || isSame(earlier, after)) {
+          continue;
+        }
+
+        undoSteps.push(() => {
+          if (!isSame(Object.getOwnPropertyDescriptor(target, key), after)) {
+            return;
+          }
+
+          if (earlier) {
+            Object.defineProperty(target, key, earlier);
+            return;
+          }
+
+          delete target[key];
+        });
+      }
+    }
+  }
+})();
+"#;
 
 const LOADER_TEMPLATE: &str = r#"(async () => {
   const ancestors = globalThis.location.ancestorOrigins;
@@ -144,6 +226,21 @@ pub(crate) fn guard_run_once(name: &str, source: &str) -> String {
                 format!("globalThis[{}]", literal(RAN_CONTENT_SCRIPTS_GLOBAL)),
             ),
             ("NAME", literal(name)),
+            ("SOURCE", source.to_owned()),
+        ],
+    )
+}
+
+/// Makes a page-world script replace its own earlier run in an open tab.
+pub(crate) fn swappable_main_world(name: &str, source: &str, source_hash: &str) -> String {
+    fill(
+        SWAPPABLE_TEMPLATE,
+        &[
+            ("MARKER", SWAPPABLE_MARKER.to_owned()),
+            ("RAN", literal(RAN_CONTENT_SCRIPTS_GLOBAL)),
+            ("RUNS", literal(SWAPPABLE_RUNS_GLOBAL)),
+            ("NAME", literal(name)),
+            ("HASH", literal(source_hash)),
             ("SOURCE", source.to_owned()),
         ],
     )

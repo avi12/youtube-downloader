@@ -2,6 +2,7 @@
 //! keep the `YouTube` page alive. Port of `scripts/dev/output/patches.ts`.
 
 pub(crate) mod hmr_names;
+mod main_world;
 mod sources;
 
 use std::fs;
@@ -10,6 +11,7 @@ use std::path::Path;
 use serde_json::{json, Map, Value};
 use ytdl_dev_hot::types::ContentHash;
 
+pub(crate) use main_world::is_swappable_output;
 pub(crate) use sources::{recorder_source, replay_function_source};
 
 use self::hmr_names::{
@@ -175,7 +177,7 @@ fn patch_background(output_dir: &Path, prelude: &str) -> Result<()> {
     write_text(&path, &format!("{prelude}{}", read_text(&path)?))
 }
 
-fn patch_content_script(output_dir: &Path, file: &str) -> Result<()> {
+fn patch_content_script(output_dir: &Path, project_root: &Path, file: &str) -> Result<()> {
     let path = output_dir.join(file);
     let original = read_text(&path)?;
     let loader_entry = HMR_ENTRIES.iter().find_map(|entry| match entry {
@@ -192,12 +194,22 @@ fn patch_content_script(output_dir: &Path, file: &str) -> Result<()> {
         ),
         None => original,
     };
-    write_text(&path, &sources::guard_run_once(file, &source))
+    let patched = if main_world::is_swappable_script(project_root, file)? {
+        sources::swappable_main_world(file, &source, &source_hash(&source))
+    } else {
+        sources::guard_run_once(file, &source)
+    };
+    write_text(&path, &patched)
 }
 
 /// Runs once WXT has written the build: adds the background prelude and the recorder, points the
-/// hot-swappable entrypoints at the HMR modules and guards every other content script.
-pub(crate) fn patch_built_output(output_dir: &Path, background_prelude: &str) -> Result<()> {
+/// hot-swappable entrypoints at the HMR modules, wraps the swappable page-world scripts and guards
+/// every other content script.
+pub(crate) fn patch_built_output(
+    output_dir: &Path,
+    project_root: &Path,
+    background_prelude: &str,
+) -> Result<()> {
     patch_background(output_dir, background_prelude)?;
     for entry in &HMR_ENTRIES {
         if let HmrEntry::Page { built_file } = entry {
@@ -215,7 +227,7 @@ pub(crate) fn patch_built_output(output_dir: &Path, background_prelude: &str) ->
         .into_iter()
         .flat_map(|entry| entry.scripts);
     for file in files {
-        patch_content_script(output_dir, &file)?;
+        patch_content_script(output_dir, project_root, &file)?;
     }
     Ok(())
 }
