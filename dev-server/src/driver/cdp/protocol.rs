@@ -63,7 +63,8 @@ pub struct EvaluateParameters<'request> {
     await_promise: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     context_id: Option<u64>,
-    return_by_value: bool,
+    #[serde(rename = "returnByValue")]
+    should_return_by_value: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     object_group: Option<&'request str>,
 }
@@ -75,7 +76,7 @@ impl<'request> EvaluateParameters<'request> {
             expression,
             await_promise: Some(true),
             context_id: None,
-            return_by_value: true,
+            should_return_by_value: true,
             object_group: None,
         }
     }
@@ -90,7 +91,7 @@ impl<'request> EvaluateParameters<'request> {
             expression,
             await_promise: None,
             context_id: Some(context_id),
-            return_by_value: group.is_none(),
+            should_return_by_value: group.is_none(),
             object_group: group,
         }
     }

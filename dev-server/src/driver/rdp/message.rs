@@ -163,7 +163,8 @@ impl WatchTargetsParameters {
 /// The console syntax an evaluation maps, such as top-level `await`.
 #[derive(Debug, Clone, Copy, Serialize)]
 struct MappedSyntax {
-    r#await: bool,
+    #[serde(rename = "await")]
+    should_await: bool,
 }
 
 /// The parameters of `evaluateJSAsync`.
@@ -196,7 +197,7 @@ impl<'text> EvaluateParameters<'text> {
     /// Reports the settled value of the promise the text resolves to.
     #[must_use]
     pub const fn awaiting(mut self) -> Self {
-        self.mapped = Some(MappedSyntax { r#await: true });
+        self.mapped = Some(MappedSyntax { should_await: true });
         self
     }
 }

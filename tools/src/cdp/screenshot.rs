@@ -94,7 +94,8 @@ struct CreateTargetParameters {
     url: String,
     width: u32,
     height: u32,
-    new_window: bool,
+    #[serde(rename = "newWindow")]
+    is_new_window: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -103,7 +104,8 @@ struct DeviceMetricsParameters {
     width: u32,
     height: u32,
     device_scale_factor: u32,
-    mobile: bool,
+    #[serde(rename = "mobile")]
+    is_mobile: bool,
 }
 
 async fn write_capture(
@@ -176,7 +178,7 @@ async fn create_popup(browser_url: &str) -> Result<String> {
         url: format!("chrome-extension://{EXTENSION_ID}/popup.html"),
         width: POPUP_WIDTH,
         height: POPUP_HEIGHT,
-        new_window: true,
+        is_new_window: true,
     };
     let outcome = session.call(Method::TargetCreateTarget, &parameters).await;
     session.close().await;
@@ -203,7 +205,7 @@ async fn emulate_and_capture(session: &mut Session, output: &PathBuf) -> Result<
         width: POPUP_WIDTH,
         height: POPUP_HEIGHT,
         device_scale_factor: POPUP_SCALE,
-        mobile: false,
+        is_mobile: false,
     };
     session
         .call(Method::EmulationSetDeviceMetricsOverride, &metrics)

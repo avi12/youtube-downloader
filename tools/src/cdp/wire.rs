@@ -19,13 +19,14 @@ pub(crate) use self::targets::{open_target, PortArg, Targets, Wanted, EXTENSION_
 #[derive(Debug, Clone, Copy, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ReloadParameters {
-    ignore_cache: bool,
+    #[serde(rename = "ignoreCache")]
+    should_ignore_cache: bool,
 }
 
 impl ReloadParameters {
     /// A reload that keeps the cache.
     pub(crate) const KEEPING_CACHE: Self = Self {
-        ignore_cache: false,
+        should_ignore_cache: false,
     };
 }
 

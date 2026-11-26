@@ -45,13 +45,14 @@ enum WindowType {
 pub(super) struct NewWindow {
     #[serde(rename = "type")]
     kind: WindowType,
-    focus: bool,
+    #[serde(rename = "focus")]
+    has_focus: bool,
 }
 
 impl NewWindow {
     pub(super) const FOCUSED_TAB: Self = Self {
         kind: WindowType::Tab,
-        focus: true,
+        has_focus: true,
     };
 }
 
@@ -167,7 +168,8 @@ pub(super) struct ById<'id> {
 #[derive(Debug, Serialize)]
 pub(super) struct InstallAddon<'path> {
     path: &'path str,
-    temporary: bool,
+    #[serde(rename = "temporary")]
+    is_temporary: bool,
 }
 
 impl<'path> InstallAddon<'path> {
@@ -175,7 +177,7 @@ impl<'path> InstallAddon<'path> {
     pub(super) const fn temporary(path: &'path str) -> Self {
         Self {
             path,
-            temporary: true,
+            is_temporary: true,
         }
     }
 }
