@@ -70,9 +70,7 @@ export interface MoviePlayerElement extends HTMLElement {
   }) => void;
 }
 
-export type PlayerCaptionTrackData = Prettify<z.infer<typeof playerCaptionTrackDataSchema> & {
-  displayName: string;
-}>;
+export type PlayerCaptionTrackData = Prettify<z.infer<typeof playerCaptionTrackDataSchema>>;
 
 export type CaptionEventBus = z.infer<typeof captionEventBusSchema>;
 

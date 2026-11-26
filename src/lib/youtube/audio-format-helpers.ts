@@ -1,3 +1,4 @@
+import { isVideoElement } from "@/lib/dom-guards";
 import { required } from "@/lib/required";
 import { DownloadType } from "@/types";
 import type { AdaptiveFormatItem, Prettify } from "@/types";
@@ -67,8 +68,8 @@ export function normalizeLanguageCode(lang: string) {
 }
 
 export function getCurrentVideoAudioLanguage() {
-  const elVideo = document.querySelector<HTMLVideoElement>(VIDEO_SELECTOR);
-  const tracks = elVideo?.audioTracks;
+  const elVideo = document.querySelector(VIDEO_SELECTOR);
+  const tracks = isVideoElement(elVideo) ? elVideo.audioTracks : undefined;
   const hasTracks = !!tracks?.length;
   if (!hasTracks) {
     return null;

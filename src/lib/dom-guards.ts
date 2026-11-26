@@ -15,4 +15,8 @@ export const isCustomEvent = createLazyGuard(() => z.instanceof(CustomEvent));
 export const isVttCue = createLazyGuard(() => z.instanceof(VTTCue));
 export const isRequest = createLazyGuard(() => z.instanceof(Request));
 export const isHeaders = createLazyGuard(() => z.instanceof(Headers));
+export const isDomException = createLazyGuard(() => z.instanceof(DOMException));
+export const isVideoElement = createLazyGuard(() => z.instanceof(HTMLVideoElement));
 export const isBlob = createLazyGuard(() => z.instanceof(Blob));
+export const isIframeElement = createLazyGuard(() => z.instanceof(HTMLIFrameElement));
+export const isScriptElement = createLazyGuard(() => z.instanceof(HTMLScriptElement));

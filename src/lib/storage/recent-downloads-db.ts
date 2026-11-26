@@ -1,4 +1,6 @@
-import { isBlob } from "@/lib/dom-guards";
+import { isBlob, isDomException } from "@/lib/dom-guards";
+import { z } from "@/lib/zod";
+import { createGuard } from "@/lib/zod-guard";
 import type { Prettify } from "@/types";
 
 const DB_NAME = "ytdl-recent-downloads";
@@ -59,29 +61,32 @@ function awaitTransaction(transaction: IDBTransaction) {
   });
 }
 
-export async function addRecentDownload({ entry, blob }: {
-  entry: {
-    id: string;
-    downloadId: number;
-    videoId: string;
-    title: string;
-    channel: string;
-    filename: string;
-    container: string;
-    mimeType: string;
-    videoMimeType?: string;
-    audioMimeType?: string;
-    size: number;
-    thumbnailUrl?: string;
-    completedAt: number;
-    lastActivityAt?: number;
-    tabId?: number;
-    quality?: string;
-    sourceUrl?: string;
-    lengthSeconds?: number;
-  };
-  blob: Blob;
-}) {
+const recentDownloadEntrySchema = z.looseObject({
+  id: z.string(),
+  downloadId: z.number(),
+  videoId: z.string(),
+  title: z.string(),
+  channel: z.string(),
+  filename: z.string(),
+  container: z.string(),
+  mimeType: z.string(),
+  videoMimeType: z.string().optional(),
+  audioMimeType: z.string().optional(),
+  size: z.number(),
+  thumbnailUrl: z.string().optional(),
+  completedAt: z.number(),
+  lastActivityAt: z.number().optional(),
+  tabId: z.number().optional(),
+  quality: z.string().optional(),
+  sourceUrl: z.string().optional(),
+  // A duration that failed to parse is stored as NaN, which z.number() rejects
+  lengthSeconds: z.number().or(z.nan()).optional()
+});
+const isRecentDownloadEntry = createGuard(recentDownloadEntrySchema);
+
+export type RecentDownloadEntry = Prettify<z.infer<typeof recentDownloadEntrySchema>>;
+
+export async function addRecentDownload({ entry, blob }: { entry: RecentDownloadEntry; blob: Blob }) {
   // Persist entry+blob, evicting the oldest cached downloads to make room when
   // storage is full, so a new download always caches without overflowing the
   // disk. Returns false if it cannot fit even after evicting everything else.
@@ -108,8 +113,6 @@ export async function addRecentDownload({ entry, blob }: {
   }
 }
 
-export type RecentDownloadEntry = Prettify<Parameters<typeof addRecentDownload>[0]["entry"]>;
-
 async function putRecentDownload({ entry, blob }: { entry: RecentDownloadEntry; blob: Blob }) {
   const database = await getDatabase();
   const transaction = database.transaction([Store.Entries, Store.Blobs], "readwrite");
@@ -119,7 +122,7 @@ async function putRecentDownload({ entry, blob }: { entry: RecentDownloadEntry; 
 }
 
 function isQuotaExceeded(error: unknown) {
-  return error instanceof DOMException && error.name === "QuotaExceededError";
+  return isDomException(error) && error.name === "QuotaExceededError";
 }
 
 function retentionTimestamp(entry: RecentDownloadEntry) {
@@ -143,8 +146,8 @@ async function mutateEntry({ id, mutate }: { id: string; mutate: (entry: RecentD
   const database = await getDatabase();
   const transaction = database.transaction(Store.Entries, "readwrite");
   const store = transaction.objectStore(Store.Entries);
-  const entry: RecentDownloadEntry | undefined = await awaitRequest(store.get(id));
-  if (entry) {
+  const entry: unknown = await awaitRequest(store.get(id));
+  if (isRecentDownloadEntry(entry)) {
     mutate(entry);
     store.put(entry);
   }
@@ -176,9 +179,12 @@ export async function touchAllRecentDownloads() {
       return;
     }
 
-    const entry: RecentDownloadEntry = cursor.value;
-    entry.lastActivityAt = now;
-    cursor.update(entry);
+    const entry: unknown = cursor.value;
+    if (isRecentDownloadEntry(entry)) {
+      entry.lastActivityAt = now;
+      cursor.update(entry);
+    }
+
     cursor.continue();
   };
 
@@ -200,10 +206,8 @@ export async function updateRecentDownloadId({ id, downloadId }: {
 export async function getAllRecentDownloads() {
   const database = await getDatabase();
   const transaction = database.transaction(Store.Entries, "readonly");
-  const entries: RecentDownloadEntry[] = await awaitRequest(
-    transaction.objectStore(Store.Entries).getAll()
-  );
-  return entries.toSorted((entryA, entryB) => entryB.completedAt - entryA.completedAt);
+  const entries = await awaitRequest(transaction.objectStore(Store.Entries).getAll());
+  return entries.filter(isRecentDownloadEntry).toSorted((entryA, entryB) => entryB.completedAt - entryA.completedAt);
 }
 
 export async function getRecentDownloadBlob(id: string) {
@@ -237,7 +241,12 @@ export async function pruneRecentDownloads({ olderThanTimestamp, protectedIds }:
       return;
     }
 
-    const entry: RecentDownloadEntry = cursor.value;
+    const entry: unknown = cursor.value;
+    if (!isRecentDownloadEntry(entry)) {
+      cursor.continue();
+      return;
+    }
+
     const youngestTimestamp = Math.max(entry.lastActivityAt ?? 0, entry.completedAt);
     const isEntryProtected = protectedIds.has(entry.id);
     const isExpired = youngestTimestamp <= olderThanTimestamp && !isEntryProtected;

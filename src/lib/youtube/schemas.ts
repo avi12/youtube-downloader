@@ -1,11 +1,10 @@
-import type { MusicSearchResponse } from "./music-search-types";
+import { musicSearchResponseSchema } from "./music-search-types";
 import { z } from "@/lib/zod";
 import { createGuard, createShapeGuard } from "@/lib/zod-guard";
 import {
   type DownloadRequest,
   DownloadType,
   type PlayerResponse,
-  type TpYtPaperInputElement,
   type VideoData,
   type YtButtonViewModelElement
 } from "@/types";
@@ -14,7 +13,8 @@ export const isDownloadType = createGuard(z.enum(DownloadType));
 
 export const playerCaptionTrackDataSchema = z.looseObject({
   languageCode: z.string(),
-  vss_id: z.string()
+  vss_id: z.string(),
+  displayName: z.string().optional()
 });
 
 export const isCaptionBusContext = createGuard(
@@ -198,18 +198,18 @@ export const isDownloadRequest = createShapeGuard<DownloadRequest>(
   })
 );
 
-export const isMusicSearchResponse = createShapeGuard<MusicSearchResponse>(z.looseObject({}));
+export const isMusicSearchResponse = createGuard(musicSearchResponseSchema);
 
-export const isTpYtPaperInputElement = createShapeGuard<TpYtPaperInputElement>(
-  z.looseObject({
-    updateStyles: z.function({
-      input: [z.record(z.string(), z.string())],
-      output: z.void()
-    }),
-    label: z.string(),
-    value: z.string()
-  })
-);
+export const tpYtPaperInputSchema = z.looseObject({
+  updateStyles: z.function({
+    input: [z.record(z.string(), z.string())],
+    output: z.void()
+  }),
+  label: z.string(),
+  value: z.string()
+});
+
+export const isTpYtPaperInputElement = createGuard(tpYtPaperInputSchema);
 
 const YT_BUTTON_VIEW_MODEL_TAG = "YT-BUTTON-VIEW-MODEL";
 
@@ -222,8 +222,10 @@ const iconNamedElementSchema = z.looseObject({
   data: z.looseObject({ iconName: z.string() })
 });
 
+const isIconNamedElement = createGuard(iconNamedElementSchema);
+
 export function readElementIconName(value: unknown) {
-  return iconNamedElementSchema.safeParse(value).data?.data.iconName;
+  return isIconNamedElement(value) ? value.data.iconName : undefined;
 }
 
 const ytLockupViewModelElementSchema = z.looseObject({

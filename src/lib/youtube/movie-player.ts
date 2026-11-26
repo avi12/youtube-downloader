@@ -1,5 +1,5 @@
 import { required } from "@/lib/required";
-import type { CaptionEventBus, MoviePlayerElement, PlayerCaptionTrackData } from "./movie-player-types";
+import type { CaptionEventBus, MoviePlayerElement } from "./movie-player-types";
 import { captionEventBusSchema, isCaptionBusContext, playerCaptionTrackDataSchema } from "./schemas";
 import { z } from "@/lib/zod";
 import { createGuard, createShapeGuard } from "@/lib/zod-guard";
@@ -11,11 +11,15 @@ export {
   type PlayerCaptionTrackData
 } from "./movie-player-types";
 
+// The player's methods are all optional, so being an HTML element is all there is to check
+const isMoviePlayer = createShapeGuard<MoviePlayerElement>(z.lazy(() => z.instanceof(HTMLElement)));
+
 export function getMoviePlayer() {
-  return document.querySelector<MoviePlayerElement>("#movie_player");
+  const elPlayer = document.querySelector("#movie_player");
+  return isMoviePlayer(elPlayer) ? elPlayer : null;
 }
 
-export const isPlayerCaptionTrackData = createShapeGuard<PlayerCaptionTrackData>(playerCaptionTrackDataSchema);
+export const isPlayerCaptionTrackData = createGuard(playerCaptionTrackDataSchema);
 
 const getOptionSchema = z.function({
   input: [z.string(), z.string()],

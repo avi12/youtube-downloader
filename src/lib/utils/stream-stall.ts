@@ -1,3 +1,5 @@
+import { isDomException } from "@/lib/dom-guards";
+
 const STREAM_STALL_TIMEOUT_MS = 30_000;
 const STALL_CHECK_INTERVAL_MS = 1_000;
 
@@ -37,8 +39,8 @@ export async function readChunk(reader: ReadableStreamDefaultReader<Uint8Array>)
   try {
     return await reader.read();
   } catch (error) {
-    const isDomException = error instanceof DOMException;
-    const isAbortError = isDomException && error.name === "AbortError";
+    const isDomError = isDomException(error);
+    const isAbortError = isDomError && error.name === "AbortError";
     if (isAbortError) {
       throw error;
     }
