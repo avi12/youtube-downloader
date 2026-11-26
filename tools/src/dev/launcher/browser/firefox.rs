@@ -178,11 +178,13 @@ pub(super) async fn launch(launch: BrowserLaunch<'_>) -> Result<(Child, FirefoxI
 mod tests {
     use crate::dev::launcher::browser::firefox::*;
 
+    const SAMPLE_DEBUGGER_PORT: u16 = 6000;
+
     #[test]
     fn prefs_render_as_user_pref_lines() -> Result<()> {
         let lines = pref_lines(&[
             (Pref::AppUpdate, PrefValue::Flag(true)),
-            (Pref::DebuggerPort, PrefValue::Number(6000)),
+            (Pref::DebuggerPort, PrefValue::Number(SAMPLE_DEBUGGER_PORT)),
             (Pref::VolumeScale, PrefValue::text("x\"y")),
         ])?;
         assert_eq!(

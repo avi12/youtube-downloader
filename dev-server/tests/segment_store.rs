@@ -6,6 +6,9 @@ use std::path::PathBuf;
 use ytdl_dev_hot::downloads::{SafeName, SegmentKey, Storage};
 use ytdl_dev_hot::Result;
 
+// Sorts after 2 by number but before it as text
+const DOUBLE_DIGIT_INDEX: u64 = 10;
+
 fn scratch_directory(label: &str) -> PathBuf {
     std::env::temp_dir().join(format!("ytdl-segments-{label}-{}", std::process::id()))
 }
@@ -23,14 +26,18 @@ fn check_store(storage: Storage) -> Result<()> {
     assert_eq!(store.held(&download)?, Vec::<SegmentKey>::new());
     assert_eq!(store.load(&download, &key("audio", 0)?)?, None);
 
-    store.save(&download, &key("video", 10)?, b"later")?;
+    store.save(&download, &key("video", DOUBLE_DIGIT_INDEX)?, b"later")?;
     store.save(&download, &key("video", 2)?, b"first copy")?;
     store.save(&download, &key("video", 2)?, b"earlier")?;
     store.save(&download, &key("audio", 0)?, b"sound")?;
 
     assert_eq!(
         store.held(&download)?,
-        [key("audio", 0)?, key("video", 2)?, key("video", 10)?]
+        [
+            key("audio", 0)?,
+            key("video", 2)?,
+            key("video", DOUBLE_DIGIT_INDEX)?
+        ]
     );
     assert_eq!(
         store.load(&download, &key("video", 2)?)?,

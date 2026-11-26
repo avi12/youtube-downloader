@@ -137,6 +137,9 @@ mod tests {
 
     use crate::driver::cdp::protocol::*;
 
+    const CONTEXT_COMMAND_ID: u64 = 3;
+    const SAMPLE_CONTEXT_ID: u64 = 7;
+
     #[test]
     fn commands_keep_their_wire_shape() -> Result<()> {
         let cases = [
@@ -155,12 +158,12 @@ mod tests {
             ),
             (
                 encode_command(
-                    3,
+                    CONTEXT_COMMAND_ID,
                     Method::RuntimeEvaluate,
-                    &EvaluateParameters::in_context("d", 7, Some("g")),
+                    &EvaluateParameters::in_context("d", SAMPLE_CONTEXT_ID, Some("g")),
                 )?,
-                json!({"id":3,"method":"Runtime.evaluate","params":{"expression":"d",
-                    "contextId":7,"returnByValue":false,"objectGroup":"g"}}),
+                json!({"id":CONTEXT_COMMAND_ID,"method":"Runtime.evaluate","params":{"expression":"d",
+                    "contextId":SAMPLE_CONTEXT_ID,"returnByValue":false,"objectGroup":"g"}}),
             ),
         ];
         for (sent, expected) in cases {
