@@ -71,33 +71,33 @@ flowchart TB
 
 | Diagram node | Code |
 | --- | --- |
-| User clicks Download | [`watch-button-click.ts:32`](src/layers/youtube/entrypoints/youtube-main.content/watch-button/watch-button-click.ts) `buildClickHandler` |
-| Pick video itag + audio tracks | [`download-plan.ts:160`](src/lib/youtube/download-plan.ts) `selectFormats` + [`:101`](src/lib/youtube/download-plan.ts) `getExtraAudioFormats` (both run by [`:255`](src/lib/youtube/download-plan.ts) `resolveDownloadPlan`) |
+| User clicks Download | [`watch-button-click.ts:34`](src/layers/youtube/entrypoints/youtube-main.content/watch-button/watch-button-click.ts) `buildClickHandler` |
+| Pick video itag + audio tracks | [`download-plan.ts:159`](src/lib/youtube/download-plan.ts) `selectFormats` + [`:100`](src/lib/youtube/download-plan.ts) `getExtraAudioFormats` (both run by [`:254`](src/lib/youtube/download-plan.ts) `resolveDownloadPlan`) |
 | Pick primary audio (language) | [`select-audio-format.ts:32`](src/lib/youtube/select-audio-format.ts) `selectPreferredAudioFormat` |
-| Align to container (codec settings, HDR) | [`align-formats-to-container.ts:137`](src/lib/youtube/align-formats-to-container.ts) `alignFormatsToContainer` (see [Format, codec, and container selection](#format-codec-and-container-selection)) |
+| Align to container (codec settings, HDR) | [`align-formats-to-container.ts:140`](src/lib/youtube/align-formats-to-container.ts) `alignFormatsToContainer` (see [Format, codec, and container selection](#format-codec-and-container-selection)) |
 | Resolve CDN URLs (decipher signatures) | [`download-formats.ts:12`](src/layers/youtube/entrypoints/youtube-main.content/video/download-formats.ts) `preResolveCdnUrls` -> [`stream-fetch.ts`](src/layers/youtube/entrypoints/youtube-main.content/video/stream-fetch.ts) `resolveFormatUrl` |
-| PO token (BotGuard + GenerateIT) | [`po-token-generator.ts:33`](src/layers/youtube/lib/youtube/po-token-generator.ts) `generatePoToken` (driving [`botguard-vm.ts`](src/layers/youtube/lib/youtube/botguard-vm.ts)) |
-| Decipher signatureCipher | [`signature-decryptor.ts:62`](src/layers/youtube/lib/youtube/signature-decryptor.ts) `decryptSignatureCipher` + [`signature-transforms.ts`](src/layers/youtube/lib/youtube/signature-transforms.ts) |
-| 1. Pick + order caption tracks | [`download-plan.ts:68`](src/lib/youtube/download-plan.ts) `resolveOrderedCaptionTracks` + [`caption-helpers.ts:29`](src/lib/youtube/caption-helpers.ts) `orderCaptionsByPreference` |
+| PO token (BotGuard + GenerateIT) | [`po-token-generator.ts:35`](src/layers/youtube/lib/youtube/po-token-generator.ts) `generatePoToken` (driving [`botguard-vm.ts`](src/layers/youtube/lib/youtube/botguard-vm.ts)) |
+| Decipher signatureCipher | [`signature-decryptor.ts:68`](src/layers/youtube/lib/youtube/signature-decryptor.ts) `decryptSignatureCipher` + [`signature-transforms.ts`](src/layers/youtube/lib/youtube/signature-transforms.ts) |
+| 1. Pick + order caption tracks | [`download-plan.ts:67`](src/lib/youtube/download-plan.ts) `resolveOrderedCaptionTracks` + [`caption-helpers.ts:30`](src/lib/youtube/caption-helpers.ts) `orderCaptionsByPreference` |
 | 2. Refresh caption URLs via InnerTube | [`caption-urls.ts:13`](src/layers/youtube/entrypoints/youtube-main.content/video/caption-urls.ts) `fetchFreshCaptionUrls` |
-| 3. Fetch VTT bytes via `<track>` | [`caption-fetch.ts:86`](src/layers/youtube/entrypoints/youtube-main.content/video/caption-fetch.ts) `fetchCaptionWebVttData` |
-| Pack DownloadRequest | [`download-request-builder.ts:92`](src/layers/youtube/entrypoints/youtube-main.content/video/download-request-builder.ts) `buildEnrichedRequest` |
+| 3. Fetch VTT bytes via `<track>` | [`caption-fetch.ts:88`](src/layers/youtube/entrypoints/youtube-main.content/video/caption-fetch.ts) `fetchCaptionWebVttData` |
+| Pack DownloadRequest | [`download-request-builder.ts:93`](src/layers/youtube/entrypoints/youtube-main.content/video/download-request-builder.ts) `buildEnrichedRequest` |
 | Cross-world CustomEvent bus | [`cross-world-messenger.ts`](src/lib/messaging/cross-world-messenger.ts) `crossWorldMessenger` |
-| ISOLATED content runtime bridge | [`cross-world-download.ts:7`](src/layers/youtube/entrypoints/youtube.content/handlers/cross-world-download.ts) `registerDownloadProgressHandlers` |
+| ISOLATED content runtime bridge | [`cross-world-download.ts:16`](src/layers/youtube/entrypoints/youtube.content/handlers/cross-world-download.ts) `registerDownloadProgressHandlers` |
 | Background SW / event-page entry | [`background/main.ts:26`](src/layers/background/main.ts) `main` (wrapped by `defineBackground` in the [`src/entrypoints/background.ts`](src/entrypoints/background.ts) stub) |
-| `isFirefoxRuntime?` probe | [`background-downloader.ts:58`](src/layers/background/download/background-downloader.ts) `isFirefoxRuntime` |
-| Dispatch to worker iframe vs Firefox path | [`background-downloader.ts:424`](src/layers/background/download/background-downloader.ts) `startBackgroundDownload` |
-| Download-worker iframe entry | [`download-worker/main.ts:28`](src/layers/processing/entrypoints/download-worker/main.ts) (message handler) |
-| ANDROID_VR InnerTube call | [`android-player.ts:127`](src/layers/background/lib/youtube/android-player.ts) `resolveAndroidUrls` |
-| Firefox page-proxy fallback | [`page-sabr-fetch.content.ts:25`](src/layers/youtube/entrypoints/page-sabr-fetch.content.ts) `readVisitorData` + [`:41`](src/layers/youtube/entrypoints/page-sabr-fetch.content.ts) `substituteBodyTokens` (bridged via [`page-sabr-fetch-bridge.ts:13`](src/layers/youtube/entrypoints/youtube.content/handlers/page-sabr-fetch-bridge.ts) `registerPageSabrFetchBridge`) |
+| `isFirefoxRuntime?` probe | [`background-downloader.ts:59`](src/layers/background/download/background-downloader.ts) `isFirefoxRuntime` |
+| Dispatch to worker iframe vs Firefox path | [`background-downloader.ts:431`](src/layers/background/download/background-downloader.ts) `startBackgroundDownload` |
+| Download-worker iframe entry | [`download-worker/main.ts:19`](src/layers/processing/entrypoints/download-worker/main.ts) (message handler) |
+| ANDROID_VR InnerTube call | [`android-player.ts:130`](src/layers/background/lib/youtube/android-player.ts) `resolveAndroidUrls` |
+| Firefox page-proxy fallback | [`page-sabr-fetch.content.ts:29`](src/layers/youtube/entrypoints/page-sabr-fetch.content.ts) `readVisitorData` + [`:44`](src/layers/youtube/entrypoints/page-sabr-fetch.content.ts) `substituteBodyTokens` (bridged via [`page-sabr-fetch-bridge.ts:14`](src/layers/youtube/entrypoints/youtube.content/handlers/page-sabr-fetch-bridge.ts) `registerPageSabrFetchBridge`) |
 | 1. SABR fetch loop | [`sabr-downloader.ts:24`](src/layers/background/download/sabr-downloader.ts) `downloadViaSabr` (stall timer in [`sabr-stall-timer.ts`](src/layers/background/download/sabr-stall-timer.ts)) |
 | 2. CDN byte-range GET | [`cdn-downloader.ts:43`](src/layers/background/download/cdn-downloader.ts) `downloadViaCdn` (range fetch in [`cdn-fetch.ts:64`](src/layers/background/download/cdn-fetch.ts) `fetchWithProgress`) |
-| 3. Direct CDN URL via browser.downloads | [`download-handlers.ts:118`](src/layers/background/handlers/download-handlers.ts) |
-| 4. Scrub-capture iframe | [`iframe-downloader.ts:34`](src/layers/background/download/iframe-downloader.ts) `prepareIframe` + [`:73`](src/layers/background/download/iframe-downloader.ts) `downloadViaWatchPage` (SourceBuffer hook in [`sourcebuffer-capture-patches.ts:34`](src/layers/youtube/entrypoints/sourcebuffer-capture/sourcebuffer-capture-patches.ts) `patchSourceBuffer`) |
-| Firefox 10 MB chunked fetch | [`firefox-direct-download.ts:264`](src/layers/background/download/firefox-direct-download.ts) `runFirefoxDirectDownload` |
+| 3. Direct CDN URL via browser.downloads | [`download-handlers.ts:132`](src/layers/background/handlers/download-handlers.ts) |
+| 4. Scrub-capture iframe | [`iframe-downloader.ts:46`](src/layers/background/download/iframe-downloader.ts) `prepareIframe` + [`:97`](src/layers/background/download/iframe-downloader.ts) `downloadViaWatchPage` (SourceBuffer hook in [`sourcebuffer-capture-patches.ts:34`](src/layers/youtube/entrypoints/sourcebuffer-capture/sourcebuffer-capture-patches.ts) `patchSourceBuffer`) |
+| Firefox 10 MB chunked fetch | [`firefox-direct-download.ts:262`](src/layers/background/download/firefox-direct-download.ts) `runFirefoxDirectDownload` |
 | Offscreen accumulator + end-handler | [`accumulator.ts`](src/layers/processing/entrypoints/offscreen/stream/accumulator.ts) + [`end-handler.ts:8`](src/layers/processing/entrypoints/offscreen/stream/end-handler.ts) `handleProcessStreamEnd` |
-| FFmpeg WASM mux worker | [`mux-worker/index.ts:34`](src/layers/processing/entrypoints/mux-worker/index.ts) `onInitMessage` + [`mux-handler-mux-video-audio.ts`](src/layers/processing/entrypoints/mux-worker/mux-handler-mux-video-audio.ts) (core build picked by [`ffmpeg-wasm-source.ts:19`](src/layers/processing/entrypoints/offscreen/ffmpeg-wasm-source.ts) `resolveFFmpegCoreBuild`) |
-| File saved via browser.downloads.download | [`download-fallback-chain.ts:78`](src/layers/background/download/download-fallback-chain.ts) |
+| FFmpeg WASM mux worker | [`mux-worker/index.ts:36`](src/layers/processing/entrypoints/mux-worker/index.ts) `onInitMessage` + [`mux-handler-mux-video-audio.ts`](src/layers/processing/entrypoints/mux-worker/mux-handler-mux-video-audio.ts) (core build picked by [`ffmpeg-core-build.ts:8`](src/lib/download-pipeline/ffmpeg-core-build.ts) `resolveFFmpegCoreBuild`) |
+| File saved via browser.downloads.download | [`blob-download.ts:54`](src/lib/download-pipeline/blob-download.ts) `persistAndTrigger` |
 | DNR `Origin`/`Referer`/`Sec-Fetch` rewrite on `googlevideo` | static ruleset [`strip-youtube-frame-headers.json`](src/public/rules/strip-youtube-frame-headers.json) (registered via `declarative_net_request` in [`wxt.config.ts`](wxt.config.ts)) |
 
 Chrome and Firefox diverge only at `isFirefoxRuntime?`. Everything that runs in MAIN context before the dispatch (auth, itags, captions) and everything after the chunks reach the accumulator (muxing, blob creation, `browser.downloads`) is shared code. The two sequence diagrams further down zoom into the Chrome 4-layer fallback chain and the Firefox page-proxy hand-off.
@@ -148,7 +148,7 @@ These are the rules the rest of the code relies on. Many are "absence of somethi
 - **Streams are copied, not re-encoded, whenever the container allows.** Every download goes through one plan ([`resolveDownloadPlan`](src/lib/youtube/download-plan.ts)) that swaps the picked streams for same-quality variants the container holds as-is, steered by the codec settings. When nothing fits, the output becomes MKV rather than re-encoding the video. See [Format, codec, and container selection](#format-codec-and-container-selection).
 - **Every picker reads one choices table.** Settings dropdowns, radio groups and the download panel's pickers take their options from `{ value: { label, description } }` tables through [`listChoices`](src/lib/utils/choices.ts), so each value's label and description are written once and adding a codec or container is one entry. YouTube's Polymer selects, which have no room for a second line, get the same text inlined by `toInlineLabeledOption`.
 - **One rule decides the download type.** "Auto" means audio only for music and video + audio for everything else, and only [`resolveDownloadType`](src/lib/youtube/download-type.ts) applies it. The watch button, the panel, and playlist and grid downloads all ask it instead of re-deriving it.
-- **FFmpeg loads in a build the CPU can run, or fails fast.** `@ffmpeg/core` 0.12.1 and later use WebAssembly SIMD, which browsers only run on CPUs with SSE4.1. The offscreen document checks with a tiny SIMD module ([`resolveFFmpegCoreBuild`](src/layers/processing/entrypoints/offscreen/ffmpeg-wasm-source.ts)) and, without SIMD, loads 0.12.0, the last build without it. Its JS glue is bundled as the `@ffmpeg/core-nosimd` alias, while its wasm is fetched from jsDelivr instead of doubling the bundle, checked against a pinned SHA-256 and cached in OPFS. If FFmpeg still can't load, the offscreen document reports `PipelineFFmpegFailed` and waiting downloads fail at once instead of hanging on a muxer that never starts (issue #21).
+- **FFmpeg loads in a build the CPU can run, or fails fast.** `@ffmpeg/core` 0.12.1 and later use WebAssembly SIMD, which browsers only run on CPUs with SSE4.1. The offscreen document checks with a tiny SIMD module ([`resolveFFmpegCoreBuild`](src/lib/download-pipeline/ffmpeg-core-build.ts)) and, without SIMD, loads 0.12.0, the last build without it. Its JS glue is bundled as the `@ffmpeg/core-nosimd` alias, while its wasm is fetched from jsDelivr instead of doubling the bundle, checked against a pinned SHA-256 and cached in OPFS. If FFmpeg still can't load, the offscreen document reports `PipelineFFmpegFailed` and waiting downloads fail at once instead of hanging on a muxer that never starts (issue #21).
 - **zod runs jitless because the YouTube page enforces Trusted Types.** MAIN-world code can't use the `eval`/`Function` that zod's schema JIT relies on, so every schema imports `z` from [`src/lib/zod.ts`](src/lib/zod.ts), which calls `z.config({ jitless: true })` once. Importing `zod` directly logs a Trusted Types violation on a YouTube page.
 - **External data is validated by zod guards and used in place.** Page objects, DOM nodes, YouTube responses and messages between contexts go through type guards built from schemas ([`createGuard`](src/lib/zod-guard.ts), [`dom-guards.ts`](src/lib/dom-guards.ts)). A parsed copy would lose a live object's identity and `this`. YouTube data uses `z.looseObject`, types are inferred from the schemas, and only fields the extension can't work without are required: an odd optional branch never rejects the whole response.
 - **Visibility is spoofed only inside the download frame.** The hidden `ytdl=1` frame ([`isDownloadFrame`](src/lib/youtube/download-frame.ts)) must keep playing, so it claims to be visible. Doing that on a real tab that is hidden or covered makes YouTube wait for animation frames that never fire, and the page stays a skeleton.
@@ -190,17 +190,17 @@ sequenceDiagram
 
 | Sequence step | Code |
 | --- | --- |
-| Click Download (DownloadRequest packed) | [`watch-button-click.ts:32`](src/layers/youtube/entrypoints/youtube-main.content/watch-button/watch-button-click.ts) `buildClickHandler` -> [`download-request-builder.ts:92`](src/layers/youtube/entrypoints/youtube-main.content/video/download-request-builder.ts) `buildEnrichedRequest` |
-| Worker receives request | [`download-worker/main.ts:28`](src/layers/processing/entrypoints/download-worker/main.ts) (message handler) |
+| Click Download (DownloadRequest packed) | [`watch-button-click.ts:34`](src/layers/youtube/entrypoints/youtube-main.content/watch-button/watch-button-click.ts) `buildClickHandler` -> [`download-request-builder.ts:93`](src/layers/youtube/entrypoints/youtube-main.content/video/download-request-builder.ts) `buildEnrichedRequest` |
+| Worker receives request | [`download-worker/main.ts:19`](src/layers/processing/entrypoints/download-worker/main.ts) (message handler) |
 | 1. SABR (protobuf via googlevideo) | [`sabr-downloader.ts:24`](src/layers/background/download/sabr-downloader.ts) `downloadViaSabr` |
 | Stall timer (5 s / 10 s) | [`sabr-stall-timer.ts`](src/layers/background/download/sabr-stall-timer.ts) `createSabrStallTimer` |
 | 2. CDN byte-range GET (resumes at offset) | [`cdn-downloader.ts:43`](src/layers/background/download/cdn-downloader.ts) `downloadViaCdn` |
-| `worker-needs-direct-url` message | constant in [`download-worker/main.ts:16`](src/layers/processing/entrypoints/download-worker/main.ts); handled in [`download-handlers.ts`](src/layers/background/handlers/download-handlers.ts) |
-| 3. browser.downloads.download(audioUrl) | [`download-handlers.ts:118`](src/layers/background/handlers/download-handlers.ts) |
-| `worker-needs-fallback` message | constant in [`download-worker/main.ts:17`](src/layers/processing/entrypoints/download-worker/main.ts) |
-| 4. Open hidden watch-page iframe (ytdl=1) | [`iframe-downloader.ts:34`](src/layers/background/download/iframe-downloader.ts) `prepareIframe` + [`:73`](src/layers/background/download/iframe-downloader.ts) `downloadViaWatchPage` |
+| `worker-needs-direct-url` message | `WorkerMessageKind` in [`worker-frame-messages.ts:12`](src/layers/processing/worker-frame-messages.ts); handled in [`download-handlers.ts`](src/layers/background/handlers/download-handlers.ts) |
+| 3. browser.downloads.download(audioUrl) | [`download-handlers.ts:132`](src/layers/background/handlers/download-handlers.ts) |
+| `worker-needs-fallback` message | `WorkerMessageKind` in [`worker-frame-messages.ts:13`](src/layers/processing/worker-frame-messages.ts) |
+| 4. Open hidden watch-page iframe (ytdl=1) | [`iframe-downloader.ts:46`](src/layers/background/download/iframe-downloader.ts) `prepareIframe` + [`:97`](src/layers/background/download/iframe-downloader.ts) `downloadViaWatchPage` |
 | SourceBuffer hook siphons segments | [`sourcebuffer-capture-patches.ts:34`](src/layers/youtube/entrypoints/sourcebuffer-capture/sourcebuffer-capture-patches.ts) `patchSourceBuffer` |
-| Muxed blob via accumulator + FFmpeg | [`end-handler.ts:8`](src/layers/processing/entrypoints/offscreen/stream/end-handler.ts) `handleProcessStreamEnd` -> [`mux-worker/index.ts:34`](src/layers/processing/entrypoints/mux-worker/index.ts) `onInitMessage` |
+| Muxed blob via accumulator + FFmpeg | [`end-handler.ts:8`](src/layers/processing/entrypoints/offscreen/stream/end-handler.ts) `handleProcessStreamEnd` -> [`mux-worker/index.ts:36`](src/layers/processing/entrypoints/mux-worker/index.ts) `onInitMessage` |
 
 The Chrome path walks four layers, each only invoked when the one above returns no usable bytes.
 
@@ -244,14 +244,14 @@ sequenceDiagram
 
 | Sequence step | Code |
 | --- | --- |
-| Click Download (DownloadRequest packed) | [`watch-button-click.ts:32`](src/layers/youtube/entrypoints/youtube-main.content/watch-button/watch-button-click.ts) `buildClickHandler` -> [`download-request-builder.ts:92`](src/layers/youtube/entrypoints/youtube-main.content/video/download-request-builder.ts) `buildEnrichedRequest` |
-| BG dispatches Firefox path | [`background-downloader.ts:424`](src/layers/background/download/background-downloader.ts) `startBackgroundDownload` (probe at [`:58`](src/layers/background/download/background-downloader.ts) `isFirefoxRuntime`) |
-| InnerTube POST (ANDROID_VR) fast path | [`android-player.ts:127`](src/layers/background/lib/youtube/android-player.ts) `resolveAndroidUrls` |
-| `pageSabrFetch` bridge (visitorData placeholder) | [`page-sabr-fetch-bridge.ts:13`](src/layers/youtube/entrypoints/youtube.content/handlers/page-sabr-fetch-bridge.ts) `registerPageSabrFetchBridge` |
-| Page-context POST (placeholder substituted) | [`page-sabr-fetch.content.ts:41`](src/layers/youtube/entrypoints/page-sabr-fetch.content.ts) `substituteBodyTokens` (reads via [`:25`](src/layers/youtube/entrypoints/page-sabr-fetch.content.ts) `readVisitorData`) |
-| 10 MB closed-range chunk fetch (parallel) | [`firefox-direct-download.ts:264`](src/layers/background/download/firefox-direct-download.ts) `runFirefoxDirectDownload` |
-| Muxed blob via offscreen + FFmpeg | [`end-handler.ts:8`](src/layers/processing/entrypoints/offscreen/stream/end-handler.ts) `handleProcessStreamEnd` -> [`mux-worker/index.ts:34`](src/layers/processing/entrypoints/mux-worker/index.ts) `onInitMessage` |
-| File saved | [`download-fallback-chain.ts:78`](src/layers/background/download/download-fallback-chain.ts) |
+| Click Download (DownloadRequest packed) | [`watch-button-click.ts:34`](src/layers/youtube/entrypoints/youtube-main.content/watch-button/watch-button-click.ts) `buildClickHandler` -> [`download-request-builder.ts:93`](src/layers/youtube/entrypoints/youtube-main.content/video/download-request-builder.ts) `buildEnrichedRequest` |
+| BG dispatches Firefox path | [`background-downloader.ts:431`](src/layers/background/download/background-downloader.ts) `startBackgroundDownload` (probe at [`:59`](src/layers/background/download/background-downloader.ts) `isFirefoxRuntime`) |
+| InnerTube POST (ANDROID_VR) fast path | [`android-player.ts:130`](src/layers/background/lib/youtube/android-player.ts) `resolveAndroidUrls` |
+| `pageSabrFetch` bridge (visitorData placeholder) | [`page-sabr-fetch-bridge.ts:14`](src/layers/youtube/entrypoints/youtube.content/handlers/page-sabr-fetch-bridge.ts) `registerPageSabrFetchBridge` |
+| Page-context POST (placeholder substituted) | [`page-sabr-fetch.content.ts:44`](src/layers/youtube/entrypoints/page-sabr-fetch.content.ts) `substituteBodyTokens` (reads via [`:29`](src/layers/youtube/entrypoints/page-sabr-fetch.content.ts) `readVisitorData`) |
+| 10 MB closed-range chunk fetch (parallel) | [`firefox-direct-download.ts:262`](src/layers/background/download/firefox-direct-download.ts) `runFirefoxDirectDownload` |
+| Muxed blob via offscreen + FFmpeg | [`end-handler.ts:8`](src/layers/processing/entrypoints/offscreen/stream/end-handler.ts) `handleProcessStreamEnd` -> [`mux-worker/index.ts:36`](src/layers/processing/entrypoints/mux-worker/index.ts) `onInitMessage` |
+| File saved | [`blob-download.ts:54`](src/lib/download-pipeline/blob-download.ts) `persistAndTrigger` |
 
 On Firefox-on-Windows, YouTube's anti-bot infrastructure rejects SABR (HTTP 403 or ~60 s response cap) regardless of cookies, PO token, or DNR rewrites. The TLS fingerprint and request signature differ enough from Chrome's that the `WEB`-client SABR path is unusable, and direct progressive URLs returned by the `WEB` client also 403 from any context.
 
@@ -267,7 +267,7 @@ Chunks stream to the offscreen iframe and join the same [accumulator](src/layers
 
 Progress crosses three boundaries - offscreen → BG → tab → MAIN-world UI - and lands as the same `DownloadProgressEntry` object on every consumer.
 
-Inside the BG, the dispatcher in [`progress-fetch.ts:178`](src/layers/background/download/progress-fetch.ts) `sendProgressUpdate` decides whether to message the tab directly or route via the SW. The probe ([`progress-fetch.ts:15`](src/layers/background/download/progress-fetch.ts) `canSendToTabDirectly`): *direct dispatch is possible from any context that owns the tabs API* - Chrome service worker (no `document`), Firefox event-page, Firefox offscreen iframe. The Chrome offscreen document and Chrome download-worker iframe lack `chrome.tabs` and must route via `ForwardProgressUpdate` to the SW, which writes [`statusProgressItem`](src/lib/storage/storage.ts) to storage and forwards to the tab. Same end state on both browsers; different number of hops.
+Inside the BG, the dispatcher in [`progress-fetch.ts:183`](src/layers/background/download/progress-fetch.ts) `sendProgressUpdate` decides whether to message the tab directly or route via the SW. The probe ([`progress-fetch.ts:17`](src/layers/background/download/progress-fetch.ts) `canSendToTabDirectly`): *direct dispatch is possible from any context that owns the tabs API* - Chrome service worker (no `document`), Firefox event-page, Firefox offscreen iframe. The Chrome offscreen document and Chrome download-worker iframe lack `chrome.tabs` and must route via `ForwardProgressUpdate` to the SW, which writes [`statusProgressItem`](src/lib/storage/storage.ts) to storage and forwards to the tab. Same end state on both browsers; different number of hops.
 
 Updates are coalesced per `videoId` at 100 ms (constant [`PROGRESS_COALESCE_MS`](src/layers/background/download/progress-fetch.ts)). Without coalescing, per-chunk emit rates starve the watch tab's hover and tooltip events. The coalesce also smooths out the byte readout (`downloadedBytes` / `totalBytes` / `bytesPerSecond`, the last computed from a 2-second sliding window) that the popup shows.
 
@@ -296,19 +296,19 @@ flowchart LR
 
 The rules live in two tables in [`container-specs.ts`](src/lib/utils/container-specs.ts): `CONTAINER_SPECS` (per extension: the codecs it holds, the ones it prefers, and the encoder to fall back to) and `VIDEO_CODEC_PREFERENCES` / `AUDIO_CODEC_PREFERENCES` (per setting: its codecs, label and description). Adding a codec or a container is a table entry, not new branching.
 
-**The panel only offers what the plan would keep.** The download panel's Video codec and Audio quality pickers run every stream through a list of conditions ([`VIDEO_FORMAT_CONDITIONS` and `AUDIO_FORMAT_CONDITIONS`](src/layers/youtube/components/download-options-panel/helpers/quality-change-handler.ts)): the container must hold the stream as-is, and the plan, with that stream's codec pinned, must keep it. So H.264 is listed only up to 1080p, HDR only on HDR videos, and WebM never lists H.264. A new constraint is one more function in the list. Picking a stream by hand pins its codec for that download only ([`pinVideoCodecPreferences`](src/lib/youtube/align-formats-to-container.ts)). Changing a codec setting in the popup replaces that pin in every open panel: the ISOLATED script forwards each settings change to the page (`OptionsUpdate`), and the panel re-derives its picks from it.
+**The panel only offers what the plan would keep.** The download panel's Video codec and Audio quality pickers run every stream through a list of conditions ([`VIDEO_FORMAT_CONDITIONS` and `AUDIO_FORMAT_CONDITIONS`](src/lib/download-options/helpers/quality-change-handler.ts)): the container must hold the stream as-is, and the plan, with that stream's codec pinned, must keep it. So H.264 is listed only up to 1080p, HDR only on HDR videos, and WebM never lists H.264. A new constraint is one more function in the list. Picking a stream by hand pins its codec for that download only ([`pinVideoCodecPreferences`](src/lib/youtube/align-formats-to-container.ts)). Changing a codec setting in the popup replaces that pin in every open panel: the ISOLATED script forwards each settings change to the page (`OptionsUpdate`), and the panel re-derives its picks from it.
 
 **Where each step lives**
 
 | Step | Code |
 | --- | --- |
 | Resolve "Auto" from the codec settings | [`auto-container.ts:17`](src/lib/youtube/auto-container.ts) `resolveAutoContainer` |
-| Frame-rate cap + Best's codec ceiling | [`select-video-quality.ts:72`](src/lib/youtube/select-video-quality.ts) `selectVideoFormatForQuality` |
-| One plan for every caller | [`download-plan.ts:255`](src/lib/youtube/download-plan.ts) `resolveDownloadPlan` |
-| Align streams to the container | [`align-formats-to-container.ts:137`](src/lib/youtube/align-formats-to-container.ts) `alignFormatsToContainer` -> [`:101`](src/lib/youtube/align-formats-to-container.ts) `alignVideoFormatToExtension` + [`select-audio-format.ts:121`](src/lib/youtube/select-audio-format.ts) `alignAudioFormatToExtension` |
-| Codec setting vs the container's preference | [`container-specs.ts:415`](src/lib/utils/container-specs.ts) `pickPreferredCodecs` |
-| Switch to MKV | [`container-specs.ts:518`](src/lib/utils/container-specs.ts) `getOutputExtension` |
-| Panel picker conditions | [`quality-change-handler.ts:94`](src/layers/youtube/components/download-options-panel/helpers/quality-change-handler.ts) `VIDEO_FORMAT_CONDITIONS` + [`:157`](src/layers/youtube/components/download-options-panel/helpers/quality-change-handler.ts) `AUDIO_FORMAT_CONDITIONS` |
+| Frame-rate cap + Best's codec ceiling | [`select-video-quality.ts:78`](src/lib/youtube/select-video-quality.ts) `selectVideoFormatForQuality` |
+| One plan for every caller | [`download-plan.ts:254`](src/lib/youtube/download-plan.ts) `resolveDownloadPlan` |
+| Align streams to the container | [`align-formats-to-container.ts:140`](src/lib/youtube/align-formats-to-container.ts) `alignFormatsToContainer` -> [`:101`](src/lib/youtube/align-formats-to-container.ts) `alignVideoFormatToExtension` + [`select-audio-format.ts:125`](src/lib/youtube/select-audio-format.ts) `alignAudioFormatToExtension` |
+| Codec setting vs the container's preference | [`container-specs.ts:434`](src/lib/utils/container-specs.ts) `pickPreferredCodecs` |
+| Switch to MKV | [`container-specs.ts:537`](src/lib/utils/container-specs.ts) `getOutputExtension` |
+| Panel picker conditions | [`quality-change-handler.ts:94`](src/lib/download-options/helpers/quality-change-handler.ts) `VIDEO_FORMAT_CONDITIONS` + [`:160`](src/lib/download-options/helpers/quality-change-handler.ts) `AUDIO_FORMAT_CONDITIONS` |
 
 ### Audio track resolution
 
@@ -334,14 +334,14 @@ flowchart LR
 | Step | Code |
 | --- | --- |
 | Pick primary by language + container | [`select-audio-format.ts:32`](src/lib/youtube/select-audio-format.ts) `selectPreferredAudioFormat` |
-| Find "original" track | [`audio-format-helpers.ts:86`](src/lib/youtube/audio-format-helpers.ts) `findOriginalAudioFormat` |
-| Pick video itag + dispatch to picker | [`download-plan.ts:160`](src/lib/youtube/download-plan.ts) `selectFormats` |
-| Collect extra tracks (dedupe + cap) | [`download-plan.ts:101`](src/lib/youtube/download-plan.ts) `getExtraAudioFormats` |
+| Find "original" track | [`audio-format-helpers.ts:88`](src/lib/youtube/audio-format-helpers.ts) `findOriginalAudioFormat` |
+| Pick video itag + dispatch to picker | [`download-plan.ts:159`](src/lib/youtube/download-plan.ts) `selectFormats` |
+| Collect extra tracks (dedupe + cap) | [`download-plan.ts:100`](src/lib/youtube/download-plan.ts) `getExtraAudioFormats` |
 | Resolve CDN URLs in parallel | [`download-formats.ts:12`](src/layers/youtube/entrypoints/youtube-main.content/video/download-formats.ts) `preResolveCdnUrls` |
-| Per-format URL + signature decipher | [`stream-fetch.ts`](src/layers/youtube/entrypoints/youtube-main.content/video/stream-fetch.ts) `resolveFormatUrl` -> [`signature-decryptor.ts:62`](src/layers/youtube/lib/youtube/signature-decryptor.ts) `decryptSignatureCipher` |
-| Tag source language for FFmpeg | [`download-request-builder.ts:37`](src/layers/youtube/entrypoints/youtube-main.content/video/download-request-builder.ts) `resolvePrimaryAudioLanguageCode` |
-| Live `<video>.audioTracks` probe | [`audio-format-helpers.ts:68`](src/lib/youtube/audio-format-helpers.ts) `getCurrentVideoAudioLanguage` |
-| Align audio container to output extension | [`select-audio-format.ts:121`](src/lib/youtube/select-audio-format.ts) `alignAudioFormatToExtension` |
+| Per-format URL + signature decipher | [`stream-fetch.ts`](src/layers/youtube/entrypoints/youtube-main.content/video/stream-fetch.ts) `resolveFormatUrl` -> [`signature-decryptor.ts:68`](src/layers/youtube/lib/youtube/signature-decryptor.ts) `decryptSignatureCipher` |
+| Tag source language for FFmpeg | [`download-request-builder.ts:38`](src/layers/youtube/entrypoints/youtube-main.content/video/download-request-builder.ts) `resolvePrimaryAudioLanguageCode` |
+| Live `<video>.audioTracks` probe | [`audio-format-helpers.ts:70`](src/lib/youtube/audio-format-helpers.ts) `getCurrentVideoAudioLanguage` |
+| Align audio container to output extension | [`select-audio-format.ts:125`](src/lib/youtube/select-audio-format.ts) `alignAudioFormatToExtension` |
 
 ### Caption resolution
 
@@ -364,13 +364,13 @@ flowchart LR
 
 | Step | Code |
 | --- | --- |
-| Pick + order tracks | [`download-plan.ts:68`](src/lib/youtube/download-plan.ts) `resolveOrderedCaptionTracks` |
-| Mirror caption mode to audio mode | [`caption-helpers.ts:18`](src/lib/youtube/caption-helpers.ts) `resolveCaptionLanguageMode` |
-| Order by language priority | [`caption-helpers.ts:29`](src/lib/youtube/caption-helpers.ts) `orderCaptionsByPreference` |
+| Pick + order tracks | [`download-plan.ts:67`](src/lib/youtube/download-plan.ts) `resolveOrderedCaptionTracks` |
+| Mirror caption mode to audio mode | [`caption-helpers.ts:19`](src/lib/youtube/caption-helpers.ts) `resolveCaptionLanguageMode` |
+| Order by language priority | [`caption-helpers.ts:30`](src/lib/youtube/caption-helpers.ts) `orderCaptionsByPreference` |
 | Refresh URLs (InnerTube POST) | [`caption-urls.ts:13`](src/layers/youtube/entrypoints/youtube-main.content/video/caption-urls.ts) `fetchFreshCaptionUrls` |
-| Fetch VTT bytes per track | [`caption-fetch.ts:86`](src/layers/youtube/entrypoints/youtube-main.content/video/caption-fetch.ts) `fetchCaptionWebVttData` |
-| `<track>`-element extractor + cue parser | [`caption-fetch.ts:49`](src/layers/youtube/entrypoints/youtube-main.content/video/caption-fetch.ts) `fetchWebVttViaTrackElement` + [`:35`](src/layers/youtube/entrypoints/youtube-main.content/video/caption-fetch.ts) `cuesToWebVtt` |
-| Pre-fetch progress reporting | [`caption-fetch.ts:113`](src/layers/youtube/entrypoints/youtube-main.content/video/caption-fetch.ts) (`ReportPageProgress` per track) |
+| Fetch VTT bytes per track | [`caption-fetch.ts:88`](src/layers/youtube/entrypoints/youtube-main.content/video/caption-fetch.ts) `fetchCaptionWebVttData` |
+| `<track>`-element extractor + cue parser | [`caption-fetch.ts:51`](src/layers/youtube/entrypoints/youtube-main.content/video/caption-fetch.ts) `fetchWebVttViaTrackElement` + [`:37`](src/layers/youtube/entrypoints/youtube-main.content/video/caption-fetch.ts) `cuesToWebVtt` |
+| Pre-fetch progress reporting | [`caption-fetch.ts:115`](src/layers/youtube/entrypoints/youtube-main.content/video/caption-fetch.ts) (`ReportPageProgress` per track) |
 
 ### Metadata, ID3 tags, and cover art
 
@@ -392,7 +392,7 @@ flowchart TB
 2. **Music-specific parsing.** If the video is detected as music (the `isMusic` flag set on the video data), the title is split into artist + song via [`parseMusicTitle`](src/layers/youtube/entrypoints/youtube-main.content/video/music-metadata.ts) (handles "Artist - Song (Official Video)", "feat." suffixes, common bracketed tag noise). If the description starts with "Provided to YouTube", [`parseDescriptionMetadata`](src/layers/youtube/entrypoints/youtube-main.content/video/music-metadata.ts) extracts the canonical song/artist/album from the auto-generated YT Music description block (the dot-separated line and the album line).
 3. **YouTube Music thumbnail upgrade.** For music videos, [`fetchMusicThumbnailUrl`](src/lib/youtube/youtube-music-metadata.ts) does a `POST music.youtube.com/youtubei/v1/search` with `clientName: WEB_REMIX` and a song-filter param. The first result's thumbnail is the high-res square art (used as cover art), which is much better than the 16:9 video thumbnail. Falls back to the YouTube `videoDetails` thumbnail if the search fails.
 4. **Genre extraction.** [`fetchYouTubeMusicGenres`](src/layers/youtube/entrypoints/youtube-main.content/video/youtube-music-genres.ts) pulls the official YT Music genre vocabulary; [`extractGenresFromKeywords`](src/layers/youtube/entrypoints/youtube-main.content/video/music-metadata.ts) cross-references the video's `keywords` list against it.
-5. **Background-side canonical enrichment.** [`enrichMetadataFromYouTubeMusic`](src/layers/background/download/metadata-enrichment.ts) runs in the BG when the dispatcher kicks off the download ([`background-downloader.ts:439`](src/layers/background/download/background-downloader.ts)). For music videos it calls [`fetchYouTubeMusicMetadata`](src/lib/youtube/youtube-music-metadata.ts) to fill in the canonical song title, artist, album, album_artist, and thumbnail. The MAIN-world prefetch in step 3 covers the common case; the BG enrichment exists so the audio-embed path always has the best metadata even if the page-side fetch was skipped or stale.
+5. **Background-side canonical enrichment.** [`enrichMetadataFromYouTubeMusic`](src/layers/background/download/metadata-enrichment.ts) runs in the BG when the dispatcher kicks off the download ([`background-downloader.ts:446`](src/layers/background/download/background-downloader.ts)). For music videos it calls [`fetchYouTubeMusicMetadata`](src/lib/youtube/youtube-music-metadata.ts) to fill in the canonical song title, artist, album, album_artist, and thumbnail. The MAIN-world prefetch in step 3 covers the common case; the BG enrichment exists so the audio-embed path always has the best metadata even if the page-side fetch was skipped or stale.
 
 **Cover-art injection (audio-only path)**, in [`handleEmbedMetadata`](src/layers/processing/entrypoints/mux-worker/mux-handler-embed-metadata.ts):
 
@@ -446,17 +446,17 @@ On a watch page the popup offers "Download this video" and a chevron that opens 
 ### Resilience
 
 - **Persist before dispatch.** Every `DownloadRequest` is written to storage before the SW dispatches it, and re-fired on the next `online` event if the connection dropped mid-flight ([`registerOnlineRetryListener`](src/layers/background/download/network-retry.ts); the page-side interrupted-state check is [`checkInterruptedDownload`](src/layers/youtube/entrypoints/youtube.content/download/interrupted-downloads.ts)).
-- **Recoverable-error classification.** A regex set in [`network-retry.ts:75`](src/layers/background/download/network-retry.ts) `isRecoverableError` matches HTTP 5xx, 429, network reset, stall, and chunk fetch error. These trigger silent auto-retry with exponential backoff (5 s / 20 s / 60 s, capped at 3 attempts) via [`scheduleAutoRetry`](src/layers/background/download/network-retry.ts).
+- **Recoverable-error classification.** A regex set in [`network-retry.ts:90`](src/layers/background/download/network-retry.ts) `isRecoverableError` matches HTTP 5xx, 429, network reset, stall, and chunk fetch error. These trigger silent auto-retry with exponential backoff (5 s / 20 s / 60 s, capped at 3 attempts) via [`scheduleAutoRetry`](src/layers/background/download/network-retry.ts).
 - **Unrecoverable errors surface as Retry.** FFmpeg mux failure, codec / container parse error, attestation wall that fresh PO tokens don't unblock, OPFS write error.
 
 ### Cancellation
 
-A user cancel ([`cancel-download.ts:3`](src/lib/ui/cancel-download.ts) `performCancelDownload`) propagates atomically through every layer that could otherwise resurrect the download:
+A user cancel ([`cancel-download.ts:4`](src/lib/ui/cancel-download.ts) `performCancelDownload`) propagates atomically through every layer that could otherwise resurrect the download:
 
-- The download-worker iframe's `AbortController` aborts in-flight fetches ([`download-worker/main.ts:25`](src/layers/processing/entrypoints/download-worker/main.ts)).
+- The download-worker iframe's `AbortController` aborts in-flight fetches ([`download-worker/main.ts:16`](src/layers/processing/entrypoints/download-worker/main.ts)).
 - The offscreen accumulator drops queued chunks for the cancelled `videoId` ([`accumulator.ts`](src/layers/processing/entrypoints/offscreen/stream/accumulator.ts)).
 - The FFmpeg mux queue clears its cancel marker on the next enqueue ([`mux-queue.ts`](src/lib/download-pipeline/mux-queue.ts)), so restarting right after cancel runs cleanly without inheriting the previous attempt's flag.
-- The persisted retry record is deleted ([`network-retry.ts:46`](src/layers/background/download/network-retry.ts) `dropPendingRetry`).
+- The persisted retry record is deleted ([`network-retry.ts:47`](src/layers/background/download/network-retry.ts) `dropPendingRetry`).
 
 A download restarted immediately after cancel runs from scratch with no state inherited from the cancelled attempt.
 
