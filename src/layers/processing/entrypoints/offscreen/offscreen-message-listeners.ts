@@ -8,13 +8,11 @@ import {
 import { handleOffscreenAudioDownload } from "./sabr-audio-download";
 import { handleProcessStreamChunk } from "./stream/accumulator";
 import { handleProcessStreamEnd } from "./stream/end-handler";
+import { type FrameCommand, FrameCommandKind } from "@/layers/processing/worker-frame-messages";
 import { cancelDownloadsByIds } from "@/lib/download-pipeline";
 import { revokePendingBlobUrl } from "@/lib/download-pipeline/blob-download";
 import { transcodeRecentDownload } from "@/lib/download-pipeline/transcode-recent";
 import { listenForOffscreenMessages, OffscreenMessageType } from "@/lib/messaging/offscreen-messaging";
-
-const IFRAME_MESSAGE_START = "start";
-const IFRAME_MESSAGE_CANCEL = "cancel";
 
 export function registerOffscreenMessageListeners() {
   listenForOffscreenMessages({
@@ -26,10 +24,10 @@ export function registerOffscreenMessageListeners() {
       cancelDownloadsByIds(data.videoIds).catch(() => {});
       for (const videoId of data.videoIds) {
         sendToWorkerIframe({
-           videoId,
-           message: {
-           type: IFRAME_MESSAGE_CANCEL 
-        } 
+          videoId,
+          message: {
+            type: FrameCommandKind.Cancel
+          }
         });
         removeWorkerIframe(videoId);
         removeDownloadIframe(videoId);
@@ -56,11 +54,11 @@ export function registerOffscreenMessageListeners() {
       elIframe.addEventListener("load", () => {
         elIframe.contentWindow?.postMessage(
           {
-            type: IFRAME_MESSAGE_START,
+            type: FrameCommandKind.Start,
             request,
             tabId,
             enrichedMetadata
-          },
+          } satisfies FrameCommand,
           location.origin
         );
       }, { once: true });

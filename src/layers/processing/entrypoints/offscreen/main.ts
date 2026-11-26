@@ -1,6 +1,7 @@
 import { fetchFFmpegCoreWasm } from "./ffmpeg-wasm-source";
 import { registerOffscreenMessageListeners } from "./offscreen-message-listeners";
-import { handleWorkerMessage, WORKER_MESSAGE_PREFIX, type WorkerMessage } from "./worker-message-handler";
+import { handleWorkerMessage } from "./worker-message-handler";
+import { isWorkerMessage } from "@/layers/processing/worker-frame-messages";
 import { resolveFFmpegCoreBuild } from "@/lib/download-pipeline/ffmpeg-core-build";
 import { initMuxWorker } from "@/lib/download-pipeline/ffmpeg-instance";
 import { sweepOrphanedOpfsFiles } from "@/lib/download-pipeline/opfs-constants";
@@ -15,9 +16,8 @@ addEventListener("message", event => {
     return;
   }
 
-  const message: WorkerMessage = event.data;
-  const isWorkerMessage = message?.type?.startsWith(WORKER_MESSAGE_PREFIX);
-  if (!isWorkerMessage) {
+  const message: unknown = event.data;
+  if (!isWorkerMessage(message)) {
     return;
   }
 

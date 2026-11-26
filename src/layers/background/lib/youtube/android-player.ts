@@ -1,4 +1,5 @@
 import { z } from "@/lib/zod";
+import { createGuard } from "@/lib/zod-guard";
 import type { Prettify } from "@/types";
 
 const INNERTUBE_PLAYER_URL = "https://www.youtube.com/youtubei/v1/player";
@@ -24,16 +25,18 @@ const androidStreamingFormatSchema = z.looseObject({
   contentLength: z.string().optional()
 });
 
-const androidPlayerResponseSchema = z.looseObject({
-  playabilityStatus: z.looseObject({
-    status: z.string().optional(),
-    reason: z.string().optional()
-  }).optional(),
-  streamingData: z.looseObject({
-    formats: z.array(androidStreamingFormatSchema).optional(),
-    adaptiveFormats: z.array(androidStreamingFormatSchema).optional()
-  }).optional()
-});
+const isAndroidPlayerResponse = createGuard(
+  z.looseObject({
+    playabilityStatus: z.looseObject({
+      status: z.string().optional(),
+      reason: z.string().optional()
+    }).optional(),
+    streamingData: z.looseObject({
+      formats: z.array(androidStreamingFormatSchema).optional(),
+      adaptiveFormats: z.array(androidStreamingFormatSchema).optional()
+    }).optional()
+  })
+);
 
 type FetchFn = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
@@ -88,7 +91,12 @@ async function fetchAndroidPlayerResponse({
     throw new Error(`ANDROID_VR player API HTTP ${response.status}`);
   }
 
-  return androidPlayerResponseSchema.parse(await response.json());
+  const playerResponse: unknown = await response.json();
+  if (!isAndroidPlayerResponse(playerResponse)) {
+    throw new Error("ANDROID_VR player API returned an unexpected response");
+  }
+
+  return playerResponse;
 }
 
 export type ResolvedAndroidUrls = Prettify<{

@@ -12,18 +12,19 @@ import {
 import type { FFmpegFactory } from "./mux-state";
 import { FFmpegCoreBuild, WorkerMessageType } from "@/lib/download-pipeline/mux-worker-types";
 import { createLogger, LogScope } from "@/lib/utils/logger";
-import type { Prettify } from "@/types";
+import { z } from "@/lib/zod";
+import { createLazyGuard } from "@/lib/zod-guard";
 
 const log = createLogger(LogScope.Ffmpeg);
 
 const FFMPEG_LOG_TYPE_STDERR = "stderr";
 
-type InitMessage = Prettify<{
-  type: WorkerMessageType.Init;
-  coreBuild: FFmpegCoreBuild;
-  wasmBinary: ArrayBuffer;
-  port: MessagePort;
-}>;
+const isInitMessage = createLazyGuard(() => z.object({
+  type: z.literal(WorkerMessageType.Init),
+  coreBuild: z.enum(FFmpegCoreBuild),
+  wasmBinary: z.instanceof(ArrayBuffer),
+  port: z.instanceof(MessagePort)
+}));
 
 const FFMPEG_CORE_GLUE: Record<FFmpegCoreBuild, () => Promise<{ default: FFmpegFactory }>> = {
   // @ts-expect-error @ffmpeg/core ships no .d.ts
@@ -32,16 +33,17 @@ const FFMPEG_CORE_GLUE: Record<FFmpegCoreBuild, () => Promise<{ default: FFmpegF
   [FFmpegCoreBuild.NoSimd]: () => import("@ffmpeg/core-nosimd")
 };
 
-async function onInitMessage(event: MessageEvent<InitMessage>) {
-  if (event.data?.type !== WorkerMessageType.Init) {
+async function onInitMessage(event: MessageEvent<unknown>) {
+  const message = event.data;
+  if (!isInitMessage(message)) {
     return;
   }
 
   removeEventListener("message", onInitMessage);
-  initPortReceiver(event.data.port);
+  initPortReceiver(message.port);
 
-  const { default: createFFmpegCore } = await FFMPEG_CORE_GLUE[event.data.coreBuild]();
-  const ffmpeg = await createFFmpegCore({ wasmBinary: event.data.wasmBinary }).catch((error: unknown) => {
+  const { default: createFFmpegCore } = await FFMPEG_CORE_GLUE[message.coreBuild]();
+  const ffmpeg = await createFFmpegCore({ wasmBinary: message.wasmBinary }).catch((error: unknown) => {
     postError(error instanceof Error ? error.message : String(error));
     return null;
   });

@@ -1,75 +1,12 @@
 import { removeWorkerIframe } from "./iframe-host";
 import { discardStreamAccumulator, handleProcessStreamChunk, handleProcessStreamChunkRaw } from "./stream/accumulator";
 import { handleProcessStreamEnd } from "./stream/end-handler";
+import { type WorkerMessage, WorkerMessageKind } from "@/layers/processing/worker-frame-messages";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
-import type { ProcessStreamEndData } from "@/lib/messaging/offscreen-messaging";
 import { AUDIO_EXTRA_STREAM_PREFIX, StreamType } from "@/types";
-import type { DownloadRequest, Prettify } from "@/types";
-
-export const WORKER_MESSAGE_PREFIX = "worker-";
-const WORKER_MESSAGE_CHUNK = "worker-chunk";
-const WORKER_MESSAGE_STREAM_END = "worker-stream-end";
-const WORKER_MESSAGE_COMPLETE = "worker-complete";
-const WORKER_MESSAGE_NEEDS_DIRECT_URL = "worker-needs-direct-url";
-const WORKER_MESSAGE_NEEDS_FALLBACK = "worker-needs-fallback";
-const WORKER_MESSAGE_ERROR = "worker-error";
-const WORKER_MESSAGE_DISCARD_STREAMS = "worker-discard-streams";
-
-type WorkerChunkMessage = Prettify<{
-  type: typeof WORKER_MESSAGE_CHUNK;
-  videoId: string;
-  streamType: string;
-  iChunk: number;
-  tabId: number;
-  buffer: ArrayBuffer;
-}>;
-type WorkerStreamEndMessage = Prettify<{
-  type: typeof WORKER_MESSAGE_STREAM_END;
-  videoId: string;
-  streamType: string;
-  totalChunks: number;
-}>;
-type WorkerCompleteMessage = Prettify<{
-  type: typeof WORKER_MESSAGE_COMPLETE;
-  videoId: string;
-  streamEnd: ProcessStreamEndData;
-  videoBuffer: ArrayBuffer | null;
-  audioBuffers: (ArrayBuffer | null)[];
-}>;
-type WorkerNeedsDirectUrlMessage = Prettify<{
-  type: typeof WORKER_MESSAGE_NEEDS_DIRECT_URL;
-  videoId: string;
-  tabId: number;
-  request: DownloadRequest;
-}>;
-type WorkerNeedsFallbackMessage = Prettify<{
-  type: typeof WORKER_MESSAGE_NEEDS_FALLBACK;
-  videoId: string;
-  tabId: number;
-  request: DownloadRequest;
-}>;
-type WorkerDiscardStreamsMessage = Prettify<{
-  type: typeof WORKER_MESSAGE_DISCARD_STREAMS;
-  videoId: string;
-}>;
-type WorkerErrorMessage = Prettify<{
-  type: typeof WORKER_MESSAGE_ERROR;
-  videoId: string;
-  tabId: number;
-  error: string;
-}>;
-
-export type WorkerMessage =
-  | WorkerChunkMessage
-  | WorkerStreamEndMessage
-  | WorkerCompleteMessage
-  | WorkerNeedsDirectUrlMessage
-  | WorkerNeedsFallbackMessage
-  | WorkerDiscardStreamsMessage
-  | WorkerErrorMessage;
 
 function handleChunk(message: WorkerMessage) {
-  if (message.type !== WORKER_MESSAGE_CHUNK) {
+  if (message.type !== WorkerMessageKind.Chunk) {
     return;
   }
 
@@ -83,7 +20,7 @@ function handleChunk(message: WorkerMessage) {
 }
 
 function handleStreamEnd(message: WorkerMessage) {
-  if (message.type !== WORKER_MESSAGE_STREAM_END) {
+  if (message.type !== WorkerMessageKind.StreamEnd) {
     return;
   }
 
@@ -98,7 +35,7 @@ function handleStreamEnd(message: WorkerMessage) {
 }
 
 function handleComplete(message: WorkerMessage) {
-  if (message.type !== WORKER_MESSAGE_COMPLETE) {
+  if (message.type !== WorkerMessageKind.Complete) {
     return;
   }
 
@@ -133,7 +70,7 @@ function handleComplete(message: WorkerMessage) {
 }
 
 function handleNeedsDirectUrl(message: WorkerMessage) {
-  if (message.type !== WORKER_MESSAGE_NEEDS_DIRECT_URL) {
+  if (message.type !== WorkerMessageKind.NeedsDirectUrl) {
     return;
   }
 
@@ -146,7 +83,7 @@ function handleNeedsDirectUrl(message: WorkerMessage) {
 }
 
 function handleNeedsFallback(message: WorkerMessage) {
-  if (message.type !== WORKER_MESSAGE_NEEDS_FALLBACK) {
+  if (message.type !== WorkerMessageKind.NeedsFallback) {
     return;
   }
 
@@ -159,7 +96,7 @@ function handleNeedsFallback(message: WorkerMessage) {
 }
 
 function handleDiscardStreams(message: WorkerMessage) {
-  if (message.type !== WORKER_MESSAGE_DISCARD_STREAMS) {
+  if (message.type !== WorkerMessageKind.DiscardStreams) {
     return;
   }
 
@@ -167,7 +104,7 @@ function handleDiscardStreams(message: WorkerMessage) {
 }
 
 function handleError(message: WorkerMessage) {
-  if (message.type !== WORKER_MESSAGE_ERROR) {
+  if (message.type !== WorkerMessageKind.Error) {
     return;
   }
 
@@ -179,13 +116,13 @@ function handleError(message: WorkerMessage) {
 }
 
 const WORKER_MESSAGE_HANDLERS: Record<WorkerMessage["type"], (message: WorkerMessage) => void> = {
-  [WORKER_MESSAGE_CHUNK]: handleChunk,
-  [WORKER_MESSAGE_STREAM_END]: handleStreamEnd,
-  [WORKER_MESSAGE_COMPLETE]: handleComplete,
-  [WORKER_MESSAGE_NEEDS_DIRECT_URL]: handleNeedsDirectUrl,
-  [WORKER_MESSAGE_NEEDS_FALLBACK]: handleNeedsFallback,
-  [WORKER_MESSAGE_DISCARD_STREAMS]: handleDiscardStreams,
-  [WORKER_MESSAGE_ERROR]: handleError
+  [WorkerMessageKind.Chunk]: handleChunk,
+  [WorkerMessageKind.StreamEnd]: handleStreamEnd,
+  [WorkerMessageKind.Complete]: handleComplete,
+  [WorkerMessageKind.NeedsDirectUrl]: handleNeedsDirectUrl,
+  [WorkerMessageKind.NeedsFallback]: handleNeedsFallback,
+  [WorkerMessageKind.DiscardStreams]: handleDiscardStreams,
+  [WorkerMessageKind.Error]: handleError
 };
 
 export function handleWorkerMessage(message: WorkerMessage) {
