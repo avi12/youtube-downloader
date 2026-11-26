@@ -1,3 +1,4 @@
+import { isDownloadFrame } from "@/lib/youtube/download-frame";
 import { injectSegmentedDownloadButton } from "@/layers/youtube/entrypoints/youtube-main.content/watch-button/watch-button";
 import { WatchButtonLayout } from "@/layers/youtube/entrypoints/youtube-main.content/watch-button/watch-button-types";
 import { getPageRoute, PageRoute, WATCH_PATHNAME } from "./page-route";
@@ -5,7 +6,10 @@ import { generatePoTokenIfNeeded, readYtcfg, videoDataCache } from "./video-data
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { videoDataStore } from "@/lib/ui/synced-stores.svelte";
 import { createLogger, LogScope } from "@/lib/utils/logger";
+import { z } from "@/lib/zod";
+import { createGuard } from "@/lib/zod-guard";
 import { getMoviePlayer } from "@/lib/youtube/movie-player";
+import { isPlayerResponse } from "@/lib/youtube/schemas";
 import { buildVideoData } from "@/lib/youtube/youtube-api";
 import { type PlayerResponse, type YtdlCaptureState } from "@/types";
 import { PlayabilityStatus } from "@/types/youtube";
@@ -47,8 +51,37 @@ function flushPendingChunks() {
   pendingChunks.length = 0;
 }
 
+const isWatchInitialData = createGuard(
+  z.looseObject({
+    currentVideoEndpoint: z.looseObject({
+      watchEndpoint: z.looseObject({ videoId: z.string().optional() }).optional()
+    }).optional(),
+    contents: z.looseObject({
+      twoColumnWatchNextResults: z.looseObject({
+        results: z.looseObject({
+          results: z.looseObject({
+            contents: z.array(
+              z.looseObject({
+                videoPrimaryInfoRenderer: z.looseObject({
+                  title: z.looseObject({
+                    runs: z.array(z.looseObject({ text: z.string().optional() })).optional()
+                  }).optional()
+                }).optional()
+              })
+            ).optional()
+          }).optional()
+        }).optional()
+      }).optional()
+    }).optional()
+  })
+);
+
 function readInitialDataTitle(videoId: string) {
   const data = window.ytInitialData;
+  if (!isWatchInitialData(data)) {
+    return "";
+  }
+
   const isMatchingVideoId = data?.currentVideoEndpoint?.watchEndpoint?.videoId === videoId;
   if (!isMatchingVideoId) {
     return "";
@@ -59,25 +92,33 @@ function readInitialDataTitle(videoId: string) {
     ?.videoPrimaryInfoRenderer?.title?.runs?.[0]?.text ?? "";
 }
 
-export interface ShortsPageData {
-  overlay?: {
-    reelPlayerOverlayRenderer?: {
-      playerOverlay?: {
-        reelPlayerOverlayViewModel?: {
-          metapanel?: {
-            reelMetapanelViewModel?: {
-              metadataItems?: {
-                shortsVideoTitleViewModel?: {
-                  text?: { content?: string };
-                };
-              }[];
-            };
-          };
-        };
-      };
-    };
-  };
-}
+const shortsMetadataItemSchema = z.looseObject({
+  shortsVideoTitleViewModel: z.looseObject({
+    text: z.looseObject({ content: z.string().optional() }).optional()
+  }).optional()
+});
+
+const shortsMetapanelSchema = z.looseObject({
+  reelMetapanelViewModel: z.looseObject({
+    metadataItems: z.array(shortsMetadataItemSchema).optional()
+  }).optional()
+});
+
+export const shortsPageDataSchema = z.looseObject({
+  overlay: z.looseObject({
+    reelPlayerOverlayRenderer: z.looseObject({
+      playerOverlay: z.looseObject({
+        reelPlayerOverlayViewModel: z.looseObject({
+          metapanel: shortsMetapanelSchema.optional()
+        }).optional()
+      }).optional()
+    }).optional()
+  }).optional()
+});
+
+type ShortsPageData = z.infer<typeof shortsPageDataSchema>;
+
+const isShortsPageData = createGuard(shortsPageDataSchema);
 
 function readShortsDisplayTitle(pageData: ShortsPageData | undefined) {
   const metadataItems = pageData?.overlay?.reelPlayerOverlayRenderer?.playerOverlay
@@ -196,18 +237,8 @@ async function announceWhilePlaying(videoId: string) {
 const PLAYBACK_NUDGE_INTERVAL_MS = 1000;
 const PLAYER_RESPONSE_POLL_ATTEMPTS = 20;
 const PLAYER_RESPONSE_POLL_INTERVAL_MS = 250;
-const IFRAME_DOWNLOAD_PARAM = "ytdl";
 const MAX_IFRAME_UNPLAYABLE_RELOADS = 5;
 const IFRAME_RELOAD_COUNT_KEY = "__ytdlIframeUnplayableReloads";
-
-function isInDownloadIframe() {
-  const isNestedFrame = self !== top;
-  if (!isNestedFrame) {
-    return false;
-  }
-
-  return new URLSearchParams(location.search).get(IFRAME_DOWNLOAD_PARAM) === "1";
-}
 
 function readReloadCount() {
   const stored = Number(sessionStorage.getItem(IFRAME_RELOAD_COUNT_KEY));
@@ -236,8 +267,8 @@ const PollOutcome = {
 type PollOutcome = (typeof PollOutcome)[keyof typeof PollOutcome];
 
 async function tryDispatchOnce(isDownloadIframe: boolean) {
-  const playerResponse = window.ytInitialPlayerResponse ?? null;
-  const hasVideoId = !!playerResponse?.videoDetails?.videoId;
+  const playerResponse: unknown = window.ytInitialPlayerResponse;
+  const hasVideoId = isPlayerResponse(playerResponse) && !!playerResponse.videoDetails?.videoId;
   if (!hasVideoId) {
     return PollOutcome.Wait;
   }
@@ -263,7 +294,7 @@ async function tryDispatchOnce(isDownloadIframe: boolean) {
   sessionStorage.removeItem(IFRAME_RELOAD_COUNT_KEY);
   await buildAndDispatchVideoData({
     playerResponse,
-    shortsPageData: window.ytInitialData
+    shortsPageData: isShortsPageData(window.ytInitialData) ? window.ytInitialData : undefined
   });
   return PollOutcome.Ready;
 }
@@ -274,7 +305,7 @@ export async function extractAndDispatchVideoData() {
     return;
   }
 
-  const isDownloadIframe = isInDownloadIframe();
+  const isDownloadIframe = isDownloadFrame();
   for (let attempt = 0; attempt < PLAYER_RESPONSE_POLL_ATTEMPTS; attempt++) {
     const outcome = await tryDispatchOnce(isDownloadIframe);
     const isTerminal = outcome === PollOutcome.Ready || outcome === PollOutcome.RetriedAsync;

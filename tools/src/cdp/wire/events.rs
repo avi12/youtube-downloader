@@ -40,9 +40,21 @@ pub(crate) struct ExecutionContext {
 /// What kind of context it is.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize)]
 pub(crate) struct ContextAux {
-    /// `default`, `isolated` or `worker`.
+    /// What runs in it.
     #[serde(default, rename = "type")]
-    pub(crate) kind: String,
+    pub(crate) kind: ContextKind,
+}
+
+/// What runs in a JavaScript context.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub(crate) enum ContextKind {
+    /// A content script's own world.
+    Isolated,
+    /// The page's world, a worker or anything else.
+    #[default]
+    #[serde(other)]
+    Other,
 }
 
 #[derive(Debug, Deserialize)]
@@ -74,7 +86,7 @@ impl RemoteArg {
 }
 
 #[derive(Debug, Deserialize)]
-struct ConsoleParams {
+struct ConsoleParameters {
     #[serde(rename = "type")]
     kind: String,
     #[serde(default)]
@@ -82,7 +94,7 @@ struct ConsoleParams {
 }
 
 #[derive(Debug, Deserialize)]
-struct LogParams {
+struct LogParameters {
     entry: LogEntry,
 }
 
@@ -94,7 +106,7 @@ struct LogEntry {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct ExceptionParams {
+struct ExceptionParameters {
     exception_details: ExceptionDetails,
 }
 
@@ -120,7 +132,7 @@ impl ExceptionDetails {
 }
 
 #[derive(Debug, Deserialize)]
-struct RequestParams {
+struct RequestParameters {
     request: RequestInfo,
 }
 
@@ -131,7 +143,7 @@ struct RequestInfo {
 }
 
 #[derive(Debug, Deserialize)]
-struct ResponseParams {
+struct ResponseParameters {
     response: ResponseInfo,
 }
 
@@ -143,7 +155,7 @@ struct ResponseInfo {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct FailedParams {
+struct FailedParameters {
     error_text: String,
     #[serde(rename = "type", default)]
     kind: String,
@@ -174,7 +186,7 @@ impl Event {
         let method: EventMethod = serde_json::from_value(Value::String(method.to_owned())).ok()?;
         match method {
             EventMethod::Console => {
-                let parsed: ConsoleParams = serde_json::from_value(parameters).ok()?;
+                let parsed: ConsoleParameters = serde_json::from_value(parameters).ok()?;
                 let text = parsed
                     .args
                     .iter()
@@ -187,32 +199,32 @@ impl Event {
                 })
             }
             EventMethod::Log => {
-                let LogParams { entry } = serde_json::from_value(parameters).ok()?;
+                let LogParameters { entry } = serde_json::from_value(parameters).ok()?;
                 Some(Self::Log {
                     level: entry.level,
                     text: entry.text,
                 })
             }
             EventMethod::Exception => {
-                let parsed: ExceptionParams = serde_json::from_value(parameters).ok()?;
+                let parsed: ExceptionParameters = serde_json::from_value(parameters).ok()?;
                 Some(Self::Exception(parsed.exception_details.message()))
             }
             EventMethod::RequestSent => {
-                let RequestParams { request } = serde_json::from_value(parameters).ok()?;
+                let RequestParameters { request } = serde_json::from_value(parameters).ok()?;
                 Some(Self::RequestSent {
                     method: request.method,
                     url: request.url,
                 })
             }
             EventMethod::ResponseReceived => {
-                let ResponseParams { response } = serde_json::from_value(parameters).ok()?;
+                let ResponseParameters { response } = serde_json::from_value(parameters).ok()?;
                 Some(Self::ResponseReceived {
                     status: response.status,
                     url: response.url,
                 })
             }
             EventMethod::LoadingFailed => {
-                let parsed: FailedParams = serde_json::from_value(parameters).ok()?;
+                let parsed: FailedParameters = serde_json::from_value(parameters).ok()?;
                 Some(Self::LoadingFailed {
                     error: parsed.error_text,
                     kind: parsed.kind,

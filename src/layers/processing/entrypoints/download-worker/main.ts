@@ -1,3 +1,4 @@
+import { FrameCommandKind, isFrameCommand, WorkerMessageKind } from "@/layers/processing/worker-frame-messages";
 import { createLogger, LogScope } from "@/lib/utils/logger";
 import { resolveQualityLabel } from "@/lib/youtube/audio-format-helpers";
 import { DownloadType, StreamType } from "@/types";
@@ -9,15 +10,6 @@ import { buildSubtitleTracks } from "#background/download/subtitle-track-builder
 
 const log = createLogger(LogScope.Worker);
 
-const WORKER_MESSAGE_CHUNK = "worker-chunk";
-const WORKER_MESSAGE_STREAM_END = "worker-stream-end";
-const WORKER_MESSAGE_COMPLETE = "worker-complete";
-const WORKER_MESSAGE_NEEDS_DIRECT_URL = "worker-needs-direct-url";
-const WORKER_MESSAGE_NEEDS_FALLBACK = "worker-needs-fallback";
-const WORKER_MESSAGE_ERROR = "worker-error";
-const WORKER_MESSAGE_DISCARD_STREAMS = "worker-discard-streams";
-const IFRAME_MESSAGE_START = "start";
-const IFRAME_MESSAGE_CANCEL = "cancel";
 const DEFAULT_VIDEO_MIME_TYPE = "video/mp4";
 const DEFAULT_AUDIO_MIME_TYPE = "audio/mp4";
 
@@ -30,20 +22,17 @@ addEventListener("message", event => {
     return;
   }
 
-  const isCancel = event.data?.type === IFRAME_MESSAGE_CANCEL;
-  if (isCancel) {
-    abortController.abort();
+  const command: unknown = event.data;
+  if (!isFrameCommand(command)) {
+    return;
   }
 
-  const isStart = event.data?.type === IFRAME_MESSAGE_START;
-  if (isStart) {
-    const { request, tabId, enrichedMetadata } = event.data;
-    runDownload({
-      request,
-      tabId,
-      enrichedMetadata
-    }).catch(() => {});
+  if (command.type === FrameCommandKind.Cancel) {
+    abortController.abort();
+    return;
   }
+
+  runDownload(command).catch(() => {});
 }, { once: false });
 
 type TrySabrWithStallTimerParams = Prettify<{
@@ -106,7 +95,7 @@ function sendChunkToParent({ videoId, streamType, tabId }: SendChunkToParentPara
     new Uint8Array(buffer).set(chunk);
     parent.postMessage(
       {
-        type: WORKER_MESSAGE_CHUNK,
+        type: WorkerMessageKind.Chunk,
         videoId,
         streamType,
         iChunk,
@@ -127,7 +116,7 @@ function sendStreamEndToParent({ videoId, streamType }: SendStreamEndToParentPar
   return (totalChunks: number) => {
     parent.postMessage(
       {
-        type: WORKER_MESSAGE_STREAM_END,
+        type: WorkerMessageKind.StreamEnd,
         videoId,
         streamType,
         totalChunks
@@ -205,7 +194,7 @@ async function runDownload({ request, tabId, enrichedMetadata }: RunDownloadPara
     const isSabrStreamPartial = !!sabrResult?.streamedToOffscreen && isSabrPartial;
     if (isSabrStreamPartial) {
       parent.postMessage({
-        type: WORKER_MESSAGE_DISCARD_STREAMS,
+        type: WorkerMessageKind.DiscardStreams,
         videoId
       }, location.origin);
     }
@@ -272,7 +261,7 @@ async function runDownload({ request, tabId, enrichedMetadata }: RunDownloadPara
       if (isDirectUrlEligible) {
         parent.postMessage(
           {
-            type: WORKER_MESSAGE_NEEDS_DIRECT_URL,
+            type: WorkerMessageKind.NeedsDirectUrl,
             videoId,
             tabId,
             request
@@ -284,7 +273,7 @@ async function runDownload({ request, tabId, enrichedMetadata }: RunDownloadPara
 
       parent.postMessage(
         {
-          type: WORKER_MESSAGE_NEEDS_FALLBACK,
+          type: WorkerMessageKind.NeedsFallback,
           videoId,
           tabId,
           request
@@ -323,7 +312,7 @@ async function runDownload({ request, tabId, enrichedMetadata }: RunDownloadPara
     const transferList = [videoBuffer, ...audioBuffers].filter(buffer => buffer !== null);
     parent.postMessage(
       {
-        type: WORKER_MESSAGE_COMPLETE,
+        type: WorkerMessageKind.Complete,
         videoId,
         streamEnd,
         videoBuffer,
@@ -340,7 +329,7 @@ async function runDownload({ request, tabId, enrichedMetadata }: RunDownloadPara
     log.error("Download failed:", error);
     parent.postMessage(
       {
-        type: WORKER_MESSAGE_ERROR,
+        type: WorkerMessageKind.Error,
         videoId,
         tabId,
         error: String(error)

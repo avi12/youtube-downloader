@@ -1,5 +1,7 @@
 import { getOrCreateClientId } from "@/lib/storage/storage";
 import { MINUTES_PER_DAY } from "@/lib/utils/time-units";
+import { z } from "@/lib/zod";
+import { createGuard } from "@/lib/zod-guard";
 
 const GA4_MEASUREMENT_ID: string | undefined = import.meta.env.WXT_GA4_MEASUREMENT_ID;
 const GA4_API_SECRET: string | undefined = import.meta.env.WXT_GA4_API_SECRET;
@@ -64,15 +66,16 @@ const BROWSER_PATTERNS: {
   }
 ];
 
-type NavigatorWithBrave = Navigator & {
-  brave: {
-    isBrave(): Promise<boolean>;
-  };
-};
-
-function isBraveNavigator(nav: Navigator): nav is NavigatorWithBrave {
-  return "brave" in nav;
-}
+const isBraveNavigator = createGuard(
+  z.object({
+    brave: z.object({
+      isBrave: z.function({
+        input: [],
+        output: z.promise(z.boolean())
+      })
+    })
+  })
+);
 
 async function isBrave() {
   return isBraveNavigator(navigator) ? navigator.brave.isBrave() : false;

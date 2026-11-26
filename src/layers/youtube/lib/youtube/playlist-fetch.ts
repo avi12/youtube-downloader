@@ -1,13 +1,12 @@
 import {
   browseContinuationResponseSchema,
-  type PlaylistContinuationEntry,
   playlistContinuationEntrySchema,
-  type PlaylistVideoEntry,
   playlistVideoEntrySchema,
   type YtInitialDataPlaylist,
   ytInitialDataPlaylistSchema
 } from "@/lib/youtube/schemas";
 import { buildPlaylistUrl } from "@/lib/youtube/youtube-url";
+import { createGuard } from "@/lib/zod-guard";
 import type { Prettify } from "@/types";
 
 const BROWSE_URL = "https://www.youtube.com/youtubei/v1/browse?prettyPrint=false";
@@ -32,13 +31,10 @@ export type PlaylistContents = Prettify<{
   owner: string;
 }>;
 
-function isPlaylistVideoEntry(entry: unknown): entry is PlaylistVideoEntry {
-  return playlistVideoEntrySchema.safeParse(entry).success;
-}
-
-function isContinuationEntry(entry: unknown): entry is PlaylistContinuationEntry {
-  return playlistContinuationEntrySchema.safeParse(entry).success;
-}
+const isBrowseContinuationResponse = createGuard(browseContinuationResponseSchema);
+const isInitialDataPlaylist = createGuard(ytInitialDataPlaylistSchema);
+const isPlaylistVideoEntry = createGuard(playlistVideoEntrySchema);
+const isContinuationEntry = createGuard(playlistContinuationEntrySchema);
 
 type ParsedEntries = Prettify<{
   videoIds: string[];
@@ -127,15 +123,14 @@ async function fetchContinuationPage({ token, meta }: {
   }
 
   const rawJson: unknown = await response.json();
-  const parsed = browseContinuationResponseSchema.safeParse(rawJson);
-  if (!parsed.success) {
+  if (!isBrowseContinuationResponse(rawJson)) {
     return {
       videoIds: [],
       continuationToken: null
     };
   }
 
-  const actions = parsed.data.onResponseReceivedActions ?? [];
+  const actions = rawJson.onResponseReceivedActions ?? [];
   const continuationItems = actions.flatMap(action => action.appendContinuationItemsAction?.continuationItems ?? []);
   return parseEntries(continuationItems);
 }
@@ -152,12 +147,17 @@ export async function fetchPlaylistContents(playlistId: string) {
     return null;
   }
 
-  let data: YtInitialDataPlaylist;
+  let data: unknown;
   try {
-    data = ytInitialDataPlaylistSchema.parse(JSON.parse(jsonText));
+    data = JSON.parse(jsonText);
   } catch {
     return null;
   }
+
+  if (!isInitialDataPlaylist(data)) {
+    return null;
+  }
+
   const initialEntries = extractInitialPlaylistEntries(data);
   const initial = parseEntries(initialEntries);
   const videoIds = [...initial.videoIds];

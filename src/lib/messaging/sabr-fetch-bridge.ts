@@ -1,6 +1,5 @@
 import type { Prettify } from "@/types";
 import { defineWindowMessaging } from "@webext-core/messaging/page";
-import { disposeOnRestart } from "@/lib/messaging/dev-restart";
 
 export type PageSabrFetchRequest = Prettify<{
   url: string;
@@ -19,4 +18,4 @@ interface SabrBridgeSchema {
   pageSabrFetch(data: PageSabrFetchRequest): PageSabrFetchResponse;
 }
 
-export const sabrFetchBridge = disposeOnRestart(defineWindowMessaging<SabrBridgeSchema>({ namespace: "ytdl-sabr-fetch" }));
+export const sabrFetchBridge = defineWindowMessaging<SabrBridgeSchema>({ namespace: "ytdl-sabr-fetch" });

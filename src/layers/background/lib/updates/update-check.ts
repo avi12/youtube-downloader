@@ -1,5 +1,6 @@
 import { updateAvailableVersionItem } from "@/lib/storage/storage";
 import { z } from "@/lib/zod";
+import { createGuard } from "@/lib/zod-guard";
 
 const UPDATE_CHECK_ALARM = "ytdlUpdateCheck";
 const CHECK_PERIOD_MINUTES = 24 * 60;
@@ -8,12 +9,14 @@ const EXTENSION_TAG_PATTERN = /^v(\d+(?:\.\d+)*)$/;
 const BADGE_TEXT = "!";
 const BADGE_COLOR = "#cc0000";
 
-const releasesSchema = z.array(
-  z.object({
-    tag_name: z.string(),
-    draft: z.boolean(),
-    prerelease: z.boolean()
-  })
+const isReleaseList = createGuard(
+  z.array(
+    z.object({
+      tag_name: z.string(),
+      draft: z.boolean(),
+      prerelease: z.boolean()
+    })
+  )
 );
 
 function isNewerVersion({ candidate, current }: { candidate: string; current: string }) {
@@ -31,12 +34,12 @@ async function fetchLatestVersion() {
     return null;
   }
 
-  const releases = releasesSchema.safeParse(await response.json());
-  if (!releases.success) {
+  const releases: unknown = await response.json();
+  if (!isReleaseList(releases)) {
     return null;
   }
 
-  const versions = releases.data
+  const versions = releases
     .filter(release => !release.draft && !release.prerelease)
     .flatMap(release => EXTENSION_TAG_PATTERN.exec(release.tag_name)?.[1] ?? []);
   let latest: string | null = null;

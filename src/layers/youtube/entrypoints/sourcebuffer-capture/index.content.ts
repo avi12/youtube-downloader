@@ -1,7 +1,7 @@
 import { patchIframeMediaVolume, patchSourceBuffer } from "./sourcebuffer-capture-patches";
+import { isDownloadFrame } from "@/lib/youtube/download-frame";
 import type { YtdlCaptureState, YtdlMediaCapture } from "@/types";
 
-const YTDL_IFRAME_QUERY_PARAM = "ytdl=1";
 const MIME_PREFIX_VIDEO = "video";
 
 export default defineContentScript({
@@ -10,13 +10,12 @@ export default defineContentScript({
   runAt: "document_start",
   allFrames: true,
   main() {
-    const isUnrelatedIframe = self !== top && !location.search.includes(YTDL_IFRAME_QUERY_PARAM);
+    const isUnrelatedIframe = self !== top && !isDownloadFrame();
     if (isUnrelatedIframe) {
       return;
     }
 
-    const isDownloadIframe = self !== top;
-    if (isDownloadIframe) {
+    if (isDownloadFrame()) {
       patchIframeMediaVolume();
     }
 

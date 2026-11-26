@@ -50,6 +50,23 @@ const PREFER_OPUS = new Set([CODEC_OPUS]);
 const PREFER_AV1 = new Set([CODEC_AV01]);
 const PREFER_DOLBY = new Set([CODEC_AC3, CODEC_EC3]);
 
+export enum CoverArtStyle {
+  AttachedPicture = "attachedPicture",
+  VorbisComment = "vorbisComment",
+  Unsupported = "unsupported"
+}
+
+const VORBIS_COMMENT_COVER_EXTENSIONS = new Set(["ogg", "opus"]);
+const COVERLESS_EXTENSIONS = new Set(["wav", "weba", "webm"]);
+
+export function getCoverArtStyle(targetExtension: string) {
+  if (VORBIS_COMMENT_COVER_EXTENSIONS.has(targetExtension)) {
+    return CoverArtStyle.VorbisComment;
+  }
+
+  return COVERLESS_EXTENSIONS.has(targetExtension) ? CoverArtStyle.Unsupported : CoverArtStyle.AttachedPicture;
+}
+
 export const MULTI_TRACK_UNSUPPORTED_EXTENSIONS = new Set(["avi", "3gp", "m4b"]);
 
 type AudioOnlySpec = Prettify<Pick<ContainerSpec, "audioCodecs" | "fallbackAudioCodec">>;
@@ -570,24 +587,4 @@ export function isVideoNativeForContainer({ videoMimeType, targetExtension }: {
   }
 
   return videoCodecsFor(containerSpec).has(extractBaseCodec(videoMimeType));
-}
-
-export function isCompatibleForRemux({ videoMimeType, audioMimeType, targetExtension }: {
-  videoMimeType: string;
-  audioMimeType: string;
-  targetExtension: string;
-}) {
-  const containerSpec = CONTAINER_SPECS[targetExtension];
-  const isSpecMissing = !containerSpec;
-  if (isSpecMissing) {
-    return true;
-  }
-
-  const isVideoNative = videoCodecsFor(containerSpec).has(extractBaseCodec(videoMimeType));
-  const isNonNativeAllowed = !!containerSpec.allowNonNativeVideo;
-  const videoOk = isVideoNative || isNonNativeAllowed;
-  const isAudioNative = containerSpec.audioCodecs.has(extractBaseCodec(audioMimeType));
-  const isFallbackAudioPresent = containerSpec.fallbackAudioCodec !== undefined;
-  const audioOk = isAudioNative || isFallbackAudioPresent;
-  return videoOk && audioOk;
 }

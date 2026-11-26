@@ -1,9 +1,11 @@
 import { required } from "@/lib/required";
 import {
   CONTAINER_SPECS,
+  CoverArtStyle,
   extractBaseCodec,
   FFMPEG_CODEC_COPY,
   getAudioFallbackCodec,
+  getCoverArtStyle,
   resolveAudioCodec
 } from "@/lib/utils/containers";
 import { type AdaptiveFormatItem, DownloadType, type Prettify } from "@/types";
@@ -60,6 +62,7 @@ const MP3_FRAME_BYTES_FACTOR = 144;
 const ID3_HEADER_BYTES = 10;
 const ID3_FRAME_HEADER_BYTES = 11;
 const ID3_PICTURE_HEADER_BYTES = 25;
+const BASE64_EXPANSION = 4 / 3;
 const ENCODER_TAG = "Lavf59.27.100";
 const TAG_OVERHEAD_BYTES = 24;
 
@@ -277,6 +280,18 @@ function measureTags(tags: string[]) {
   return [...tags, ENCODER_TAG].reduce((sum, tag) => sum + byteLength(tag) + TAG_OVERHEAD_BYTES, 0);
 }
 
+function measureCover({ coverBytes, extension }: Prettify<{
+  coverBytes: number;
+  extension: string;
+}>) {
+  const style = getCoverArtStyle(extension);
+  if (style === CoverArtStyle.Unsupported) {
+    return 0;
+  }
+
+  return style === CoverArtStyle.VorbisComment ? coverBytes * BASE64_EXPANSION : coverBytes;
+}
+
 type PredictMuxedParams = Prettify<{
   videoFormat: AdaptiveFormatItem;
   audioFormats: AdaptiveFormatItem[];
@@ -371,7 +386,12 @@ function predictAudioOnly({ audioFormat, extension, inputs }: PredictAudioOnlyPa
        format: audioFormat,
        encoder: isEmbedPath ? encoder : (getAudioFallbackCodec(extension) ?? encoder) 
     });
-  const extraBytes = isEmbedPath ? inputs.coverBytes + measureTags(inputs.tags) : 0;
+  const extraBytes = isEmbedPath
+    ? measureCover({
+      coverBytes: inputs.coverBytes,
+      extension
+    }) + measureTags(inputs.tags)
+    : 0;
   const isApproximate = audio.isApproximate || !inputs;
   if (extension === MP3_EXTENSION) {
     const pictureBytes = isEmbedPath ? ID3_PICTURE_HEADER_BYTES : 0;

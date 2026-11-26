@@ -6,6 +6,10 @@ import type { FailedInjection } from "./FailedInjection";
  */
 export type TabUpdateResult = { staleTabCount: number, reinjectedTabCount: number, 
 /**
+ * Tabs whose swappable MAIN-world scripts replaced their earlier run.
+ */
+swappedTabCount: number, 
+/**
  * One-shot MAIN-to-ISOLATED messages re-sent to the fresh scripts.
  */
 replayedHandshakeCount: number, failedInjections: Array<FailedInjection>, };

@@ -27,7 +27,7 @@ export async function fetchVideoViaSabrStream({
   });
   return collectReadableStream({
     stream: videoStream,
-    expectedBytes: parseInt(videoFormat.contentLength, 10),
+    expectedBytes: parseInt(videoFormat.contentLength ?? "", 10),
     signal,
     onChunk
   });
@@ -56,7 +56,7 @@ export async function fetchAudioViaSabrStream({
   });
   return collectReadableStream({
     stream: audioStream,
-    expectedBytes: parseInt(audioFormat.contentLength, 10),
+    expectedBytes: parseInt(audioFormat.contentLength ?? "", 10),
     signal,
     onChunk
   });

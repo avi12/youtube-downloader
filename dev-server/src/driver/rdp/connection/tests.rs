@@ -1,11 +1,11 @@
-use serde_json::json;
+use serde_json::{json, Value};
 use tokio::io::{duplex, DuplexStream};
 
 use crate::driver::rdp::connection::*;
+use crate::driver::rdp::encode_packet;
 
 const PIPE_BUFFER_BYTES: usize = 4096;
 const SMALL_PIPE_BUFFER_BYTES: usize = 64;
-
 const LIMIT: Duration = Duration::from_secs(1);
 
 async fn push(server: &mut DuplexStream, packet: &Value) -> Result<()> {

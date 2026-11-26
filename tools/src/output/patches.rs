@@ -2,25 +2,26 @@
 //! keep the `YouTube` page alive. Port of `scripts/dev/output/patches.ts`.
 
 pub(crate) mod hmr_names;
+mod main_world;
 mod sources;
 
 use std::fs;
 use std::path::Path;
 
-use serde_json::{json, Map, Value};
+use serde::Serialize;
 use ytdl_dev_hot::types::ContentHash;
 
+pub(crate) use main_world::is_swappable_output;
 pub(crate) use sources::{recorder_source, replay_function_source};
 
 use self::hmr_names::{
     HMR_MANIFEST_FILE, HMR_OUT_SUBDIR, HMR_POPUP_LOADER_FILE, HMR_RUNTIME_FILE, YOUTUBE_ENTRY_NAME,
 };
 use crate::output::error::{OutputError, Result};
-use crate::output::manifest::{ExtensionManifest, MANIFEST_FILE};
+use crate::output::manifest::{ContentScriptWorld, ExtensionManifest, ManifestList, MANIFEST_FILE};
 
 const YOUTUBE_WAR_MATCH: &str = "*://*.youtube.com/*";
 const CROSS_WORLD_RECORDER_FILE: &str = "dev/cross-world-recorder.js";
-const MAIN_WORLD: &str = "MAIN";
 const MODULE_SCRIPT_TYPE: &str = "type=\"module\"";
 const SCRIPT_OPEN: &str = "<script";
 const SCRIPT_CLOSE: &str = "</script>";
@@ -61,26 +62,44 @@ fn write_text(path: &Path, text: &str) -> Result<()> {
     fs::write(path, text).map_err(OutputError::with_path(path))
 }
 
-fn manifest_object(manifest: &mut Value) -> Result<&mut Map<String, Value>> {
-    manifest
-        .as_object_mut()
-        .ok_or_else(|| OutputError::Invalid("manifest.json is not an object".to_owned()))
+/// When a content script is injected.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "snake_case")]
+enum RunAt {
+    DocumentStart,
 }
 
-fn push_entry(manifest: &mut Map<String, Value>, key: &str, entry: Value) -> Result<()> {
-    let list = manifest
-        .entry(key)
-        .or_insert_with(|| Value::Array(Vec::new()));
-    let items = list
-        .as_array_mut()
-        .ok_or_else(|| OutputError::Invalid(format!("manifest key {key} is not an array")))?;
+#[derive(Debug, Serialize)]
+struct RecorderScript {
+    matches: Vec<String>,
+    #[serde(rename = "js")]
+    scripts: [&'static str; 1],
+    run_at: RunAt,
+    world: ContentScriptWorld,
+}
+
+#[derive(Debug, Serialize)]
+struct WebAccessibleResource {
+    resources: [String; 1],
+    matches: [&'static str; 1],
+}
+
+fn push_entry(
+    manifest: &mut ExtensionManifest,
+    list: ManifestList,
+    entry: &impl Serialize,
+) -> Result<()> {
+    let entry = serde_json::to_value(entry)?;
+    let items = manifest.list_mut(list)?.ok_or_else(|| {
+        OutputError::Invalid(format!("manifest key {} is not an array", list.key()))
+    })?;
     items.push(entry);
     Ok(())
 }
 
 /// The recorder runs in the page itself from `document_start`, in every top frame the isolated
 /// content scripts match, so it hears the MAIN-world script's first message.
-fn recorder_content_script(manifest: &ExtensionManifest) -> Result<Value> {
+fn recorder_content_script(manifest: &ExtensionManifest) -> Result<RecorderScript> {
     let mut matches: Vec<String> = Vec::new();
     for entry in manifest.list_isolated_content_scripts()? {
         for pattern in entry.matches {
@@ -89,25 +108,28 @@ fn recorder_content_script(manifest: &ExtensionManifest) -> Result<Value> {
             }
         }
     }
-    Ok(json!({
-        "matches": matches,
-        "js": [CROSS_WORLD_RECORDER_FILE],
-        "run_at": "document_start",
-        "world": MAIN_WORLD,
-    }))
+    Ok(RecorderScript {
+        matches,
+        scripts: [CROSS_WORLD_RECORDER_FILE],
+        run_at: RunAt::DocumentStart,
+        world: ContentScriptWorld::Main,
+    })
 }
 
 /// Adds the recorder content script and makes the HMR modules web-accessible to `YouTube`.
 pub(crate) fn patch_manifest(output_directory: &Path) -> Result<()> {
     let mut manifest = ExtensionManifest::read(output_directory)?;
     let recorder = recorder_content_script(&manifest)?;
-    let object = manifest_object(&mut manifest.0)?;
-    push_entry(object, "content_scripts", recorder)?;
-    let resources = json!({
-        "resources": [format!("{HMR_OUT_SUBDIR}/*")],
-        "matches": [YOUTUBE_WAR_MATCH],
-    });
-    push_entry(object, "web_accessible_resources", resources)?;
+    push_entry(&mut manifest, ManifestList::ContentScripts, &recorder)?;
+    let resources = WebAccessibleResource {
+        resources: [format!("{HMR_OUT_SUBDIR}/*")],
+        matches: [YOUTUBE_WAR_MATCH],
+    };
+    push_entry(
+        &mut manifest,
+        ManifestList::WebAccessibleResources,
+        &resources,
+    )?;
     write_text(
         &output_directory.join(MANIFEST_FILE),
         &serde_json::to_string_pretty(&manifest.0)?,
@@ -175,7 +197,7 @@ fn patch_background(output_directory: &Path, prelude: &str) -> Result<()> {
     write_text(&path, &format!("{prelude}{}", read_text(&path)?))
 }
 
-fn patch_content_script(output_directory: &Path, file: &str) -> Result<()> {
+fn patch_content_script(output_directory: &Path, project_root: &Path, file: &str) -> Result<()> {
     let path = output_directory.join(file);
     let original = read_text(&path)?;
     let loader_entry = HMR_ENTRIES.iter().find_map(|entry| match entry {
@@ -192,12 +214,22 @@ fn patch_content_script(output_directory: &Path, file: &str) -> Result<()> {
         ),
         None => original,
     };
-    write_text(&path, &sources::guard_run_once(file, &source))
+    let patched = if main_world::is_swappable_script(project_root, file)? {
+        sources::swappable_main_world(file, &source, &source_hash(&source))
+    } else {
+        sources::guard_run_once(file, &source)
+    };
+    write_text(&path, &patched)
 }
 
 /// Runs once WXT has written the build: adds the background prelude and the recorder, points the
-/// hot-swappable entrypoints at the HMR modules and guards every other content script.
-pub(crate) fn patch_built_output(output_directory: &Path, background_prelude: &str) -> Result<()> {
+/// hot-swappable entrypoints at the HMR modules, wraps the swappable page-world scripts and guards
+/// every other content script.
+pub(crate) fn patch_built_output(
+    output_directory: &Path,
+    project_root: &Path,
+    background_prelude: &str,
+) -> Result<()> {
     patch_background(output_directory, background_prelude)?;
     for entry in &HMR_ENTRIES {
         if let HmrEntry::Page { built_file } = entry {
@@ -215,13 +247,15 @@ pub(crate) fn patch_built_output(output_directory: &Path, background_prelude: &s
         .into_iter()
         .flat_map(|entry| entry.scripts);
     for file in files {
-        patch_content_script(output_directory, &file)?;
+        patch_content_script(output_directory, project_root, &file)?;
     }
     Ok(())
 }
 
 #[cfg(test)]
 mod tests {
+    use serde_json::json;
+
     use crate::output::patches::*;
 
     #[test]
@@ -243,12 +277,16 @@ mod tests {
                 {"js": ["m.js"], "world": "MAIN", "matches": ["*://other/*"]}
             ]
         }));
-        let recorder = recorder_content_script(&manifest)?;
+        let recorder = serde_json::to_value(recorder_content_script(&manifest)?)?;
         assert_eq!(
-            recorder.get("matches"),
-            Some(&json!(["*://*.youtube.com/*", "*://music.youtube.com/*"]))
+            recorder,
+            json!({
+                "matches": ["*://*.youtube.com/*", "*://music.youtube.com/*"],
+                "js": [CROSS_WORLD_RECORDER_FILE],
+                "run_at": "document_start",
+                "world": "MAIN",
+            })
         );
-        assert_eq!(recorder.get("world"), Some(&json!("MAIN")));
         Ok(())
     }
 

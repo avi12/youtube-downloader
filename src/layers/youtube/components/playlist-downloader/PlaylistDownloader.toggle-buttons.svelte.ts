@@ -1,3 +1,4 @@
+import { isHtmlElement } from "@/lib/dom-guards";
 import { required } from "@/lib/required";
 import {
   ALL_TOGGLE_BUTTONS,
@@ -81,7 +82,7 @@ export function createPlaylistToggleButtons(state: CreatePlaylistToggleButtonsPa
 
   function createAttacher(buttonDefinition: (typeof ALL_TOGGLE_BUTTONS)[number]) {
     return (elButton: Element) => {
-      if (!(elButton instanceof HTMLElement)) {
+      if (!isHtmlElement(elButton)) {
         return;
       }
 
@@ -104,7 +105,7 @@ export function createPlaylistToggleButtons(state: CreatePlaylistToggleButtonsPa
       const nextButton = required(group[iNext]);
       nextButton.onClick(state);
       const elNext = elements.get(nextButton.id);
-      queueMicrotask(() => elNext?.querySelector<HTMLButtonElement>("button")?.focus());
+      queueMicrotask(() => elNext?.querySelector("button")?.focus());
     };
   }
 

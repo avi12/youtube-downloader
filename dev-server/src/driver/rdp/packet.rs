@@ -1,5 +1,6 @@
 //! The RDP wire framing: `<byte length>:<json>`, in both directions.
 
+use serde::Serialize;
 use serde_json::Value;
 
 use crate::error::{Error, Result};
@@ -13,12 +14,13 @@ use crate::error::{Error, Result};
 /// assert_eq!(encode_packet(&json!({"to":"root"}))?, b"13:{\"to\":\"root\"}");
 /// # Ok::<(), ytdl_dev_hot::Error>(())
 /// ```
-pub fn encode_packet(packet: &Value) -> Result<Vec<u8>> {
+pub fn encode_packet<T: Serialize + ?Sized>(packet: &T) -> Result<Vec<u8>> {
     let body = serde_json::to_string(packet)?;
     Ok(format!("{}:{body}", body.len()).into_bytes())
 }
 
-/// Reassembles packets from a byte stream that splits and joins them arbitrarily.
+/// Reassembles packets from a byte stream that splits and joins them arbitrarily. The framing is
+/// shared by RDP and Marionette, so packets stay untyped here and each client parses its own.
 #[derive(Debug, Default)]
 pub struct PacketDecoder {
     buffer: Vec<u8>,

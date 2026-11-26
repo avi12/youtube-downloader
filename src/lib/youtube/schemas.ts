@@ -1,38 +1,59 @@
-import type { MusicSearchResponse } from "./music-search-types";
+import { musicSearchResponseSchema } from "./music-search-types";
 import { z } from "@/lib/zod";
-import type {
-  DownloadRequest,
-  PlayerResponse,
-  TpYtPaperInputElement,
-  VideoData,
-  YtButtonViewModelElement
-} from "@/types";
+import { createGuard, createLazyGuard } from "@/lib/zod-guard";
+import { DownloadType, type YtButtonViewModelElement } from "@/types";
+import { downloadRequestSchema, videoDataSchema } from "@/types/domain-types";
+import { playerResponseSchema } from "@/types/youtube-player-response";
+
+export const isDownloadType = createGuard(z.enum(DownloadType));
 
 export const playerCaptionTrackDataSchema = z.looseObject({
   languageCode: z.string(),
-  vss_id: z.string()
+  vss_id: z.string(),
+  displayName: z.string().optional()
 });
 
-export const captionBusContextSchema = z.looseObject({
-  state: z.record(z.string(), z.unknown()).optional()
-});
+export const isCaptionBusContext = createGuard(
+  z.looseObject({
+    state: z.record(z.string(), z.unknown()).optional()
+  })
+);
 
 export const captionEventBusSchema = z.looseObject({
-  subscribe: z.function()
+  subscribe: z.function({
+    input: [
+      z.string(),
+      z.function({
+        input: [z.unknown()],
+        output: z.void()
+      })
+    ],
+    output: z.void()
+  })
+});
+
+const botGuardSnapshotSchema = z.function({
+  input: [z.array(z.unknown())],
+  output: z.string().nullable()
 });
 
 export const botGuardVmEntrySchema = z.looseObject({
-  a: z.function()
+  a: z.function({
+    input: z.array(z.unknown()),
+    output: z.tuple([botGuardSnapshotSchema.optional()]).nullish()
+  })
 });
 
 export const trustedResourceUrlSchema = z.looseObject({
   privateDoNotAccessOrElseTrustedResourceUrlWrappedValue: z.string()
 });
 
-export const trackDescriptorSchema = z.looseObject({
-  id: z.string(),
-  isAutoDubbed: z.unknown()
-});
+export const isTrackDescriptor = createGuard(
+  z.looseObject({
+    id: z.string(),
+    isAutoDubbed: z.unknown()
+  })
+);
 
 export const playlistVideoEntrySchema = z.looseObject({
   playlistVideoRenderer: z.looseObject({
@@ -64,9 +85,14 @@ const lockupCardDataSchema = z.looseObject({
   videoRenderer: videoRendererSchema.optional()
 });
 
-export const ytcfgSchema = z.looseObject({
-  get: z.custom<(key: string) => unknown>(value => typeof value === "function").optional()
-});
+export const isYtcfg = createGuard(
+  z.looseObject({
+    get: z.function({
+      input: [z.string()],
+      output: z.unknown()
+    }).optional()
+  })
+);
 
 const continuationItemListSchema = z.looseObject({
   continuationItems: z.array(z.unknown()).optional()
@@ -145,63 +171,42 @@ export const ytInitialDataPlaylistSchema = z.looseObject({
   }).optional()
 });
 
-const playerResponseShapeSchema = z.looseObject({
-  playabilityStatus: z.looseObject({
-    status: z.string()
-  })
-});
+export const isPlayerResponse = createGuard(playerResponseSchema);
 
-export const playerResponseSchema = z.custom<PlayerResponse>(
-  value => playerResponseShapeSchema.safeParse(value).success
-);
+export const isVideoData = createGuard(videoDataSchema);
 
-export function isPlayerResponse(value: unknown): value is PlayerResponse {
-  return playerResponseSchema.safeParse(value).success;
-}
+export const isDownloadRequest = createGuard(downloadRequestSchema);
 
-const videoDataShapeSchema = z.looseObject({
-  videoId: z.string()
-});
+export const isMusicSearchResponse = createGuard(musicSearchResponseSchema);
 
-export const videoDataSchema = z.custom<VideoData>(value => videoDataShapeSchema.safeParse(value).success);
-
-const downloadRequestShapeSchema = z.looseObject({
-  videoId: z.string(),
-  videoItag: z.number(),
-  audioItag: z.number(),
-  filenameOutput: z.string()
-});
-
-export const downloadRequestSchema = z.custom<DownloadRequest>(
-  value => downloadRequestShapeSchema.safeParse(value).success
-);
-
-export const musicSearchResponseSchema = z.custom<MusicSearchResponse>(
-  value => z.looseObject({}).safeParse(value).success
-);
-
-const tpYtPaperInputSchema = z.looseObject({
-  updateStyles: z.custom<(styles: Record<string, string>) => void>(value => typeof value === "function"),
+export const tpYtPaperInputSchema = z.looseObject({
+  updateStyles: z.function({
+    input: [z.record(z.string(), z.string())],
+    output: z.void()
+  }),
   label: z.string(),
   value: z.string()
 });
 
-export function isTpYtPaperInputElement(value: unknown): value is TpYtPaperInputElement {
-  return tpYtPaperInputSchema.safeParse(value).success;
-}
+export const isTpYtPaperInputElement = createGuard(tpYtPaperInputSchema);
 
 const YT_BUTTON_VIEW_MODEL_TAG = "YT-BUTTON-VIEW-MODEL";
 
-export function isYtButtonViewModelElement(value: unknown): value is YtButtonViewModelElement {
-  return value instanceof HTMLElement && value.tagName === YT_BUTTON_VIEW_MODEL_TAG;
-}
+// Lazy: `HTMLElement` doesn't exist when WXT imports the entrypoints in Node
+export const isYtButtonViewModelElement = createLazyGuard(
+  () => z.custom<YtButtonViewModelElement>(
+    value => value instanceof HTMLElement && value.tagName === YT_BUTTON_VIEW_MODEL_TAG
+  )
+);
 
 const iconNamedElementSchema = z.looseObject({
   data: z.looseObject({ iconName: z.string() })
 });
 
+const isIconNamedElement = createGuard(iconNamedElementSchema);
+
 export function readElementIconName(value: unknown) {
-  return iconNamedElementSchema.safeParse(value).data?.data.iconName;
+  return isIconNamedElement(value) ? value.data.iconName : undefined;
 }
 
 const ytLockupViewModelElementSchema = z.looseObject({
@@ -210,12 +215,9 @@ const ytLockupViewModelElementSchema = z.looseObject({
 
 export type YtLockupViewModelElement = HTMLElement & z.infer<typeof ytLockupViewModelElementSchema>;
 
-export function isYtLockupViewModelElement(value: unknown): value is YtLockupViewModelElement {
-  return ytLockupViewModelElementSchema.safeParse(value).success;
-}
+export const isYtLockupViewModelElement = createGuard(
+  z.custom<YtLockupViewModelElement>(value => ytLockupViewModelElementSchema.safeParse(value).success)
+);
 
-export type PlayerCaptionTrackData = z.infer<typeof playerCaptionTrackDataSchema>;
 export type YtInitialDataPlaylist = z.infer<typeof ytInitialDataPlaylistSchema>;
 export type BrowseContinuationResponse = z.infer<typeof browseContinuationResponseSchema>;
-export type PlaylistVideoEntry = z.infer<typeof playlistVideoEntrySchema>;
-export type PlaylistContinuationEntry = z.infer<typeof playlistContinuationEntrySchema>;

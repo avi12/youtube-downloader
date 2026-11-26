@@ -1,4 +1,6 @@
 import type { ButtonViewModelData } from "./youtube-button-enums";
+import type { tpYtPaperInputSchema } from "@/lib/youtube/schemas";
+import type { z } from "@/lib/zod";
 
 /** YouTube-internal Polymer view model - values reverse-engineered from YouTube's runtime. */
 export interface YtButtonViewModelElement extends HTMLElement {
@@ -19,11 +21,7 @@ export interface TpYtPaperProgressElement extends HTMLElement {
 }
 
 /** @see https://github.com/PolymerElements/paper-input */
-export interface TpYtPaperInputElement extends HTMLElement {
-  updateStyles(styles: Record<string, string>): void;
-  label: string;
-  value: string;
-}
+export type TpYtPaperInputElement = HTMLElement & z.infer<typeof tpYtPaperInputSchema>;
 
 /** @see https://github.com/PolymerElements/iron-icon */
 export interface YtIconElement extends HTMLElement {

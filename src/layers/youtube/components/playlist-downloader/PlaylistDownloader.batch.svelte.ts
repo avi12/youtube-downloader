@@ -13,6 +13,7 @@ import {
   type VideoData
 } from "@/types";
 import { SvelteSet } from "svelte/reactivity";
+import { checkedPlaylistVideos } from "#youtube/lib/ui/playlist-selection.svelte";
 
 const FULL_PROGRESS_PERCENT = 100;
 
@@ -106,6 +107,7 @@ export function createBatchDownloadState({
 
     for (const video of videos) {
       batchVideoIds.add(video.videoId);
+      checkedPlaylistVideos.add(video.videoId);
     }
 
     const { playlistId, isZipBundle, zipName, downloadRequests } = buildBatchDownloadRequests({

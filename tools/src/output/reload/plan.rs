@@ -15,6 +15,8 @@ use crate::output::reload::snapshot::BuildSnapshot;
 
 const LOCALES_DIR_PREFIX: &str = "_locales/";
 const HTML_SUFFIX: &str = ".html";
+/// Only developer tools read source maps, so a changed one never asks for a reload.
+const SOURCE_MAP_SUFFIX: &str = ".map";
 const LIVE_LOADED_EXTENSIONS: [&str; 3] = ["html", "js", "css"];
 const HASHED_ASSET_DIRS: [&str; 2] = ["chunks/", "assets/"];
 const HASHED_ASSET_SUFFIXES: [&str; 2] = [".js", ".css"];
@@ -30,6 +32,7 @@ const STALE_BACKGROUND_REASON: &str =
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(test, derive(ts_rs::TS), ts(export))]
 #[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
 pub(crate) struct PageRefreshPlan {
     /// HTML entrypoints whose page changed (popup, offscreen, download-worker).
     pub(crate) page_names: Vec<String>,
@@ -47,19 +50,55 @@ impl PageRefreshPlan {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(test, derive(ts_rs::TS), ts(export))]
 #[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
 pub(crate) struct ExtensionReloadPlan {
     pub(crate) reasons: Vec<String>,
-    /// MAIN-world scripts that changed: a page-world script cannot be swapped, so their tabs are reported as stale.
+    /// Changed MAIN-world scripts that cannot be swapped: their tabs are reported as stale.
     pub(crate) main_world_content_scripts: Vec<ContentScriptEntry>,
+    /// Changed MAIN-world scripts that replace their own run once re-injected.
+    #[serde(default)]
+    pub(crate) swappable_main_world_scripts: Vec<ContentScriptEntry>,
     /// Every isolated script: the extension reload orphans them all.
     pub(crate) isolated_content_scripts: Vec<ContentScriptEntry>,
     pub(crate) changed_isolated_style_sheets: Vec<String>,
+}
+
+/// Appends the items `target` does not hold yet, keeping their order.
+fn extend_unique<T: PartialEq>(target: &mut Vec<T>, items: Vec<T>) {
+    for item in items {
+        if !target.contains(&item) {
+            target.push(item);
+        }
+    }
+}
+
+impl ExtensionReloadPlan {
+    /// One reload covering this plan and a newer one. The isolated scripts are the newer build's,
+    /// since those are what gets injected.
+    pub(crate) fn merge(mut self, newer: Self) -> Self {
+        extend_unique(&mut self.reasons, newer.reasons);
+        extend_unique(
+            &mut self.main_world_content_scripts,
+            newer.main_world_content_scripts,
+        );
+        extend_unique(
+            &mut self.swappable_main_world_scripts,
+            newer.swappable_main_world_scripts,
+        );
+        extend_unique(
+            &mut self.changed_isolated_style_sheets,
+            newer.changed_isolated_style_sheets,
+        );
+        self.isolated_content_scripts = newer.isolated_content_scripts;
+        self
+    }
 }
 
 /// Only the background changed: it restarts in place; `fallback` runs if that fails.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(test, derive(ts_rs::TS), ts(export))]
 #[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
 pub(crate) struct BackgroundSwapPlan {
     pub(crate) background_files: Vec<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -72,6 +111,7 @@ pub(crate) struct BackgroundSwapPlan {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(test, derive(ts_rs::TS), ts(export))]
 #[serde(tag = "kind", rename_all = "kebab-case")]
+#[serde(deny_unknown_fields)]
 pub(crate) enum ReloadPlan {
     /// Nothing changed.
     None,
@@ -86,6 +126,7 @@ pub(crate) enum ReloadPlan {
 fn diff_file_hashes(before: &BuildSnapshot, after: &BuildSnapshot) -> BTreeSet<String> {
     let files = before.file_hashes.keys().chain(after.file_hashes.keys());
     files
+        .filter(|file| !file.ends_with(SOURCE_MAP_SUFFIX))
         .filter(|file| before.file_hashes.get(*file) != after.file_hashes.get(*file))
         .cloned()
         .collect()
@@ -159,6 +200,53 @@ fn plan_page_refresh(after: &BuildSnapshot, changed: &BTreeSet<String>) -> PageR
     }
 }
 
+fn is_script_set_changed(before: &BuildSnapshot, after: &BuildSnapshot) -> bool {
+    before.manifest.content_scripts_value() != after.manifest.content_scripts_value()
+}
+
+/// The changed MAIN-world scripts, split by what re-injecting them achieves.
+struct MainWorldChanges {
+    swappable: Vec<ContentScriptEntry>,
+    stale: Vec<ContentScriptEntry>,
+}
+
+/// A changed script list swaps nothing: a removed script's run would stay.
+fn split_main_world(
+    entries: Vec<ContentScriptEntry>,
+    before: &BuildSnapshot,
+    after: &BuildSnapshot,
+    changed: &BTreeSet<String>,
+) -> MainWorldChanges {
+    let mut split = MainWorldChanges {
+        swappable: Vec::new(),
+        stale: Vec::new(),
+    };
+    if is_script_set_changed(before, after) {
+        split.stale = entries;
+        return split;
+    }
+    let is_swapped = |file: &str| changed.contains(file) && after.swappable_files.contains(file);
+    for entry in entries {
+        let swapped = entry.with_scripts(is_swapped);
+        let rest = entry.with_scripts(|file| !is_swapped(file));
+        if !swapped.scripts.is_empty() {
+            split.swappable.push(ContentScriptEntry {
+                css: Vec::new(),
+                ..swapped
+            });
+        }
+        let is_rest_changed = rest
+            .scripts
+            .iter()
+            .chain(&rest.css)
+            .any(|file| changed.contains(file));
+        if is_rest_changed {
+            split.stale.push(rest);
+        }
+    }
+    split
+}
+
 /// A changed manifest `content_scripts` list counts every script on either side as changed.
 fn list_changed_content_scripts(
     before: &BuildSnapshot,
@@ -166,9 +254,7 @@ fn list_changed_content_scripts(
     changed: &BTreeSet<String>,
 ) -> Result<Vec<ContentScriptEntry>> {
     let mut scripts = after.manifest.list_content_scripts()?;
-    let is_set_changed =
-        before.manifest.content_scripts_value() != after.manifest.content_scripts_value();
-    if is_set_changed {
+    if is_script_set_changed(before, after) {
         scripts.extend(before.manifest.list_content_scripts()?);
         return Ok(scripts);
     }
@@ -209,8 +295,23 @@ fn plan_extension_reload(
         let names = describe_content_scripts(&changed_isolated);
         other_reasons.push(format!("content script {names} changed"));
     }
-    if !main_world.is_empty() {
-        let names = describe_content_scripts(&main_world);
+    let main_world = split_main_world(main_world, before, after, changed);
+    // A manifest entry lists several scripts, of which only the changed ones are named
+    let changed_main_world: Vec<ContentScriptEntry> = main_world
+        .swappable
+        .iter()
+        .chain(&main_world.stale)
+        .map(|entry| {
+            let named = entry.with_scripts(|file| changed.contains(file));
+            if named.scripts.is_empty() {
+                entry.clone()
+            } else {
+                named
+            }
+        })
+        .collect();
+    if !changed_main_world.is_empty() {
+        let names = describe_content_scripts(&changed_main_world);
         other_reasons.push(format!("MAIN-world content script {names} changed"));
     }
     let is_background_unaffected = other_reasons.is_empty() && !is_background_changed;
@@ -233,7 +334,8 @@ fn plan_extension_reload(
         .collect();
     let fallback = ExtensionReloadPlan {
         reasons,
-        main_world_content_scripts: main_world,
+        main_world_content_scripts: main_world.stale,
+        swappable_main_world_scripts: main_world.swappable,
         isolated_content_scripts,
         changed_isolated_style_sheets: changed_style_sheets,
     };
@@ -276,13 +378,16 @@ pub(crate) fn plan_reload(before: &BuildSnapshot, after: &BuildSnapshot) -> Resu
 
 /// Chrome runs an unpacked extension's worker from the script it cached at install, so a profile
 /// reused from an older session can start with stale code.
-pub(crate) fn plan_stale_background_reload(manifest: &ExtensionManifest) -> Result<ReloadPlan> {
-    Ok(ReloadPlan::ReloadExtension(ExtensionReloadPlan {
+pub(crate) fn plan_stale_background_reload(
+    manifest: &ExtensionManifest,
+) -> Result<ExtensionReloadPlan> {
+    Ok(ExtensionReloadPlan {
         reasons: vec![STALE_BACKGROUND_REASON.to_owned()],
         main_world_content_scripts: Vec::new(),
+        swappable_main_world_scripts: Vec::new(),
         isolated_content_scripts: manifest.list_isolated_content_scripts()?,
         changed_isolated_style_sheets: Vec::new(),
-    }))
+    })
 }
 
 #[cfg(test)]

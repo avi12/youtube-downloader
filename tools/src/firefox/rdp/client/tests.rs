@@ -1,3 +1,5 @@
+use serde_json::json;
+
 use crate::firefox::rdp::client::*;
 
 #[test]

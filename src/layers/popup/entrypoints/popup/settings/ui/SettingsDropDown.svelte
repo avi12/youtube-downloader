@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isHtmlElement, isNode } from "@/lib/dom-guards";
   import { required } from "@/lib/required";
   import checkIcon from "@/layers/popup/entrypoints/popup/icons/check.svg?raw";
   import chevronRightIcon from "@/layers/popup/entrypoints/popup/icons/chevron-right.svg?raw";
@@ -42,11 +43,14 @@
   }
 
   function focusFirstItem() {
-    elList?.querySelector<HTMLElement>("[role=\"option\"]")?.focus();
+    const elFirstItem = elList?.querySelector("[role=\"option\"]");
+    if (isHtmlElement(elFirstItem)) {
+      elFirstItem.focus();
+    }
   }
 
   function navigateItems(direction: 1 | -1) {
-    const dropDownItems = [...(elList?.querySelectorAll<HTMLElement>("[role=\"option\"]") ?? [])];
+    const dropDownItems = [...(elList?.querySelectorAll("[role=\"option\"]") ?? [])].filter(isHtmlElement);
     const iCurrent = dropDownItems.findIndex(item => item === document.activeElement);
     dropDownItems[(iCurrent + direction + dropDownItems.length) % dropDownItems.length]?.focus();
   }
@@ -54,10 +58,10 @@
   function handleTab(event: KeyboardEvent) {
     isOpen = false;
     const focusable = [
-      ...document.querySelectorAll<HTMLElement>(
+      ...document.querySelectorAll(
         "a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex=\"-1\"])"
       )
-    ].filter(element => !elList?.contains(element));
+    ].filter(isHtmlElement).filter(element => !elList?.contains(element));
     const iTrigger = focusable.indexOf(required(elTrigger));
     const step = event.shiftKey ? -1 : 1;
     const next = focusable[iTrigger + step];
@@ -91,7 +95,7 @@
   }
 
   function handleDocumentPointerDown(event: PointerEvent) {
-    if (!(event.target instanceof Node)) {
+    if (!(isNode(event.target))) {
       return;
     }
 
@@ -104,7 +108,7 @@
   }
 
   function preventOuterScroll(event: Event) {
-    const isScrollInsideList = !(event.target instanceof Node) || elList?.contains(event.target);
+    const isScrollInsideList = !(isNode(event.target)) || elList?.contains(event.target);
     if (isScrollInsideList) {
       return;
     }
@@ -148,14 +152,14 @@
 
     positionList();
 
-    const selectedItem = elList.querySelector<HTMLElement>("[aria-selected=\"true\"]");
+    const selectedItem = elList.querySelector("[aria-selected=\"true\"]");
     selectedItem?.scrollIntoView({
       behavior: "instant",
       block: "center"
     });
 
     const releaseInertTrap = applyInertTrap(elList);
-    const scroller = elTrigger?.closest<HTMLElement>(".panel-wrapper");
+    const scroller = elTrigger?.closest(".panel-wrapper");
     document.addEventListener("pointerdown", handleDocumentPointerDown);
     scroller?.addEventListener("wheel", preventOuterScroll, { passive: false });
     scroller?.addEventListener("touchmove", preventOuterScroll, { passive: false });

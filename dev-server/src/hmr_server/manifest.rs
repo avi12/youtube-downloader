@@ -20,7 +20,7 @@ pub const HMR_DIRECTORY: &str = "hmr";
 /// The extension of the temporary file a manifest rewrite goes through.
 const TEMPORARY_EXTENSION: &str = "json.tmp";
 
-/// The manifest file the runtime reads, under `output_dir`.
+/// The manifest file the runtime reads, under `output_directory`.
 pub fn manifest_path(output_directory: &Path) -> PathBuf {
     output_directory
         .join(HMR_DIRECTORY)

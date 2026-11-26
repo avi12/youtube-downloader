@@ -1,4 +1,4 @@
-const YTDL_IFRAME_QUERY_PARAM = "ytdl=1";
+import { isDownloadFrame } from "@/lib/youtube/download-frame";
 
 export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
@@ -6,8 +6,7 @@ export default defineContentScript({
   runAt: "document_start",
   allFrames: true,
   main() {
-    const isYtdlIframe = self !== top && location.search.includes(YTDL_IFRAME_QUERY_PARAM);
-    if (!isYtdlIframe) {
+    if (!isDownloadFrame()) {
       return;
     }
 

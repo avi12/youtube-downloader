@@ -13,6 +13,7 @@ use crate::dev::hmr::chunks::{BuildOutput, ChunkType, GraphCollector, OutputChun
 use crate::dev::hmr::compile::update::{ContentScriptUpdate, RuntimeHashes};
 use crate::dev::hmr::compile::versions::{
     compute_final_versions, describe_chunks, hash_vendor_chunks, HmrChunk, ImportStamper,
+    ServedVersions,
 };
 use crate::dev::hmr::config::{
     short_hash, BuildBrowser, HmrManifest, ManifestModule, ProjectPaths, HMR_MANIFEST_FILE,
@@ -28,6 +29,9 @@ static PREVIOUS_RUNTIME_HASHES: Mutex<Option<RuntimeHashes>> = Mutex::new(None);
 
 /// The source hash of each module whose edit can't hot-swap, as of the previous build of this process.
 static PREVIOUS_SOURCE_HASHES: Mutex<BTreeMap<String, String>> = Mutex::new(BTreeMap::new());
+
+/// The URL version each module was served under, across the builds of this process.
+static SERVED_VERSIONS: Mutex<ServedVersions> = Mutex::new(ServedVersions::new());
 
 /// A hash of what was last written to each output file, so an edit rewrites only what changed.
 static WRITTEN_HASHES: Mutex<BTreeMap<String, String>> = Mutex::new(BTreeMap::new());
@@ -288,7 +292,10 @@ pub(super) fn finish_build(input: FinishInput) -> Result<Finished> {
     write_assets(&output_directory, chunks)?;
     let codes = chunk_codes(chunks);
     let by_file_name = describe_chunks(&paths, chunks, &codes);
-    let versions = compute_final_versions(&by_file_name);
+    let versions = SERVED_VERSIONS
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner)
+        .refresh(compute_final_versions(&by_file_name));
     write_stamped_modules(&output_directory, &by_file_name, &versions)?;
     let (modules, entries) =
         describe_modules(&paths, chunks, &versions, &codes, &main_world_modules);

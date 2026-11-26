@@ -1,11 +1,12 @@
 //! The two builds of the dev server: the production WXT build (a `bun run wxt build` process, WXT
 //! stays Node) with the dev patches applied to its output, and the HMR module build.
 
+use crate::output::manifest::ManifestList;
 use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-use serde_json::{json, Value};
+use serde_json::Value;
 use tokio::time::sleep;
 
 use crate::dev::hmr::{build_hmr, HmrBuild, HmrRequest};
@@ -91,19 +92,9 @@ fn wxt_setup(options: &DevOptions) -> Result<WxtSetup> {
 
 fn add_dev_permission(output_directory: &Path) -> Result<()> {
     let mut manifest = ExtensionManifest::read(output_directory)?;
-    let Some(object) = manifest.0.as_object_mut() else {
-        return Err(LauncherError::Invalid(
-            "the built manifest is not an object".to_owned(),
-        ));
-    };
-    let permissions = object
-        .entry("permissions")
-        .or_insert_with(|| Value::Array(Vec::new()));
-    let permission = json!(DEV_ONLY_PERMISSION);
-    if let Some(list) = permissions
-        .as_array_mut()
-        .filter(|list| !list.contains(&permission))
-    {
+    let permissions = manifest.list_mut(ManifestList::Permissions)?;
+    let permission = Value::from(DEV_ONLY_PERMISSION);
+    if let Some(list) = permissions.filter(|list| !list.contains(&permission)) {
         list.push(permission);
     }
     std::fs::write(
@@ -126,7 +117,7 @@ async fn build_extension(options: &DevOptions) -> Result<PathBuf> {
     let output_directory = output_directory_of(options);
     add_dev_permission(&output_directory)?;
     patch_manifest(&output_directory)?;
-    patch_built_output(&output_directory, &prelude)?;
+    patch_built_output(&output_directory, &options.project_root, &prelude)?;
     Ok(output_directory)
 }
 

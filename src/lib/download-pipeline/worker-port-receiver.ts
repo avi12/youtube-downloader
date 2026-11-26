@@ -1,7 +1,7 @@
 import { WorkerMessageType } from "./mux-worker-types";
+import { INVALID_WORKER_COMMAND_MESSAGE, isWorkerCommand } from "./worker-port-types";
 import type {
   CommandHandlerMap,
-  WorkerCommand,
   WorkerDataResponseMap,
   WorkerDataResponseType
 } from "./worker-port-types";
@@ -21,8 +21,16 @@ export function createWorkerPortReceiver(port: MessagePort) {
 
   let commandHandlers: CommandHandlerMap = {};
 
-  port.onmessage = function onPortMessage(event: MessageEvent<WorkerCommand>) {
+  port.onmessage = function onPortMessage(event: MessageEvent<unknown>) {
     const message = event.data;
+    if (!isWorkerCommand(message)) {
+      port.postMessage({
+        type: WorkerMessageType.Error,
+        message: INVALID_WORKER_COMMAND_MESSAGE
+      });
+      return;
+    }
+
     switch (message.type) {
       case WorkerMessageType.MuxVideoAudio:
         commandHandlers[WorkerMessageType.MuxVideoAudio]?.({ job: message.job });

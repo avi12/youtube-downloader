@@ -7,14 +7,14 @@ import {
   startBackgroundDownload
 } from "@/layers/background/download/background-downloader";
 import { reportVideoUnavailable } from "@/layers/background/download/download-failure-reporter";
-import { tryDirectUrlDownload } from "@/layers/background/download/download-fallback-chain";
+import { tryDirectUrlDownload } from "@/layers/background/download/direct-url-download";
 import {
   downloadViaWatchPage,
   initIframeReadyListener,
   registerPopupDownloadHandler
 } from "@/layers/background/download/iframe-downloader";
 import { clearIframeAutoRetry } from "@/layers/background/download/iframe-auto-retries";
-import { handleIframeFallback } from "@/layers/background/download/sabr-attempt";
+import { handleIframeFallback } from "@/layers/background/download/iframe-fallback";
 import { enqueueToPopupList, removeFromPopupList } from "@/layers/background/queue/popup-list";
 import { signalVideoComplete, touchVideoActivity } from "@/layers/background/queue/sequential-queue";
 import { cancelDownloads, getTabIdsForVideo, trackVideoForTab } from "@/layers/background/queue/tab-tracker";

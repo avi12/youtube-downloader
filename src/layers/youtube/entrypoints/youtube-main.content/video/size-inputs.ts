@@ -6,6 +6,7 @@ import { type DownloadPlanParams, resolveDownloadPlan } from "@/lib/youtube/down
 import type { SizeInputs } from "@/lib/youtube/output-size";
 import { preferJpegThumbnail } from "@/lib/youtube/thumbnail-url";
 import { DownloadType, type VideoMetadata } from "@/types";
+import { isSizeInputsRequest } from "#youtube/lib/messaging/payload-guards";
 
 const DECODER = new TextDecoder();
 const sizeInputsCache = new Map<string, Promise<SizeInputs | null>>();
@@ -63,6 +64,10 @@ async function measureSizeInputs({ videoId, params }: { videoId: string; params:
 
 export function registerSizeInputsHandler() {
   crossWorldMessenger.onMessage(CrossWorldMessage.MeasureSizeInputs, ({ data }) => {
+    if (!isSizeInputsRequest(data)) {
+      return null;
+    }
+
     const key = JSON.stringify(data);
     const cached = sizeInputsCache.get(key);
     if (cached) {

@@ -1,3 +1,4 @@
+import { DOWNLOAD_FRAME_QUERY } from "@/lib/youtube/download-frame";
 import { ensureProcessor } from "@/layers/background/handlers/processor";
 import { enqueueToPopupList } from "@/layers/background/queue/popup-list";
 import { awaitVideoComplete } from "@/layers/background/queue/sequential-queue";
@@ -51,7 +52,7 @@ async function prepareIframe({ data, signal }: {
   // Mobile user agents get redirected to m.youtube.com, where no content script runs
   const watchParams = new URLSearchParams({
     v: data.videoId,
-    ytdl: "1",
+    ...DOWNLOAD_FRAME_QUERY,
     mute: "1",
     autoplay: "1",
     app: "desktop"

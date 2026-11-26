@@ -1,14 +1,11 @@
 import { required } from "@/lib/required";
+import { prepareCoverArt } from "./mux-cover-art";
 import { buildInputArgs } from "./mux-ffmpeg-args";
 import { postResult, state, tryUnlink } from "./mux-state";
-import { fetchThumbnail, sanitizeForFFmpeg } from "./mux-thumbnail";
+import { sanitizeForFFmpeg } from "./mux-thumbnail";
 import type { EmbedMetadataJob } from "@/lib/download-pipeline/mux-worker-types";
-import { FFMPEG_CODEC_COPY, getCompatibleFilename, getFileExtension, resolveAudioCodec } from "@/lib/utils/containers";
+import { getCompatibleFilename, getFileExtension, resolveAudioCodec } from "@/lib/utils/containers";
 
-const WEBM_AUDIO_OUTPUT_EXTENSIONS = new Set(["weba", "webm"]);
-const JPEG_EXTENSION = "jpg";
-const FFMPEG_CODEC_MJPEG = "mjpeg";
-const COVER_FILENAME_PREFIX = "cover";
 const INPUT_FILENAME_PREFIX = "input";
 
 export async function handleEmbedMetadata(job: EmbedMetadataJob) {
@@ -22,31 +19,13 @@ export async function handleEmbedMetadata(job: EmbedMetadataJob) {
   state.progressOffset = 0;
   state.progressScale = 1;
 
-  let coverFilename = "";
-  let isCoverArtPresent = false;
-
   required(state.ffmpeg).FS.writeFile(inputFilename, new Uint8Array(audioData));
 
-  const ffmpegArgs = [...buildInputArgs(inputFilename)];
-  const isWebmOutput = WEBM_AUDIO_OUTPUT_EXTENSIONS.has(outputExtension);
-  const isEmbeddableThumbnail = thumbnailUrl && !isWebmOutput;
-  if (isEmbeddableThumbnail) {
-    const thumbnail = await fetchThumbnail(thumbnailUrl);
-    if (thumbnail) {
-      coverFilename = `${COVER_FILENAME_PREFIX}.${thumbnail.extension}`;
-      required(state.ffmpeg).FS.writeFile(coverFilename, thumbnail.data);
-      ffmpegArgs.push(...buildInputArgs(coverFilename));
-      isCoverArtPresent = true;
-    }
-  }
-
-  ffmpegArgs.push("-map", "0:a");
-
-  if (isCoverArtPresent) {
-    ffmpegArgs.push("-map", "1");
-    ffmpegArgs.push("-c:v", coverFilename.endsWith(`.${JPEG_EXTENSION}`) ? FFMPEG_CODEC_COPY : FFMPEG_CODEC_MJPEG);
-    ffmpegArgs.push("-disposition:v", "attached_pic");
-  }
+  const cover = await prepareCoverArt({
+    thumbnailUrl,
+    outputExtension
+  });
+  const ffmpegArgs = [...buildInputArgs(inputFilename), ...cover.inputArgs, "-map", "0:a", ...cover.outputArgs];
 
   const audioCodec = resolveAudioCodec({
     audioMimeType: audioMimeType ?? "",
@@ -94,8 +73,8 @@ export async function handleEmbedMetadata(job: EmbedMetadataJob) {
     tryUnlink(inputFilename);
     tryUnlink(outputFilename);
 
-    if (isCoverArtPresent) {
-      tryUnlink(coverFilename);
+    if (cover.filename) {
+      tryUnlink(cover.filename);
     }
   }
 }

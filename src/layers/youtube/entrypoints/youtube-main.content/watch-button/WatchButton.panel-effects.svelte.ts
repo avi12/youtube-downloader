@@ -1,4 +1,5 @@
 import type { TpYtIronDropdownElement, YtButtonViewModelElement } from "@/types";
+import { isHtmlElement } from "@/lib/dom-guards";
 
 const PANEL_VIEWPORT_MARGIN = 16;
 const EVENT_IRON_OVERLAY_OPENED = "iron-overlay-opened";
@@ -54,8 +55,11 @@ export function createPanelEffects({
   }
 
   $effect(() => {
-    const elSlot = getElDropdown().querySelector<HTMLElement>(`[${ATTR_PANEL_SLOT}]`);
-    elSlot?.style.setProperty(CSS_VAR_PANEL_ORIGIN, getIsPanelBelow() ? "top" : "bottom");
+    const elSlot = getElDropdown().querySelector(`[${ATTR_PANEL_SLOT}]`);
+    const origin = getIsPanelBelow() ? "top" : "bottom";
+    if (isHtmlElement(elSlot)) {
+      elSlot.style.setProperty(CSS_VAR_PANEL_ORIGIN, origin);
+    }
   });
 
   $effect(() => {
@@ -77,7 +81,7 @@ export function createPanelEffects({
       }
 
       setIsPanelOpen(false);
-      getElChevronButton()?.querySelector<HTMLButtonElement>("button")?.focus();
+      getElChevronButton()?.querySelector("button")?.focus();
     }
 
     function handleWindowResize() {

@@ -6,10 +6,13 @@ use std::time::Duration;
 use clap::{Args, Subcommand};
 use serde::Serialize;
 use serde_json::{json, Value};
+use ytdl_dev_hot::driver::rdp::message::{
+    ActorId, FrameTarget, RequestKind, WatchTargetsParameters,
+};
 
 use crate::firefox::pause;
-use crate::firefox::rdp::client::{truncate, Rdp, RequestKind};
-use crate::firefox::rdp::replies::FrameTarget;
+use crate::firefox::rdp::client::{truncate, Rdp};
+use crate::firefox::rdp::replies::EvaluationReply;
 use crate::firefox::{FirefoxError, Result};
 use crate::port::parse_port_number;
 
@@ -86,11 +89,17 @@ struct AddonSummary {
 #[derive(Debug, Serialize)]
 struct TabSummary {
     #[serde(skip_serializing_if = "Option::is_none")]
-    actor: Option<String>,
+    actor: Option<ActorId>,
     #[serde(skip_serializing_if = "Option::is_none")]
     title: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     url: Option<String>,
+}
+
+/// The parameters of `navigateTo`.
+#[derive(Debug, Serialize)]
+struct NavigateParameters<'url> {
+    url: &'url str,
 }
 
 fn preview(text: Option<String>, limit: usize) -> Option<String> {
@@ -105,7 +114,7 @@ fn evaluation_summary(body: &Value) -> &Value {
 }
 
 /// The console actor of the background page, found among the add-on's frame targets.
-fn background_console(targets: &[FrameTarget]) -> Option<String> {
+fn background_console(targets: &[FrameTarget]) -> Option<ActorId> {
     let url_of = |target: &FrameTarget| target.url.clone().unwrap_or_default();
     let background = targets
         .iter()
@@ -125,21 +134,25 @@ fn target_urls(targets: &[FrameTarget], limit: usize) -> String {
     json!(urls).to_string()
 }
 
-async fn watch_addon_frames(rdp: &mut Rdp) -> Result<String> {
+async fn watch_addon_frames(rdp: &mut Rdp) -> Result<ActorId> {
     let watcher = rdp.addon_watcher().await?;
-    let extra = json!({"targetType": "frame"});
-    rdp.send(&watcher, RequestKind::WatchTargets, extra).await?;
+    rdp.send(
+        &watcher,
+        RequestKind::WatchTargets,
+        &WatchTargetsParameters::FRAMES,
+    )
+    .await?;
     Ok(watcher)
 }
 
 async fn evaluate_value(
     rdp: &mut Rdp,
-    console: &str,
+    console: &ActorId,
     text: &str,
     limit: Duration,
 ) -> Result<Option<Value>> {
     let result = rdp.evaluate(console, text, limit).await?;
-    Ok(result.body.get("result").cloned())
+    Ok(result.parse::<EvaluationReply>()?.result)
 }
 
 pub(in crate::firefox) async fn run(args: DriveArgs) -> Result<()> {
@@ -213,7 +226,11 @@ async fn navigate(rdp: &mut Rdp, url_part: &str, url: &str) -> Result<()> {
         .and_then(|frame| frame.actor)
         .ok_or_else(|| FirefoxError::Failed("the tab has no frame actor".into()))?;
     let reply = rdp
-        .request(&frame_actor, RequestKind::NavigateTo, json!({"url": url}))
+        .request(
+            &frame_actor,
+            RequestKind::NavigateTo,
+            &NavigateParameters { url },
+        )
         .await?;
     println!(
         "nav result: {}",

@@ -1,7 +1,7 @@
 import { required } from "@/lib/required";
+import { prepareCoverArt } from "./mux-cover-art";
 import { buildInputArgs, buildRemuxArgs } from "./mux-ffmpeg-args";
 import { postError, postResult, state, tryUnlink } from "./mux-state";
-import { fetchThumbnail } from "./mux-thumbnail";
 import type { TranscodeAudioJob, TranscodeFileJob } from "@/lib/download-pipeline/mux-worker-types";
 import {
   audioContainers,
@@ -12,10 +12,6 @@ import {
   resolveAudioCodec
 } from "@/lib/utils/containers";
 import type { Prettify } from "@/types";
-
-const FFMPEG_CODEC_MJPEG = "mjpeg";
-const JPEG_EXTENSION = "jpg";
-const COVER_FILENAME_PREFIX = "cover";
 
 export function handleTranscodeAudio(job: TranscodeAudioJob) {
   const { audioData, sourceExtension, filenameOutput, videoId, tabId } = job;
@@ -53,17 +49,6 @@ export function handleTranscodeAudio(job: TranscodeAudioJob) {
   }
 }
 
-async function tryWriteCoverArt(coverArtUrl: string) {
-  const thumbnail = await fetchThumbnail(coverArtUrl);
-  if (!thumbnail) {
-    return null;
-  }
-
-  const coverFilename = `${COVER_FILENAME_PREFIX}.${thumbnail.extension}`;
-  required(state.ffmpeg).FS.writeFile(coverFilename, thumbnail.data);
-  return coverFilename;
-}
-
 type ExtractAudioWithCoverArtParams = Prettify<{
   sourceFilename: string;
   outputFilename: string;
@@ -74,24 +59,20 @@ type ExtractAudioWithCoverArtParams = Prettify<{
 async function extractAudioWithCoverArt({
   sourceFilename, outputFilename, targetContainer, coverArtUrl, audioMimeType
 }: ExtractAudioWithCoverArtParams) {
-  const coverFilename = await tryWriteCoverArt(coverArtUrl);
+  const cover = await prepareCoverArt({
+    thumbnailUrl: coverArtUrl,
+    outputExtension: targetContainer
+  });
   const audioCodec = resolveAudioCodec({
     audioMimeType,
     targetExtension: targetContainer
   });
-  const ffmpegArgs = [...buildInputArgs(sourceFilename)];
-  if (coverFilename) {
-    ffmpegArgs.push(...buildInputArgs(coverFilename), "-map", "0:a", "-map", "1");
-    ffmpegArgs.push("-c:v", coverFilename.endsWith(`.${JPEG_EXTENSION}`) ? FFMPEG_CODEC_COPY : FFMPEG_CODEC_MJPEG);
-    ffmpegArgs.push("-disposition:v", "attached_pic");
-  } else {
-    ffmpegArgs.push("-map", "0:a");
-  }
-
-  ffmpegArgs.push("-c:a", audioCodec, outputFilename);
   return {
-    args: ffmpegArgs,
-    coverFilename
+    args: [
+      ...buildInputArgs(sourceFilename), ...cover.inputArgs, "-map", "0:a", ...cover.outputArgs,
+      "-c:a", audioCodec, outputFilename
+    ],
+    coverFilename: cover.filename
   };
 }
 

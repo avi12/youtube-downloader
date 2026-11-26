@@ -6,7 +6,7 @@ use std::env;
 use std::fmt::Write;
 use std::path::{Path, PathBuf};
 
-use serde_json::{json, Value};
+use serde::Serialize;
 use tokio::process::Child;
 
 use crate::dev::launcher::browser::marionette::install_temporary_addon;
@@ -29,37 +29,89 @@ const MAC_BINARY: &str = "/Applications/Firefox.app/Contents/MacOS/firefox";
 const WINDOWS_BINARY_PATH: &str = "Mozilla Firefox/firefox.exe";
 const PROGRAM_FILES_VARIABLES: [&str; 2] = ["ProgramFiles", "ProgramFiles(x86)"];
 
-fn pref_lines(prefs: &[(&str, Value)]) -> String {
-    prefs
-        .iter()
-        .fold(String::new(), |mut lines, (name, value)| {
-            // Writing into a String cannot fail
-            let _ = writeln!(lines, "user_pref(\"{name}\", {value});");
-            lines
-        })
+/// The preferences the dev profile sets.
+#[derive(Debug, Clone, Copy)]
+enum Pref {
+    RemoteDebugging,
+    ConnectionPrompt,
+    ChromeDebugging,
+    DebuggerPort,
+    MarionettePort,
+    ExtensionUuids,
+    DefaultBrowserCheck,
+    HomepageOverride,
+    TabsWarnOnClose,
+    AppUpdate,
+    VolumeScale,
+}
+
+impl Pref {
+    const fn name(self) -> &'static str {
+        match self {
+            Self::RemoteDebugging => "devtools.debugger.remote-enabled",
+            Self::ConnectionPrompt => "devtools.debugger.prompt-connection",
+            Self::ChromeDebugging => "devtools.chrome.enabled",
+            Self::DebuggerPort => "devtools.debugger.remote-port",
+            Self::MarionettePort => "marionette.port",
+            Self::ExtensionUuids => "extensions.webextensions.uuids",
+            Self::DefaultBrowserCheck => "browser.shell.checkDefaultBrowser",
+            Self::HomepageOverride => "browser.startup.homepage_override.mstone",
+            Self::TabsWarnOnClose => "browser.tabs.warnOnClose",
+            Self::AppUpdate => "app.update.enabled",
+            Self::VolumeScale => "media.volume_scale",
+        }
+    }
+}
+
+/// A preference value; it renders as the JavaScript literal of the same JSON.
+#[derive(Debug, Serialize)]
+#[serde(untagged)]
+enum PrefValue {
+    Flag(bool),
+    Number(u16),
+    Text(String),
+}
+
+impl PrefValue {
+    fn text(text: &str) -> Self {
+        Self::Text(text.to_owned())
+    }
+}
+
+fn pref_lines(prefs: &[(Pref, PrefValue)]) -> Result<String> {
+    let mut lines = String::new();
+    for (pref, value) in prefs {
+        let value = serde_json::to_string(value)?;
+        // Writing into a String cannot fail
+        let _ = writeln!(lines, "user_pref(\"{}\", {value});", pref.name());
+    }
+    Ok(lines)
 }
 
 fn user_prefs(options: &DevOptions, extension_id: &str, rdp_port: u16) -> Result<String> {
     let uuids: BTreeMap<&str, &str> = BTreeMap::from([(extension_id, ADDON_UUID)]);
     let mut prefs = vec![
-        ("devtools.debugger.remote-enabled", json!(true)),
-        ("devtools.debugger.prompt-connection", json!(false)),
-        ("devtools.chrome.enabled", json!(true)),
-        ("devtools.debugger.remote-port", json!(rdp_port)),
-        ("marionette.port", json!(options.marionette_port)),
+        (Pref::RemoteDebugging, PrefValue::Flag(true)),
+        (Pref::ConnectionPrompt, PrefValue::Flag(false)),
+        (Pref::ChromeDebugging, PrefValue::Flag(true)),
+        (Pref::DebuggerPort, PrefValue::Number(rdp_port)),
         (
-            "extensions.webextensions.uuids",
-            json!(serde_json::to_string(&uuids)?),
+            Pref::MarionettePort,
+            PrefValue::Number(options.marionette_port),
         ),
-        ("browser.shell.checkDefaultBrowser", json!(false)),
-        ("browser.startup.homepage_override.mstone", json!("ignore")),
-        ("browser.tabs.warnOnClose", json!(false)),
-        ("app.update.enabled", json!(false)),
+        (
+            Pref::ExtensionUuids,
+            PrefValue::Text(serde_json::to_string(&uuids)?),
+        ),
+        (Pref::DefaultBrowserCheck, PrefValue::Flag(false)),
+        (Pref::HomepageOverride, PrefValue::text("ignore")),
+        (Pref::TabsWarnOnClose, PrefValue::Flag(false)),
+        (Pref::AppUpdate, PrefValue::Flag(false)),
     ];
     if options.is_audio_muted {
-        prefs.push(("media.volume_scale", json!("0.0")));
+        prefs.push((Pref::VolumeScale, PrefValue::text("0.0")));
     }
-    Ok(pref_lines(&prefs))
+    pref_lines(&prefs)
 }
 
 fn find_firefox(host: &HostEnvironment) -> Result<PathBuf> {
@@ -127,21 +179,29 @@ mod tests {
     use crate::dev::launcher::browser::firefox::*;
 
     #[test]
-    fn prefs_render_as_user_pref_lines() {
-        let lines = pref_lines(&[("a.b", json!(true)), ("c.d", json!("x\"y"))]);
+    fn prefs_render_as_user_pref_lines() -> Result<()> {
+        let lines = pref_lines(&[
+            (Pref::AppUpdate, PrefValue::Flag(true)),
+            (Pref::DebuggerPort, PrefValue::Number(6000)),
+            (Pref::VolumeScale, PrefValue::text("x\"y")),
+        ])?;
         assert_eq!(
             lines,
-            "user_pref(\"a.b\", true);\nuser_pref(\"c.d\", \"x\\\"y\");\n"
+            "user_pref(\"app.update.enabled\", true);\n\
+             user_pref(\"devtools.debugger.remote-port\", 6000);\n\
+             user_pref(\"media.volume_scale\", \"x\\\"y\");\n"
         );
+        Ok(())
     }
 
     #[test]
-    fn the_uuid_pref_maps_the_gecko_id() {
+    fn the_uuid_pref_maps_the_gecko_id() -> Result<()> {
         let uuids: BTreeMap<&str, &str> = BTreeMap::from([("a@b.c", ADDON_UUID)]);
-        let encoded = serde_json::to_string(&json!(serde_json::to_string(&uuids).unwrap()));
+        let value = PrefValue::Text(serde_json::to_string(&uuids)?);
         assert_eq!(
-            encoded.unwrap(),
+            serde_json::to_string(&value)?,
             format!("\"{{\\\"a@b.c\\\":\\\"{ADDON_UUID}\\\"}}\"")
         );
+        Ok(())
     }
 }

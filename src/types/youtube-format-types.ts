@@ -1,118 +1,107 @@
 import type { Prettify } from "./prettify";
-import type { AudioQuality, QualityLabel, VideoQuality } from "./youtube-format-enums";
+import { z } from "@/lib/zod";
 
-export type MediaItem = Prettify<{
-  itag: number;
-  url?: string;
-  mimeType: `${"video" | "audio"}/${string}`;
-  bitrate: number;
-  initRange: {
-    start: `${number}`;
-    end: `${number}`;
-  };
-  indexRange: {
-    start: `${number}`;
-    end: `${number}`;
-  };
-  lastModified: number;
-  contentLength: `${number}`;
-  averageBitrate: number;
-  approxDurationMs: `${number}`;
-}>;
+const byteRangeSchema = z.looseObject({
+  start: z.string(),
+  end: z.string()
+});
+
+const mediaItemSchema = z.looseObject({
+  itag: z.number(),
+  url: z.string().optional(),
+  mimeType: z.string(),
+  bitrate: z.number(),
+  initRange: byteRangeSchema.optional(),
+  indexRange: byteRangeSchema.optional(),
+  lastModified: z.union([z.string(), z.number()]).optional(),
+  contentLength: z.string().optional(),
+  averageBitrate: z.number().optional(),
+  approxDurationMs: z.string().optional(),
+  width: z.number().optional(),
+  height: z.number().optional(),
+  quality: z.string().optional(),
+  fps: z.number().optional(),
+  qualityLabel: z.string().optional(),
+  audioQuality: z.string().optional(),
+  audioSampleRate: z.string().optional(),
+  audioChannels: z.number().optional(),
+  projectionType: z.string().optional()
+});
 
 /** YouTube InnerTube API -values reverse-engineered from `streamingData.formats[]` in player responses. @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/classes/misc/Format.ts */
-export type FormatItem = Prettify<MediaItem & {
-  width: number;
-  height: number;
-  quality:
-    | typeof VideoQuality.Tiny
-    | typeof VideoQuality.Medium
-    | typeof VideoQuality.Large
-    | typeof VideoQuality.Hd720;
-  fps: 30;
-  qualityLabel:
-    | typeof QualityLabel.P144
-    | typeof QualityLabel.P360
-    | typeof QualityLabel.P480
-    | typeof QualityLabel.P720;
-  audioQuality: AudioQuality;
-  audioBitrate?: number;
-  projectionType: "RECTANGULAR";
-  audioSampleRate: `${number}`;
-  audioChannels: number;
-}>;
+export const formatItemSchema = mediaItemSchema.extend({
+  audioBitrate: z.number().optional()
+});
 
 /** YouTube InnerTube API -values reverse-engineered from `streamingData.adaptiveFormats[]` in player responses. @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/classes/misc/Format.ts */
-export type AdaptiveFormatItem = Prettify<MediaItem & {
-  width?: number;
-  height?: number;
-  quality: VideoQuality;
-  fps?: 24 | 25 | 30 | 48 | 50 | 60;
-  qualityLabel?: QualityLabel | (string & {});
-  averageBitrate: number;
-  audioQuality?: AudioQuality;
-  colorInfo?: {
-    primaries: "COLOR_PRIMARIES_BT709" | "COLOR_PRIMARIES_BT2020" | (string & {});
-    transferCharacteristics:
-      | "COLOR_TRANSFER_CHARACTERISTICS_BT709"
-      | "COLOR_TRANSFER_CHARACTERISTICS_SMPTEST2084"
-      | (string & {});
-    matrixCoefficients:
-      | "COLOR_MATRIX_COEFFICIENTS_BT709"
-      | "COLOR_MATRIX_COEFFICIENTS_BT2020_NCL"
-      | (string & {});
-  };
-  audioTrack?: {
-    id: string;
-    displayName: string;
-    audioIsDefault: boolean;
-  };
-  signatureCipher?: string;
-  projectionType?: "RECTANGULAR" | "MESH";
-  stereoLayout?: "STEREO_LAYOUT_LEFT_RIGHT" | "STEREO_LAYOUT_TOP_BOTTOM" | (string & {});
-  spatialAudioType?: "SPATIAL_AUDIO_TYPE_AMBISONICS_5_1" | "SPATIAL_AUDIO_TYPE_AMBISONICS_QUAD" | "SPATIAL_AUDIO_TYPE_FOA_WITH_NON_DIEGETIC" | (string & {});
-  highReplication?: boolean;
-  audioSampleRate?: `${number}`;
-  loudnessDb?: number;
-  trackAbsoluteLoudnessLkfs?: number;
-  audioChannels?: number;
-  targetDurationSec?: number;
-  maxDvrDurationSec?: number;
-  type?: "FORMAT_STREAM_TYPE_OTF" | (string & {});
-  drmFamilies?: string[];
-  drmTrackType?: string;
-  fairPlayKeyUri?: string;
-  distinctParams?: string;
-  xtags?: string;
-}>;
-
-export type TranslationLanguage = Prettify<{
-  languageCode: string;
-  languageName: { simpleText: string };
-}>;
-
-/** @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/classes/PlayerCaptionsTracklist.ts */
-export type CaptionTrack = Prettify<{
-  baseUrl: string;
-  name: { simpleText: string };
-  vssId: string;
-  languageCode: string;
-  kind?: string;
-  isTranslatable: boolean;
-  translationLanguageCode?: string;
-  sourceTrackVssId?: string;
-}>;
+export const adaptiveFormatSchema = mediaItemSchema.extend({
+  colorInfo: z.looseObject({
+    primaries: z.string().optional(),
+    transferCharacteristics: z.string().optional(),
+    matrixCoefficients: z.string().optional()
+  }).optional(),
+  audioTrack: z.looseObject({
+    id: z.string(),
+    displayName: z.string(),
+    audioIsDefault: z.boolean()
+  }).optional(),
+  signatureCipher: z.string().optional(),
+  stereoLayout: z.string().optional(),
+  spatialAudioType: z.string().optional(),
+  highReplication: z.boolean().optional(),
+  loudnessDb: z.number().optional(),
+  trackAbsoluteLoudnessLkfs: z.number().optional(),
+  targetDurationSec: z.number().optional(),
+  maxDvrDurationSec: z.number().optional(),
+  type: z.string().optional(),
+  drmFamilies: z.array(z.string()).optional(),
+  drmTrackType: z.string().optional(),
+  fairPlayKeyUri: z.string().optional(),
+  distinctParams: z.string().optional(),
+  xtags: z.string().optional()
+});
 
 // The desktop site sends plain text, the mobile site sends the same text as runs
-export type PlayerText = Prettify<{
-  simpleText?: string;
-  runs?: { text: string }[];
-}>;
+const playerTextSchema = z.looseObject({
+  simpleText: z.string().optional(),
+  runs: z.array(
+    z.looseObject({ text: z.string() })
+  ).optional()
+});
 
-export type PlayerCaptionTrack = Prettify<Omit<CaptionTrack, "name"> & {
-  name: PlayerText;
-}>;
+const plainTextSchema = z.looseObject({
+  simpleText: z.string()
+});
 
-export type PlayerTranslationLanguage = Prettify<Omit<TranslationLanguage, "languageName"> & {
-  languageName: PlayerText;
-}>;
+export const playerTranslationLanguageSchema = z.looseObject({
+  languageCode: z.string(),
+  languageName: playerTextSchema
+});
+
+export const translationLanguageSchema = playerTranslationLanguageSchema.extend({
+  languageName: plainTextSchema
+});
+
+export const playerCaptionTrackSchema = z.looseObject({
+  baseUrl: z.string(),
+  name: playerTextSchema,
+  vssId: z.string(),
+  languageCode: z.string(),
+  kind: z.string().optional(),
+  isTranslatable: z.boolean().optional(),
+  translationLanguageCode: z.string().optional(),
+  sourceTrackVssId: z.string().optional()
+});
+
+/** @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/classes/PlayerCaptionsTracklist.ts */
+export const captionTrackSchema = playerCaptionTrackSchema.extend({
+  name: plainTextSchema
+});
+
+export type AdaptiveFormatItem = Prettify<z.infer<typeof adaptiveFormatSchema>>;
+
+export type TranslationLanguage = Prettify<z.infer<typeof translationLanguageSchema>>;
+
+export type CaptionTrack = Prettify<z.infer<typeof captionTrackSchema>>;
+
+export type PlayerText = Prettify<z.infer<typeof playerTextSchema>>;

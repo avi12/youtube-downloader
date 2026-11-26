@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isHtmlElement } from "@/lib/dom-guards";
   import PolymerSelect from "@/layers/youtube/components/polymer-select/PolymerSelect.svelte";
   import { createTrackSelectState, type TrackSelectProps } from "@/lib/download-options/track-select.svelte.ts";
   import { onButtonClick } from "@/lib/messaging/cross-world-messenger";
@@ -70,8 +71,7 @@
                 checked={props.downloadExtras ? "" : undefined}
                 disabled={props.isDownloading || tracks.isExtensionMultiTrackIncompatible ? "" : undefined}
                 onchange={e => {
-                  const isHtmlElement = e.target instanceof HTMLElement;
-                  if (isHtmlElement) {
+                  if (isHtmlElement(e.target)) {
                     props.ondownloadextraschange(e.target.hasAttribute("checked"));
                   }
                 }}
@@ -99,8 +99,7 @@
                 checked={props.downloadExtraCaptions ? "" : undefined}
                 disabled={props.isDownloading ? "" : undefined}
                 onchange={e => {
-                  const isHtmlElement = e.target instanceof HTMLElement;
-                  if (isHtmlElement) {
+                  if (isHtmlElement(e.target)) {
                     props.ondownloadextracaptionschange(e.target.hasAttribute("checked"));
                   }
                 }}

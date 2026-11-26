@@ -1,3 +1,4 @@
+import type { FrameCommand } from "@/layers/processing/worker-frame-messages";
 import type { Prettify } from "@/types";
 import { browser } from "#imports";
 
@@ -48,7 +49,7 @@ export function createWorkerIframe(videoId: string) {
   return elIframe;
 }
 
-export function sendToWorkerIframe({ videoId, message }: { videoId: string; message: unknown }) {
+export function sendToWorkerIframe({ videoId, message }: { videoId: string; message: FrameCommand }) {
   const elIframe = workerIframes.get(videoId);
   elIframe?.contentWindow?.postMessage(message, location.origin);
 }

@@ -1,5 +1,5 @@
 import { InnertubeClientName, type InnertubePlayerRequest } from "@/lib/youtube/innertube";
-import { playerResponseSchema } from "@/lib/youtube/schemas";
+import { isPlayerResponse } from "@/lib/youtube/schemas";
 import { getYtcfg, YtcfgKey } from "@/lib/youtube/ytcfg";
 
 const PLAYER_API_PATH = "/youtubei/v1/player?prettyPrint=false";
@@ -52,7 +52,11 @@ export async function fetchFreshCaptionUrls(videoId: string) {
       return new Map<string, string>();
     }
 
-    const data = playerResponseSchema.parse(await response.json());
+    const data: unknown = await response.json();
+    if (!isPlayerResponse(data)) {
+      return new Map<string, string>();
+    }
+
     const freshTracks = data.captions?.playerCaptionsTracklistRenderer?.captionTracks ?? [];
     return new Map(freshTracks.map(track => [track.vssId, track.baseUrl]));
   } catch {

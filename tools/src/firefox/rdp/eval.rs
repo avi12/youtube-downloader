@@ -4,11 +4,10 @@ use std::time::Duration;
 
 use clap::Args;
 use serde::Deserialize;
-use serde_json::json;
+use ytdl_dev_hot::driver::rdp::message::{ActorId, NoParameters, RequestKind};
 
-use crate::firefox::rdp::client::{
-    find_rdp_port, truncate, Rdp, RequestKind, DEFAULT_REPLY_TIMEOUT, ROOT_ACTOR,
-};
+use crate::firefox::rdp::client::{find_rdp_port, truncate, Rdp, DEFAULT_REPLY_TIMEOUT};
+use crate::firefox::rdp::replies::TabList;
 use crate::firefox::{FirefoxError, Result};
 
 const EVAL_TIMEOUT: Duration = Duration::from_secs(30);
@@ -33,7 +32,7 @@ struct ProcessList {
 #[derive(Debug, Default, Deserialize)]
 #[serde(default)]
 struct ProcessEntry {
-    actor: Option<String>,
+    actor: Option<ActorId>,
     id: Option<u64>,
     parent: Option<bool>,
 }
@@ -52,20 +51,24 @@ pub(in crate::firefox) async fn list() -> Result<()> {
     let mut rdp = Rdp::connect(port, DEFAULT_REPLY_TIMEOUT).await?;
     println!("Greeting: {}", rdp.greeting);
     let tabs = rdp
-        .request(ROOT_ACTOR, RequestKind::ListTabs, json!({}))
+        .request(&ActorId::root(), RequestKind::ListTabs, &NoParameters {})
         .await?;
     println!("listTabs raw: {}", tabs.body);
     let addons = rdp.addons().await?;
     let processes = rdp
-        .request(ROOT_ACTOR, RequestKind::ListProcesses, json!({}))
+        .request(
+            &ActorId::root(),
+            RequestKind::ListProcesses,
+            &NoParameters {},
+        )
         .await?
         .parse::<ProcessList>()?;
 
     println!("\n== Tabs ==");
-    for tab in tabs.parse::<crate::firefox::rdp::replies::TabList>()?.tabs {
+    for tab in tabs.parse::<TabList>()?.tabs {
         println!(
             "  {} | {} | {}",
-            or_unknown(tab.actor.as_deref()),
+            or_unknown(tab.actor.as_ref().map(ActorId::as_str)),
             or_unknown(tab.url.as_deref()),
             or_unknown(tab.title.as_deref())
         );
@@ -74,7 +77,7 @@ pub(in crate::firefox) async fn list() -> Result<()> {
     for addon in addons {
         println!(
             "  {} | {} | {} | {}",
-            or_unknown(addon.actor.as_deref()),
+            or_unknown(addon.actor.as_ref().map(ActorId::as_str)),
             or_unknown(addon.id.as_deref()),
             or_unknown(addon.name.as_deref()),
             addon.url.as_deref().unwrap_or_default()
@@ -84,7 +87,7 @@ pub(in crate::firefox) async fn list() -> Result<()> {
     for process in processes.processes {
         println!(
             "  {} | pid={} | parent={}",
-            or_unknown(process.actor.as_deref()),
+            or_unknown(process.actor.as_ref().map(ActorId::as_str)),
             display_or_unknown(process.id),
             display_or_unknown(process.parent)
         );

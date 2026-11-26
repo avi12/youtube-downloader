@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isHtmlElement } from "@/lib/dom-guards";
   interface Props {
     isEnabled: boolean;
     ontoggle: (isEnabled: boolean) => void;
@@ -11,8 +12,7 @@
   <tp-yt-paper-checkbox
     checked={isEnabled ? "" : undefined}
     onchange={e => {
-      const isHtmlElement = e.target instanceof HTMLElement;
-      if (isHtmlElement) {
+      if (isHtmlElement(e.target)) {
         ontoggle(e.target.hasAttribute("checked"));
       }
     }}

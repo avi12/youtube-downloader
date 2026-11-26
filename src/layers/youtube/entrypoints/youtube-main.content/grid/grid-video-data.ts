@@ -3,6 +3,7 @@ import { fetchVideoDataViaApi } from "./grid-video-fetch";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { videoDataFailedStore, videoDataStore } from "@/lib/ui/synced-stores.svelte";
 import { createLogger, LogScope } from "@/lib/utils/logger";
+import { isVideoIdPayload } from "#youtube/lib/messaging/payload-guards";
 
 const log = createLogger(LogScope.Main);
 
@@ -64,6 +65,10 @@ function requestVideoData(videoId: string) {
 
 export function registerGridVideoDataHandler() {
   crossWorldMessenger.onMessage(CrossWorldMessage.RequestVideoData, ({ data }) => {
+    if (!isVideoIdPayload(data)) {
+      return;
+    }
+
     requestVideoData(data.videoId);
   });
 }

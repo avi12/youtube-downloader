@@ -1,3 +1,4 @@
+import { isVideoElement, isVttCue } from "@/lib/dom-guards";
 import { required } from "@/lib/required";
 import { fetchFreshCaptionUrls } from "./caption-urls";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
@@ -36,7 +37,7 @@ function formatWebVttTimestamp(seconds: number) {
 function cuesToWebVtt(cues: TextTrackCueList) {
   const lines = ["WEBVTT", ""];
   for (const cue of cues) {
-    if (!(cue instanceof VTTCue)) {
+    if (!isVttCue(cue)) {
       continue;
     }
 
@@ -48,8 +49,8 @@ function cuesToWebVtt(cues: TextTrackCueList) {
 }
 
 async function fetchWebVttViaTrackElement(url: string) {
-  const elVideo = document.querySelector<HTMLVideoElement>(HTML5_MAIN_VIDEO_SELECTOR);
-  if (!elVideo) {
+  const elVideo = document.querySelector(HTML5_MAIN_VIDEO_SELECTOR);
+  if (!isVideoElement(elVideo)) {
     return null;
   }
 

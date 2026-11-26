@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isInputElement } from "@/lib/dom-guards";
   import PlaylistOverrideBadge from "./PlaylistOverrideBadge.svelte";
   import { slide } from "svelte/transition";
 
@@ -23,8 +24,7 @@
         dir="auto"
         disabled={isDisabled}
         oninput={e => {
-          const isInputElement = e.target instanceof HTMLInputElement;
-          if (isInputElement) {
+          if (isInputElement(e.target)) {
             onchange(e.target.value);
           }
         }}

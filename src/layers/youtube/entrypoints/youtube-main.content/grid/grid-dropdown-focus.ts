@@ -1,8 +1,10 @@
+import { isElement } from "@/lib/dom-guards";
+
 const PAPER_DROPDOWN_MENU_TAG = "tp-yt-paper-dropdown-menu";
 const KEYBOARD_FOCUSED_ATTR = "keyboard-focused";
 
 function handleDropdownFocusIn(event: FocusEvent) {
-  if (!(event.target instanceof Element)) {
+  if (!(isElement(event.target))) {
     return;
   }
 
@@ -17,7 +19,7 @@ function handleDropdownFocusIn(event: FocusEvent) {
 }
 
 function handleDropdownFocusOut(event: FocusEvent) {
-  if (!(event.target instanceof Element)) {
+  if (!(isElement(event.target))) {
     return;
   }
 

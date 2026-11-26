@@ -1,12 +1,19 @@
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
-import type { YtdSettingsOptionsElement } from "@/types/polymer-elements";
+import { z } from "@/lib/zod";
+import { createGuard } from "@/lib/zod-guard";
 
 export const DATA_SETTINGS_OPTIONS_ID_ATTR = "data-ytdl-settings-id";
 let settingsOptionsIdCounter = 0;
 
-export function isYtdSettingsOptionsRenderer(elTarget: Element): elTarget is YtdSettingsOptionsElement {
-  return elTarget.tagName.toLowerCase() === "ytd-settings-options-renderer";
-}
+export const isYtdSettingsOptionsRenderer = createGuard(
+  z.looseObject({
+    tagName: z.literal("YTD-SETTINGS-OPTIONS-RENDERER"),
+    set: z.function({
+      input: [z.string(), z.unknown()],
+      output: z.void()
+    })
+  })
+);
 
 function sendSettingsOptionsData({ elTarget, title }: {
   elTarget: Element;

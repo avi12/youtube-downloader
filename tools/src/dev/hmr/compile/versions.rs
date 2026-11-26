@@ -153,6 +153,47 @@ fn directory_of(file_name: &str) -> &str {
         .map_or(".", |(directory, _)| directory)
 }
 
+/// The version each module was last served under. The page caches a module by its URL, so a reverted
+/// edit needs a URL it never saw, or the page hands back the stale instance without running it.
+#[derive(Debug, Default)]
+pub(super) struct ServedVersions {
+    /// Per file name: the content version, and the version its URL carries
+    served: BTreeMap<String, (String, String)>,
+    changes: u64,
+}
+
+impl ServedVersions {
+    pub(super) const fn new() -> Self {
+        Self {
+            served: BTreeMap::new(),
+            changes: 0,
+        }
+    }
+
+    /// The URL version of every module: unchanged content keeps its URL, changed content gets a new one.
+    pub(super) fn refresh(
+        &mut self,
+        versions: BTreeMap<String, String>,
+    ) -> BTreeMap<String, String> {
+        versions
+            .into_iter()
+            .map(|(file_name, content)| {
+                let url = match self.served.get(&file_name) {
+                    Some((served, url)) if *served == content => url.clone(),
+                    Some(_) => {
+                        self.changes += 1;
+                        format!("{content}-{}", self.changes)
+                    }
+                    None => content.clone(),
+                };
+                self.served
+                    .insert(file_name.clone(), (content, url.clone()));
+                (file_name, url)
+            })
+            .collect()
+    }
+}
+
 /// Stamps imports with `?v=<version>`.
 pub(super) struct ImportStamper {
     pattern: Regex,
@@ -270,6 +311,21 @@ mod tests {
         let version = versions.get("src/b.js").unwrap();
         assert!(stamped.contains(&format!("from \"./b.js?v={version}\"")));
         assert!(stamped.contains("from './C.svelte.js';"));
+    }
+
+    #[test]
+    fn a_reverted_module_gets_a_url_it_never_had() {
+        let mut served = ServedVersions::new();
+        let mut url_of = |content: &str| {
+            let versions = BTreeMap::from([("a.js".to_owned(), content.to_owned())]);
+            served.refresh(versions).remove("a.js").unwrap()
+        };
+        let first = url_of("one");
+        assert_eq!(url_of("one"), first);
+        let edited = url_of("two");
+        let reverted = url_of("one");
+        assert_ne!(reverted, first);
+        assert_ne!(reverted, edited);
     }
 
     #[test]

@@ -24,6 +24,7 @@ use crate::types::{BrowserKind, Port, RelPath, RequestId};
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(test, derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
 pub struct HtmlEntrypoint {
     /// The entrypoint name, as the extension frame is found by it.
     pub name: String,
@@ -35,6 +36,7 @@ pub struct HtmlEntrypoint {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(test, derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
 pub struct SidecarConfig {
     /// The extension project directory (`PROJECT_ROOT` in `scripts/dev/project.ts`).
     pub project_root: PathBuf,
@@ -89,6 +91,7 @@ pub struct SidecarConfig {
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(test, derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
 pub struct ChangedOutputs {
     /// A background script output moved.
     pub is_background_changed: bool,
@@ -103,6 +106,7 @@ pub struct ChangedOutputs {
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(test, derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
 pub struct EntrypointLayout {
     /// HTML entrypoints of the build.
     pub html_entrypoints: Vec<HtmlEntrypoint>,
@@ -115,6 +119,7 @@ pub struct EntrypointLayout {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(test, derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
 pub struct ReloadExtensionParams {
     /// What the build changed.
     pub changed: ChangedOutputs,
@@ -127,6 +132,7 @@ pub struct ReloadExtensionParams {
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(test, derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
 pub struct RebuildHmrResult {
     /// Project-relative source files of the HMR graph.
     pub hmr_source_files: Vec<RelPath>,
@@ -165,6 +171,7 @@ pub struct RequestEnvelope {
 /// A log line for TypeScript to print.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(test, derive(ts_rs::TS))]
+#[serde(deny_unknown_fields)]
 pub struct LogLine {
     /// The text, without a trailing newline.
     pub log: String,
@@ -186,6 +193,7 @@ pub enum OutboundMessage {
 /// a void success.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(test, derive(ts_rs::TS))]
+#[serde(deny_unknown_fields)]
 pub struct Response {
     /// The id of the request being answered.
     pub id: RequestId,
@@ -212,6 +220,7 @@ impl Response {
 #[cfg_attr(test, derive(ts_rs::TS))]
 #[serde(tag = "notify", rename_all = "camelCase")]
 #[non_exhaustive]
+#[serde(deny_unknown_fields)]
 pub enum Notification {
     /// Stop everything, flush, exit.
     Shutdown,

@@ -1,3 +1,5 @@
+import { isHtmlElement } from "@/lib/dom-guards";
+
 const Selector = {
   PlaylistContents: "ytd-playlist-video-list-renderer #contents",
   PlaylistVideo: "ytd-playlist-video-renderer",
@@ -22,8 +24,7 @@ function isMoreAvailable(elContents: Element) {
 
 function scrollContainerToBottom(elContents: Element) {
   const elLastChild = elContents.lastElementChild;
-  const isHtmlElement = elLastChild instanceof HTMLElement;
-  if (!isHtmlElement) {
+  if (!isHtmlElement(elLastChild)) {
     return;
   }
 
@@ -94,7 +95,7 @@ export async function revealAllPlaylistVideos({
 export function scrollVideoItemIntoView(videoId: string) {
   const elItemAnchor = document.querySelector(`[data-ytdl-item="${CSS.escape(videoId)}"]`);
   const elPlaylistItem = elItemAnchor?.closest(Selector.PlaylistVideo);
-  const isHtmlPlaylistItem = elPlaylistItem instanceof HTMLElement;
+  const isHtmlPlaylistItem = isHtmlElement(elPlaylistItem);
   if (!isHtmlPlaylistItem) {
     return;
   }

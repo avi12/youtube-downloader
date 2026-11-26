@@ -21,6 +21,7 @@ pub(crate) enum ChunkType {
 /// One bundler output.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
 pub(crate) struct OutputChunk {
     #[serde(rename = "type")]
     pub(crate) kind: ChunkType,
@@ -56,6 +57,7 @@ impl OutputChunk {
 
 /// One module the bundler loaded, and the modules importing it.
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct ModuleRecord {
     pub(crate) id: String,
     pub(crate) importers: Vec<String>,
@@ -63,6 +65,7 @@ pub(crate) struct ModuleRecord {
 
 /// What the compile worker returns.
 #[derive(Debug, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct BuildOutput {
     #[serde(default)]
     pub(crate) chunks: Vec<OutputChunk>,

@@ -1,41 +1,60 @@
 //! Shuts down the isolated worlds an extension reload orphaned in open tabs, from the outside over
 //! CDP. Port of `scripts/dev/browsers/chrome/worlds.ts`.
 
-use serde::Deserialize;
-use serde_json::json;
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use ytdl_dev_hot::driver::cdp::CdpTarget;
 
-use crate::cdp::wire::{ContextEvaluation, Method, Session};
+use crate::cdp::wire::{
+    ContextEvaluation, ContextKind, Method, NoParameters, RemoteObject, Session,
+};
 use crate::dev::browsers::error::{BrowserError, Result};
 use crate::dev::browsers::scripts::{
     INVOKE_STARTED_LISTENER, ORPHANED_WORLD_PROBE, REMOVE_LISTENER,
     WXT_SCRIPT_STARTED_EVENT_SUFFIX, WXT_SCRIPT_STARTED_MESSAGE_ID,
 };
 
-const ISOLATED_WORLD_TYPE: &str = "isolated";
 /// `DOMDebugger` hands back listener functions only for objects that belong to an object group.
 const OBJECT_GROUP: &str = "ytdl-dev-server";
 const WORLD_ROOTS: [&str; 2] = ["document", "window"];
 
-#[derive(Debug, Deserialize)]
-struct RemoteObject {
-    #[serde(rename = "objectId")]
-    object_id: Option<String>,
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ObjectParameters<'object> {
+    object_id: &'object str,
 }
 
-#[derive(Debug, Deserialize)]
-struct EvaluateReply {
-    result: RemoteObject,
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct CallFunctionParameters<'call> {
+    object_id: &'call str,
+    function_declaration: &'call str,
+    arguments: &'call [CallArgument<'call>],
 }
 
-#[derive(Debug, Deserialize)]
-struct ProbeReply {
-    result: ProbeValue,
+/// One argument of `Runtime.callFunctionOn`: a page object or a plain JSON value.
+#[derive(Debug, Serialize)]
+#[serde(untagged)]
+enum CallArgument<'call> {
+    Object {
+        #[serde(rename = "objectId")]
+        object_id: &'call str,
+    },
+    Value {
+        value: Value,
+    },
 }
 
-#[derive(Debug, Deserialize)]
-struct ProbeValue {
-    value: Option<bool>,
+impl<'call> CallArgument<'call> {
+    const fn object(object_id: &'call str) -> Self {
+        Self::Object { object_id }
+    }
+
+    fn value(value: impl Into<Value>) -> Self {
+        Self::Value {
+            value: value.into(),
+        }
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -75,11 +94,9 @@ impl ListenerInfo {
 }
 
 async fn list_world_listeners(session: &mut Session, object_id: &str) -> Result<Vec<Listener>> {
+    let parameters = ObjectParameters { object_id };
     let reply = session
-        .call(
-            Method::DomDebuggerGetEventListeners,
-            json!({ "objectId": object_id }),
-        )
+        .call(Method::DomDebuggerGetEventListeners, &parameters)
         .await?;
     let reply: ListenersReply = serde_json::from_value(reply)?;
     Ok(reply
@@ -97,18 +114,18 @@ async fn invalidate_wxt_contexts(session: &mut Session, object_id: &str) -> Resu
             continue;
         }
         let script_name = listener.kind.split(':').nth(1).unwrap_or_default();
-        let parameters = json!({
-            "objectId": object_id,
-            "functionDeclaration": INVOKE_STARTED_LISTENER.trim(),
-            "arguments": [
-                { "objectId": listener.handler_object_id },
-                { "value": listener.kind },
-                { "value": script_name },
-                { "value": WXT_SCRIPT_STARTED_MESSAGE_ID },
+        let parameters = CallFunctionParameters {
+            object_id,
+            function_declaration: INVOKE_STARTED_LISTENER.trim(),
+            arguments: &[
+                CallArgument::object(&listener.handler_object_id),
+                CallArgument::value(listener.kind.as_str()),
+                CallArgument::value(script_name),
+                CallArgument::value(WXT_SCRIPT_STARTED_MESSAGE_ID),
             ],
-        });
+        };
         session
-            .call(Method::RuntimeCallFunctionOn, parameters)
+            .call(Method::RuntimeCallFunctionOn, &parameters)
             .await?;
     }
     Ok(())
@@ -116,17 +133,17 @@ async fn invalidate_wxt_contexts(session: &mut Session, object_id: &str) -> Resu
 
 async fn remove_world_listeners(session: &mut Session, object_id: &str) -> Result<()> {
     for listener in list_world_listeners(session, object_id).await? {
-        let parameters = json!({
-            "objectId": object_id,
-            "functionDeclaration": REMOVE_LISTENER.trim(),
-            "arguments": [
-                { "value": listener.kind },
-                { "objectId": listener.handler_object_id },
-                { "value": listener.should_use_capture },
+        let parameters = CallFunctionParameters {
+            object_id,
+            function_declaration: REMOVE_LISTENER.trim(),
+            arguments: &[
+                CallArgument::value(listener.kind.as_str()),
+                CallArgument::object(&listener.handler_object_id),
+                CallArgument::value(listener.should_use_capture),
             ],
-        });
+        };
         session
-            .call(Method::RuntimeCallFunctionOn, parameters)
+            .call(Method::RuntimeCallFunctionOn, &parameters)
             .await?;
     }
     Ok(())
@@ -145,7 +162,6 @@ async fn neutralize_world(session: &mut Session, context_id: u64) -> Result<()> 
                 group: Some(OBJECT_GROUP),
             })
             .await?;
-        let reply: EvaluateReply = serde_json::from_value(reply)?;
         let Some(object_id) = reply.result.object_id else {
             continue;
         };
@@ -163,16 +179,18 @@ async fn is_orphaned(session: &mut Session, context_id: u64) -> Result<bool> {
             group: None,
         })
         .await?;
-    let reply: ProbeReply = serde_json::from_value(reply)?;
-    Ok(reply.result.value.unwrap_or(false))
+    let is_orphan = reply.result.value.map(serde_json::from_value).transpose()?;
+    Ok(is_orphan.unwrap_or(false))
 }
 
 async fn neutralize_contexts(session: &mut Session, world_name: &str) -> Result<()> {
-    session.call(Method::RuntimeEnable, json!({})).await?;
+    session
+        .call(Method::RuntimeEnable, &NoParameters {})
+        .await?;
     let worlds: Vec<u64> = session
         .execution_contexts()
         .iter()
-        .filter(|context| context.aux.kind == ISOLATED_WORLD_TYPE && context.name == world_name)
+        .filter(|context| context.aux.kind == ContextKind::Isolated && context.name == world_name)
         .map(|context| context.id)
         .collect();
     for context_id in worlds {
@@ -195,4 +213,26 @@ pub(super) async fn neutralize_orphaned_worlds_in_page(
     let outcome = neutralize_contexts(&mut session, world_name).await;
     session.close().await;
     outcome
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use crate::dev::browsers::targets::chrome::worlds::*;
+
+    #[test]
+    fn function_calls_pass_objects_by_handle_and_values_inline() -> serde_json::Result<()> {
+        let parameters = CallFunctionParameters {
+            object_id: "o",
+            function_declaration: "f",
+            arguments: &[CallArgument::object("h"), CallArgument::value(true)],
+        };
+        assert_eq!(
+            serde_json::to_value(parameters)?,
+            json!({"objectId": "o", "functionDeclaration": "f",
+                "arguments": [{"objectId": "h"}, {"value": true}]})
+        );
+        Ok(())
+    }
 }

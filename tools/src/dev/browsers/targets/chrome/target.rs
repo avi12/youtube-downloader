@@ -9,7 +9,7 @@ use tokio::time::Instant;
 use ytdl_dev_hot::driver::cdp::{CdpClient, CdpTarget, TargetKind};
 use ytdl_dev_hot::types::Port;
 
-use crate::cdp::wire::{close_target, evaluate_on, Method, Session};
+use crate::cdp::wire::{close_target, evaluate_on, Method, NoParameters, Session};
 use crate::dev::browsers::error::{BrowserError, Result};
 use crate::dev::browsers::scripts::{self, MANIFEST_NAME};
 use crate::dev::browsers::target::{BoxFuture, ReloadTarget};
@@ -24,6 +24,8 @@ const SERVICE_WORKER_WAIT: Duration = Duration::from_secs(10);
 const SERVICE_WORKER_POLL: Duration = Duration::from_millis(200);
 const EXTENSION_URL_PREFIX: &str = "chrome-extension://";
 const HTML_SUFFIX: &str = ".html";
+/// Opened anew for every download, so the next one loads a new build and a running one is left alone.
+const PER_DOWNLOAD_PAGE: &str = "download-worker";
 
 /// A Chrome-family browser reached over its remote debugging port.
 pub(crate) struct ChromeTarget {
@@ -255,7 +257,8 @@ impl ChromeTarget {
             .filter(|target| target.url.starts_with(&prefix))
             .filter_map(|target| {
                 let name = page_name_of(&target.url)?.to_owned();
-                (is_any_page_affected || plan.page_names.contains(&name)).then_some((target, name))
+                let is_affected = is_any_page_affected || plan.page_names.contains(&name);
+                (is_affected && name != PER_DOWNLOAD_PAGE).then_some((target, name))
             })
             .collect())
     }
@@ -267,19 +270,27 @@ impl ChromeTarget {
         match target.kind {
             TargetKind::Page => {
                 let mut session = Session::open(debugger_url_of(target)?).await?;
-                let outcome = session
-                    .call(Method::PageReload, serde_json::json!({}))
-                    .await;
+                let outcome = session.call(Method::PageReload, &NoParameters {}).await;
                 session.close().await;
                 outcome?;
                 Ok(Some(PageAction::Reloaded))
             }
             TargetKind::Other => {
+                if self.is_close_deferred().await {
+                    return Ok(Some(PageAction::Deferred));
+                }
                 close_target(self.port.get(), &target.id.to_string()).await?;
                 Ok(Some(PageAction::Closed))
             }
             _ => Ok(None),
         }
+    }
+
+    /// Closing the offscreen document would kill the downloads in it. A stopped worker has none.
+    async fn is_close_deferred(&self) -> bool {
+        self.evaluate_in_worker(&scripts::defer_close_while_downloading())
+            .await
+            .is_ok_and(|value| value == Value::Bool(true))
     }
 
     async fn refresh_pages_now(&self, plan: &PageRefreshPlan) -> Result<Vec<RefreshedPage>> {

@@ -1,40 +1,40 @@
 import { type InnertubeBrowseRequest, InnertubeClientName } from "@/lib/youtube/innertube";
 import { z } from "@/lib/zod";
+import { createGuard } from "@/lib/zod-guard";
 import type { Prettify } from "@/types";
 
 const YT_MUSIC_BROWSE_URL = "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false";
 const YT_MUSIC_MOODS_AND_GENRES_BROWSE_ID = "FEmusic_moods_and_genres";
 const CONTENT_TYPE_JSON = "application/json";
 
-type MoodsAndGenresResponse = Prettify<{
-  contents?: {
-    singleColumnBrowseResultsRenderer?: {
-      tabs?: {
-        tabRenderer?: {
-          content?: {
-            sectionListRenderer?: {
-              contents?: {
-                gridRenderer?: {
-                  items?: {
-                    musicNavigationButtonRenderer?: {
-                      buttonText?: {
-                        runs?: { text: string }[];
-                      };
-                    };
-                  }[];
-                };
-              }[];
-            };
-          };
-        };
-      }[];
-    };
-  };
-}>;
+const genreItemSchema = z.looseObject({
+  musicNavigationButtonRenderer: z.looseObject({
+    buttonText: z.looseObject({
+      runs: z.array(z.looseObject({ text: z.string().optional() })).optional()
+    }).optional()
+  }).optional()
+});
 
-const moodsAndGenresResponseShapeSchema = z.looseObject({});
-const moodsAndGenresResponseSchema = z.custom<MoodsAndGenresResponse>(
-  value => moodsAndGenresResponseShapeSchema.safeParse(value).success
+const genreSectionSchema = z.looseObject({
+  gridRenderer: z.looseObject({ items: z.array(genreItemSchema).optional() }).optional()
+});
+
+const genreTabSchema = z.looseObject({
+  tabRenderer: z.looseObject({
+    content: z.looseObject({
+      sectionListRenderer: z.looseObject({ contents: z.array(genreSectionSchema).optional() }).optional()
+    }).optional()
+  }).optional()
+});
+
+const genreContentsSchema = z.looseObject({
+  singleColumnBrowseResultsRenderer: z.looseObject({ tabs: z.array(genreTabSchema).optional() }).optional()
+});
+
+const isMoodsAndGenresResponse = createGuard(
+  z.looseObject({
+    contents: genreContentsSchema.optional()
+  })
 );
 
 const YT_MUSIC_CLIENT_VERSION = "1.20260408.01.00";
@@ -62,9 +62,15 @@ export async function fetchYouTubeMusicGenres() {
       } satisfies InnertubeBrowseRequest)
     });
 
-    const data = moodsAndGenresResponseSchema.parse(await response.json());
-    const sections = data.contents?.singleColumnBrowseResultsRenderer?.tabs?.[0]
-      ?.tabRenderer?.content?.sectionListRenderer?.contents ?? [];
+    const data: unknown = await response.json();
+    if (!isMoodsAndGenresResponse(data)) {
+      return new Set<string>();
+    }
+
+    const contents: z.infer<typeof genreContentsSchema> | undefined = data.contents;
+    const tabs: z.infer<typeof genreTabSchema>[] = contents?.singleColumnBrowseResultsRenderer?.tabs ?? [];
+    const sections: z.infer<typeof genreSectionSchema>[] =
+      tabs[0]?.tabRenderer?.content?.sectionListRenderer?.contents ?? [];
 
     const genres = new Set<string>();
     const items = sections.flatMap(section => section.gridRenderer?.items ?? []);

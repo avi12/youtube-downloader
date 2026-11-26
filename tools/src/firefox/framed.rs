@@ -3,6 +3,7 @@
 use std::collections::VecDeque;
 use std::time::Duration;
 
+use serde::Serialize;
 use serde_json::Value;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
@@ -35,9 +36,13 @@ impl Framed {
         })
     }
 
-    pub(super) async fn send(&mut self, packet: &Value) -> Result<()> {
-        let bytes = encode_packet(packet)?;
-        self.stream.write_all(&bytes).await?;
+    pub(super) async fn send<T: Serialize + Sync>(&mut self, packet: &T) -> Result<()> {
+        self.write(&encode_packet(packet)?).await
+    }
+
+    /// Writes an already framed packet.
+    pub(super) async fn write(&mut self, bytes: &[u8]) -> Result<()> {
+        self.stream.write_all(bytes).await?;
         Ok(())
     }
 

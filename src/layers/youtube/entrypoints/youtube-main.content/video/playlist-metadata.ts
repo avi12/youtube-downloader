@@ -1,24 +1,41 @@
+import { isCustomEvent } from "@/lib/dom-guards";
 import { cleanupSegmentedButton } from "@/layers/youtube/entrypoints/youtube-main.content/watch-button/watch-button";
-import { buildAndDispatchVideoData, type ShortsPageData } from "./capture-dispatch";
+import { buildAndDispatchVideoData, shortsPageDataSchema } from "./capture-dispatch";
 import { getPageRoute, getRouteVideoId, PageRoute } from "./page-route";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { playlistMetadataSignal } from "@/lib/ui/synced-stores.svelte";
-import { type PlayerResponse } from "@/types";
+import { isPlayerResponse } from "@/lib/youtube/schemas";
+import { z } from "@/lib/zod";
+import { createGuard } from "@/lib/zod-guard";
 
 const WATCH_FLEXY_TAG = "ytd-watch-flexy";
 const PLAYER_DATA_POLL_ATTEMPTS = 20;
 const PLAYER_DATA_POLL_INTERVAL_MS = 250;
 
-declare global {
-  interface HTMLElementTagNameMap {
-    "ytd-watch-flexy": HTMLElement & {
-      playerData: PlayerResponse | null;
-    };
-  }
-}
+const isWatchFlexy = createGuard(z.looseObject({ playerData: z.unknown() }));
+
+const textRunsSchema = z.looseObject({
+  runs: z.array(z.looseObject({ text: z.string().optional() })).optional()
+});
+
+const isPlaylistPageData = createGuard(
+  z.looseObject({
+    header: z.looseObject({
+      playlistHeaderRenderer: z.looseObject({
+        title: z.looseObject({ simpleText: z.string().optional() }).optional(),
+        playlistId: z.string().optional(),
+        ownerText: textRunsSchema.optional()
+      }).optional()
+    }).optional(),
+    metadata: z.looseObject({
+      playlistMetadataRenderer: z.looseObject({ title: z.string().optional() }).optional()
+    }).optional()
+  })
+);
 
 export function extractPlaylistMetadata() {
-  const { header, metadata } = window.ytInitialData ?? {};
+  const data = window.ytInitialData;
+  const { header, metadata } = isPlaylistPageData(data) ? data : {};
   const hasNoPlaylistData = !header && !metadata;
   if (hasNoPlaylistData) {
     playlistMetadataSignal.value = null;
@@ -50,19 +67,22 @@ function handleNavigation() {
   extractPlaylistMetadata();
 }
 
-interface NavigateResponse {
-  playerResponse?: PlayerResponse;
-  response?: ShortsPageData;
-}
+const isNavigateDetail = createGuard(
+  z.looseObject({
+    response: z.looseObject({
+      playerResponse: z.unknown(),
+      response: shortsPageDataSchema.optional()
+    })
+  })
+);
 
 function readNavigateResponse(event: Event) {
-  const isCustomEvent = event instanceof CustomEvent;
-  if (!isCustomEvent) {
+  if (!isCustomEvent(event)) {
     return null;
   }
 
-  const detail: { response?: NavigateResponse } | null = event.detail;
-  return detail?.response ?? null;
+  const { detail } = event;
+  return isNavigateDetail(detail) ? detail.response : null;
 }
 
 export async function handleNavigateSuccess(event: Event) {
@@ -73,7 +93,7 @@ export async function handleNavigateSuccess(event: Event) {
   if (route === PageRoute.Shorts) {
     const navigateResponse = readNavigateResponse(event);
     const playerResponse = navigateResponse?.playerResponse;
-    const isMatchingShort = playerResponse?.videoDetails?.videoId === expectedVideoId;
+    const isMatchingShort = isPlayerResponse(playerResponse) && playerResponse.videoDetails?.videoId === expectedVideoId;
     if (isMatchingShort) {
       await buildAndDispatchVideoData({
         playerResponse,
@@ -89,8 +109,9 @@ export async function handleNavigateSuccess(event: Event) {
   }
 
   for (let attempt = 0; attempt < PLAYER_DATA_POLL_ATTEMPTS; attempt++) {
-    const playerResponse = document.querySelector(WATCH_FLEXY_TAG)?.playerData ?? null;
-    const isReady = playerResponse?.videoDetails?.videoId === expectedVideoId;
+    const elWatchFlexy = document.querySelector(WATCH_FLEXY_TAG);
+    const playerResponse = isWatchFlexy(elWatchFlexy) ? elWatchFlexy.playerData : null;
+    const isReady = isPlayerResponse(playerResponse) && playerResponse.videoDetails?.videoId === expectedVideoId;
     if (isReady) {
       await buildAndDispatchVideoData({ playerResponse });
       return;

@@ -1,10 +1,11 @@
+import { isBlob, isHeaders, isRequest } from "@/lib/dom-guards";
 import { MessageType, sendMessageToTab } from "@/lib/messaging/messaging";
 import { base64ToUint8Array, uint8ToBase64 } from "@/lib/utils/binary";
 
 export type PageProxyFetch = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
 function inputToUrl(input: RequestInfo | URL) {
-  if (input instanceof Request) {
+  if (isRequest(input)) {
     return input.url;
   }
 
@@ -22,7 +23,7 @@ async function initToBodyBase64({ init, input }: { init: RequestInit | undefined
       return uint8ToBase64(new Uint8Array(body.buffer, body.byteOffset, body.byteLength));
     }
 
-    if (body instanceof Blob) {
+    if (isBlob(body)) {
       return uint8ToBase64(new Uint8Array(await body.arrayBuffer()));
     }
 
@@ -31,7 +32,7 @@ async function initToBodyBase64({ init, input }: { init: RequestInit | undefined
     }
   }
 
-  if (input instanceof Request) {
+  if (isRequest(input)) {
     const cloned = input.clone();
     const buffer = await cloned.arrayBuffer();
     return uint8ToBase64(new Uint8Array(buffer));
@@ -47,7 +48,7 @@ function initHeadersToRecord(init: RequestInit | undefined) {
   }
 
   const out: Record<string, string> = {};
-  if (raw instanceof Headers) {
+  if (isHeaders(raw)) {
     for (const [key, value] of raw) {
       out[key] = value;
     }
@@ -71,7 +72,7 @@ function initHeadersToRecord(init: RequestInit | undefined) {
 export function createPageProxyFetch(tabId: number) {
   return async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = inputToUrl(input);
-    const method = (init?.method ?? (input instanceof Request ? input.method : "GET")).toUpperCase();
+    const method = (init?.method ?? (isRequest(input) ? input.method : "GET")).toUpperCase();
     const bodyBase64 = await initToBodyBase64({
        init,
        input 

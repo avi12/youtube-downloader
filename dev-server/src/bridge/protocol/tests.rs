@@ -87,3 +87,11 @@ fn null_result_is_a_void_success() -> Result<()> {
     assert_eq!(response.into_result()?, Value::Null);
     Ok(())
 }
+
+#[test]
+fn our_own_messages_reject_unknown_fields() {
+    let known = r#"{"hmrSourceFiles":["a.ts"]}"#;
+    assert!(decode_line::<RebuildHmrResult>(known).is_ok());
+    let misspelled = r#"{"hmrSourceFiles":[],"hmrSourceFile":[]}"#;
+    assert!(decode_line::<RebuildHmrResult>(misspelled).is_err());
+}

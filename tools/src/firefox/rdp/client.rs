@@ -5,62 +5,62 @@ use std::collections::VecDeque;
 use std::time::Duration;
 
 use serde::de::DeserializeOwned;
-use serde::Serialize;
-use serde_json::{json, Map, Value};
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use tokio::process::Command;
 use tokio::time::{timeout_at, Instant};
+use ytdl_dev_hot::driver::rdp::message::{
+    encode_request, ActorId, Addon, EvaluateParameters, FrameTarget, GetWatcherParameters,
+    NoParameters, PacketKind, RequestKind, ResultId,
+};
 
 use crate::firefox::framed::Framed;
-use crate::firefox::rdp::replies::{
-    Addon, AddonList, FrameTarget, TabList, TargetReply, WatcherEvent,
-};
-use crate::firefox::{FirefoxError, Result};
+use crate::firefox::rdp::replies::{AddonList, Tab, TabList, TargetReply, WatcherEvent};
+use crate::firefox::{FirefoxError, Result, GECKO_ID, MARIONETTE_DEFAULT_PORT};
 
-pub(crate) const ROOT_ACTOR: &str = "root";
-pub(crate) const ADDON_ID: &str = "youtube-downloader@avi12.com";
-const SKIP_PORTS: [u16; 2] = [2828, 9230];
+/// A port Firefox listens on that is not its debugger server.
+const NON_DEBUGGER_PORT: u16 = 9230;
+const SKIP_PORTS: [u16; 2] = [MARIONETTE_DEFAULT_PORT, NON_DEBUGGER_PORT];
 const MIN_RDP_PORT: u16 = 1024;
 pub(crate) const DEFAULT_REPLY_TIMEOUT: Duration = Duration::from_secs(5);
 const LISTENING_PORTS_SCRIPT: &str = "$ff=Get-Process firefox -EA 0; Get-NetTCPConnection -State Listen -EA 0 | ?{ $_.OwningProcess -in $ff.Id } | Select-Object -ExpandProperty LocalPort";
-pub(crate) const TARGET_AVAILABLE_FORM: &str = "target-available-form";
-const EVALUATION_RESULT: &str = "evaluationResult";
-
-/// The request types sent to actors (the `type` of an outgoing packet).
-#[derive(Debug, Clone, Copy, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub(crate) enum RequestKind {
-    ListTabs,
-    ListAddons,
-    ListProcesses,
-    GetProcess,
-    GetTarget,
-    GetWatcher,
-    WatchTargets,
-    WatchResources,
-    NavigateTo,
-    #[serde(rename = "evaluateJSAsync")]
-    EvaluateJsAsync,
+/// The header every packet is routed by; the rest of it is read per request.
+#[derive(Debug, Deserialize)]
+struct Header {
+    from: ActorId,
+    #[serde(rename = "type")]
+    kind: Option<PacketKind>,
+    #[serde(rename = "resultID")]
+    result_id: Option<ResultId>,
 }
 
 /// One packet from an actor.
 #[derive(Debug, Clone)]
 pub(crate) struct Message {
-    pub(crate) from: String,
+    pub(crate) from: ActorId,
+    pub(crate) kind: Option<PacketKind>,
+    result_id: Option<ResultId>,
+    /// The whole packet, which commands print or parse further.
     pub(crate) body: Value,
 }
 
 impl Message {
     fn from_value(body: Value) -> Option<Self> {
-        let from = body.get("from")?.as_str()?.to_owned();
-        Some(Self { from, body })
+        let Header {
+            from,
+            kind,
+            result_id,
+        } = Header::deserialize(&body).ok()?;
+        Some(Self {
+            from,
+            kind,
+            result_id,
+            body,
+        })
     }
 
     pub(crate) fn parse<T: DeserializeOwned>(&self) -> Result<T> {
         Ok(T::deserialize(&self.body)?)
-    }
-
-    pub(crate) fn type_is(&self, expected: &str) -> bool {
-        self.body.get("type").and_then(Value::as_str) == Some(expected)
     }
 }
 
@@ -110,7 +110,7 @@ impl Rdp {
             reply_timeout,
             greeting: Value::Null,
         };
-        let greeting = rdp.wait_from(ROOT_ACTOR, reply_timeout).await?;
+        let greeting = rdp.wait_from(&ActorId::root(), reply_timeout).await?;
         rdp.greeting = greeting.body;
         Ok(rdp)
     }
@@ -138,7 +138,7 @@ impl Rdp {
     /// The first packet from `actor` that `matches`, within `limit`.
     pub(crate) async fn wait_matching(
         &mut self,
-        actor: &str,
+        actor: &ActorId,
         limit: Duration,
         matches: impl Fn(&Message) -> bool + Send,
     ) -> Result<Message> {
@@ -147,45 +147,40 @@ impl Rdp {
             let found = self
                 .queue
                 .iter()
-                .position(|message| message.from == actor && matches(message));
+                .position(|message| message.from == *actor && matches(message));
             if let Some(message) = found.and_then(|index| self.queue.remove(index)) {
                 return Ok(message);
             }
             timeout_at(deadline, self.read_one())
                 .await
-                .map_err(|_| FirefoxError::Timeout(actor.to_owned()))??;
+                .map_err(|_| FirefoxError::Timeout(actor.to_string()))??;
         }
     }
 
     /// Waits for the next packet from `actor`.
-    pub(crate) async fn wait_from(&mut self, actor: &str, limit: Duration) -> Result<Message> {
+    pub(crate) async fn wait_from(&mut self, actor: &ActorId, limit: Duration) -> Result<Message> {
         self.wait_matching(actor, limit, |_| true).await
     }
 
     /// Sends a request without waiting for its reply.
-    pub(crate) async fn send(
+    pub(crate) async fn send<P: Serialize + Sync>(
         &mut self,
-        actor: &str,
+        actor: &ActorId,
         kind: RequestKind,
-        extra: Value,
+        parameters: &P,
     ) -> Result<()> {
-        let mut packet = Map::new();
-        packet.insert("to".into(), json!(actor));
-        packet.insert("type".into(), json!(kind));
-        if let Value::Object(fields) = extra {
-            packet.extend(fields);
-        }
-        self.framed.send(&Value::Object(packet)).await
+        let packet = encode_request(actor, kind, parameters)?;
+        self.framed.write(&packet).await
     }
 
     /// Sends a request and waits for the next packet from the same actor.
-    pub(crate) async fn request(
+    pub(crate) async fn request<P: Serialize + Sync>(
         &mut self,
-        actor: &str,
+        actor: &ActorId,
         kind: RequestKind,
-        extra: Value,
+        parameters: &P,
     ) -> Result<Message> {
-        self.send(actor, kind, extra).await?;
+        self.send(actor, kind, parameters).await?;
         self.wait_from(actor, self.reply_timeout).await
     }
 
@@ -193,59 +188,60 @@ impl Rdp {
     /// reply itself when it carried no `resultID`).
     pub(crate) async fn evaluate(
         &mut self,
-        console: &str,
+        console: &ActorId,
         text: &str,
         limit: Duration,
     ) -> Result<Message> {
-        let body = json!({"text": text, "eager": false});
-        self.evaluate_body(console, body, limit).await
+        let parameters = EvaluateParameters::new(text).not_eager();
+        self.evaluate_with(console, parameters, limit).await
     }
 
     /// Like [`Self::evaluate`], awaiting the promise the text resolves to (top-level `await`).
     pub(crate) async fn evaluate_awaiting(
         &mut self,
-        console: &str,
+        console: &ActorId,
         text: &str,
         limit: Duration,
     ) -> Result<Message> {
-        let body = json!({"text": text, "eager": false, "mapped": {"await": true}});
-        self.evaluate_body(console, body, limit).await
+        let parameters = EvaluateParameters::new(text).not_eager().awaiting();
+        self.evaluate_with(console, parameters, limit).await
     }
 
-    async fn evaluate_body(
+    async fn evaluate_with(
         &mut self,
-        console: &str,
-        body: Value,
+        console: &ActorId,
+        parameters: EvaluateParameters<'_>,
         limit: Duration,
     ) -> Result<Message> {
         let ack = self
-            .request(console, RequestKind::EvaluateJsAsync, body)
+            .request(console, RequestKind::EvaluateJsAsync, &parameters)
             .await?;
-        let Some(result_id) = ack.body.get("resultID").cloned() else {
+        let Some(result_id) = ack.result_id.clone() else {
             return Ok(ack);
         };
         self.wait_matching(console, limit, |message| {
-            message.type_is(EVALUATION_RESULT) && message.body.get("resultID") == Some(&result_id)
+            message.kind == Some(PacketKind::EvaluationResult)
+                && message.result_id.as_ref() == Some(&result_id)
         })
         .await
     }
 
-    pub(crate) async fn tabs(&mut self) -> Result<Vec<crate::firefox::rdp::replies::Tab>> {
+    pub(crate) async fn tabs(&mut self) -> Result<Vec<Tab>> {
         let reply = self
-            .request(ROOT_ACTOR, RequestKind::ListTabs, json!({}))
+            .request(&ActorId::root(), RequestKind::ListTabs, &NoParameters {})
             .await?;
         Ok(reply.parse::<TabList>()?.tabs)
     }
 
     pub(crate) async fn addons(&mut self) -> Result<Vec<Addon>> {
         let reply = self
-            .request(ROOT_ACTOR, RequestKind::ListAddons, json!({}))
+            .request(&ActorId::root(), RequestKind::ListAddons, &NoParameters {})
             .await?;
         Ok(reply.parse::<AddonList>()?.addons)
     }
 
     /// The actor of the first tab whose URL contains `url_part`.
-    pub(crate) async fn find_tab_actor(&mut self, url_part: &str) -> Result<String> {
+    pub(crate) async fn find_tab_actor(&mut self, url_part: &str) -> Result<ActorId> {
         let tabs = self.tabs().await?;
         tabs.into_iter()
             .find(|tab| tab.url.as_deref().unwrap_or_default().contains(url_part))
@@ -254,23 +250,27 @@ impl Rdp {
     }
 
     /// The `getTarget` reply of a tab actor, typed and raw.
-    pub(crate) async fn target_of(&mut self, tab_actor: &str) -> Result<(TargetReply, Value)> {
+    pub(crate) async fn target_of(&mut self, tab_actor: &ActorId) -> Result<(TargetReply, Value)> {
         let reply = self
-            .request(tab_actor, RequestKind::GetTarget, json!({}))
+            .request(tab_actor, RequestKind::GetTarget, &NoParameters {})
             .await?;
         Ok((reply.parse()?, reply.body))
     }
 
     /// The watcher actor of the extension.
-    pub(crate) async fn addon_watcher(&mut self) -> Result<String> {
+    pub(crate) async fn addon_watcher(&mut self) -> Result<ActorId> {
         let addons = self.addons().await?;
         let addon_actor = addons
             .into_iter()
-            .find(|addon| addon.id.as_deref() == Some(ADDON_ID))
+            .find(|addon| addon.id.as_deref() == Some(GECKO_ID))
             .and_then(|addon| addon.actor)
             .ok_or_else(|| FirefoxError::Failed("addon not found".into()))?;
         let reply = self
-            .request(&addon_actor, RequestKind::GetWatcher, json!({}))
+            .request(
+                &addon_actor,
+                RequestKind::GetWatcher,
+                &GetWatcherParameters::default(),
+            )
             .await?;
         let watcher = reply.parse::<WatcherEvent>()?.actor;
         watcher.ok_or_else(|| FirefoxError::Failed("no watcher".into()))
@@ -280,7 +280,7 @@ impl Rdp {
     /// within `per_wait`.
     pub(crate) async fn collect_targets(
         &mut self,
-        watcher: &str,
+        watcher: &ActorId,
         total: Duration,
         per_wait: Duration,
     ) -> Vec<FrameTarget> {
@@ -298,7 +298,7 @@ impl Rdp {
             let Ok(event) = message.parse::<WatcherEvent>() else {
                 continue;
             };
-            let is_form = event.kind.as_deref() == Some(TARGET_AVAILABLE_FORM);
+            let is_form = event.kind == Some(PacketKind::TargetAvailable);
             targets.extend(
                 event
                     .target

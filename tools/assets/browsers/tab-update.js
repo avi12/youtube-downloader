@@ -1,8 +1,9 @@
-async ({ mainWorldPatterns, isolatedContentScripts }, replayHandshakes) => {
+async ({ mainWorldPatterns, isolatedContentScripts, swappableMainWorldScripts }, replayHandshakes) => {
   const api = globalThis.browser ?? globalThis.chrome;
   // Tabs are never reloaded: whatever can't be updated in place is only reported
   const staleTabIds = new Set();
   const reinjectedTabIds = new Set();
+  const swappedTabIds = new Set();
   const failedInjections = [];
   if (mainWorldPatterns.length) {
     for (const tab of await api.tabs.query({ url: mainWorldPatterns })) {
@@ -10,7 +11,19 @@ async ({ mainWorldPatterns, isolatedContentScripts }, replayHandshakes) => {
     }
   }
 
-  for (const entry of isolatedContentScripts) {
+  const injections = [
+    ...swappableMainWorldScripts.map(entry => ({
+       entry,
+       world: "MAIN",
+       updatedTabIds: swappedTabIds
+    })),
+    ...isolatedContentScripts.map(entry => ({
+       entry,
+       world: "ISOLATED",
+       updatedTabIds: reinjectedTabIds
+    }))
+  ];
+  for (const { entry, world, updatedTabIds } of injections) {
     for (const tab of await api.tabs.query({
        url: entry.matches,
        status: "complete" 
@@ -38,16 +51,16 @@ async ({ mainWorldPatterns, isolatedContentScripts }, replayHandshakes) => {
         await api.scripting.executeScript({
            target,
            files: entry.js,
-           world: "ISOLATED",
+           world,
            injectImmediately: true 
         });
-        reinjectedTabIds.add(tab.id);
+        updatedTabIds.add(tab.id);
       } catch (error) {
         failedInjections.push({
            url: tab.url,
            message: String(error?.message ?? error) 
         });
-        reinjectedTabIds.delete(tab.id);
+        updatedTabIds.delete(tab.id);
       }
     }
   }
@@ -67,6 +80,7 @@ async ({ mainWorldPatterns, isolatedContentScripts }, replayHandshakes) => {
   return {
     staleTabCount: staleTabIds.size,
     reinjectedTabCount: reinjectedTabIds.size,
+    swappedTabCount: swappedTabIds.size,
     replayedHandshakeCount,
     failedInjections
   };

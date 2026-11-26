@@ -2,6 +2,7 @@
 //! assets under `assets/browsers/`. Each asset is one function expression called with JSON config.
 
 use std::collections::BTreeSet;
+use std::time::Duration;
 
 use serde::Serialize;
 
@@ -38,6 +39,13 @@ pub(super) const MANIFEST_NAME: &str =
 pub(super) const RUNTIME_RELOAD: &str =
     include_str!("../../../assets/browsers/expressions/runtime-reload.js");
 
+/// A function resolving to true while the extension has a running download.
+const IS_DOWNLOADING: &str = include_str!("../../../assets/browsers/expressions/is-downloading.js");
+const DEFER_CLOSE_WHILE_DOWNLOADING: &str =
+    include_str!("../../../assets/browsers/expressions/defer-close-while-downloading.js");
+const WAIT_UNTIL_DOWNLOADS_END: &str =
+    include_str!("../../../assets/browsers/expressions/wait-until-downloads-end.js");
+
 const EXTENSION_RELOAD: &str = include_str!("../../../assets/browsers/extension-reload.js");
 const EXTENSION_ID_BY_NAME: &str = include_str!("../../../assets/browsers/extension-id-by-name.js");
 
@@ -62,6 +70,7 @@ pub(super) fn extension_id_by_name(name: &str) -> serde_json::Result<String> {
 struct TabUpdateConfig<'a> {
     main_world_patterns: Vec<&'a str>,
     isolated_content_scripts: &'a [ContentScriptEntry],
+    swappable_main_world_scripts: &'a [ContentScriptEntry],
 }
 
 #[derive(Serialize)]
@@ -90,8 +99,30 @@ fn invoke(asset: &str, arguments: &[String]) -> String {
     format!("({})({})", asset.trim(), arguments.join(", "))
 }
 
-/// Counts the tabs a changed MAIN-world script matches, then re-injects every ISOLATED script into
-/// the complete, non-discarded tabs it matches and replays the handshakes it missed.
+/// Run in the service worker: true while downloads run, closing the offscreen document once they
+/// end.
+pub(super) fn defer_close_while_downloading() -> String {
+    invoke(
+        DEFER_CLOSE_WHILE_DOWNLOADING,
+        &[IS_DOWNLOADING.trim().to_owned()],
+    )
+}
+
+/// Run in the background: resolves to true once no download runs, or to false when downloads still
+/// run after `limit`.
+pub(super) fn wait_until_downloads_end(limit: Duration) -> String {
+    invoke(
+        WAIT_UNTIL_DOWNLOADS_END,
+        &[
+            IS_DOWNLOADING.trim().to_owned(),
+            limit.as_millis().to_string(),
+        ],
+    )
+}
+
+/// Counts the tabs an unswappable MAIN-world change leaves stale, re-injects the swappable ones and
+/// every ISOLATED script into the complete, non-discarded tabs they match, and replays the
+/// handshakes the isolated scripts missed.
 pub(super) fn tab_update(plan: &ExtensionReloadPlan) -> serde_json::Result<String> {
     let config = TabUpdateConfig {
         main_world_patterns: unique(
@@ -100,6 +131,7 @@ pub(super) fn tab_update(plan: &ExtensionReloadPlan) -> serde_json::Result<Strin
                 .flat_map(|entry| &entry.matches),
         ),
         isolated_content_scripts: &plan.isolated_content_scripts,
+        swappable_main_world_scripts: &plan.swappable_main_world_scripts,
     };
     Ok(invoke(
         TAB_UPDATE,
@@ -133,7 +165,13 @@ pub(super) fn page_refresh(plan: &PageRefreshPlan) -> serde_json::Result<String>
         page_names: &plan.page_names,
         is_shared_asset_changed: !plan.shared_asset_files.is_empty(),
     };
-    Ok(invoke(PAGE_REFRESH, &[serde_json::to_string(&config)?]))
+    Ok(invoke(
+        PAGE_REFRESH,
+        &[
+            serde_json::to_string(&config)?,
+            IS_DOWNLOADING.trim().to_owned(),
+        ],
+    ))
 }
 
 #[cfg(test)]
@@ -153,6 +191,7 @@ mod tests {
         ExtensionReloadPlan {
             reasons: Vec::new(),
             main_world_content_scripts: vec![entry(ContentScriptWorld::Main, "*://a.com/*")],
+            swappable_main_world_scripts: Vec::new(),
             isolated_content_scripts: vec![entry(ContentScriptWorld::Isolated, "*://b.com/*")],
             changed_isolated_style_sheets: Vec::new(),
         }

@@ -8,14 +8,14 @@ use std::path::{Path, PathBuf};
 use clap::{Args, ValueEnum};
 use serde::{Deserialize, Serialize};
 
+use crate::firefox::MARIONETTE_DEFAULT_PORT;
 use crate::output::error::{OutputError, Result};
 use crate::port::parse_port_number;
 
 const CDP_PORT_WINDOWS: u16 = 9229;
 const CDP_PORT_LINUX: u16 = 9233;
 const CDP_PORT_FIREFOX: u16 = 9230;
-const MARIONETTE_PORT_DEFAULT: u16 = 2828;
-const REBUILD_DEBOUNCE_MS: u32 = 800;
+const REBUILD_DEBOUNCE_MS: u32 = 50;
 const WATCH_POLL_INTERVAL_MS: u32 = 500;
 const HMR_PORT_OFFSET: u32 = 1000;
 const ENV_FILES: [&str; 2] = [".env", ".env.local"];
@@ -215,7 +215,7 @@ pub(crate) fn resolve_options(args: &OptionArgs, host: &HostEnvironment) -> Resu
         cdp_port: args
             .cdp_port
             .unwrap_or_else(|| default_cdp_port(args.is_firefox, host.platform)),
-        marionette_port: args.marionette_port.unwrap_or(MARIONETTE_PORT_DEFAULT),
+        marionette_port: args.marionette_port.unwrap_or(MARIONETTE_DEFAULT_PORT),
         profile_directory,
         out_directory: args.out_directory.clone(),
         start_url: args

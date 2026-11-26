@@ -1,10 +1,11 @@
+import { isAnchorElement, isElement } from "@/lib/dom-guards";
 import { extractVideoId } from "./grid-card";
 import { resolveVideoDownloadability } from "./video-downloadability.svelte";
 import { checkInterruptedDownload } from "@/layers/youtube/entrypoints/youtube.content/download/interrupted-downloads";
 import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
 import { getVideoIdFromUrl } from "@/lib/youtube/youtube-url";
 import PlaylistVideoItem from "#youtube/components/playlist-downloader/video-item/PlaylistVideoItem.svelte";
-import { mount } from "svelte";
+import { mount, unmount } from "svelte";
 
 const PLAYLIST_VIDEO_TAG = "ytd-playlist-video-renderer";
 const LOCKUP_ROW_SELECTOR = "yt-item-section-renderer yt-lockup-view-model";
@@ -19,6 +20,16 @@ const SELECTOR_LOCKUP_LIST_CONTENTS = "yt-section-list-renderer yt-item-section-
 const INTERRUPTED_CHECK_TIMEOUT_MS = 3000;
 
 const pendingMounts = new WeakMap<Element, string>();
+const itemUis = new WeakMap<Element, { remove: () => void }>();
+
+// Dropping the container alone leaves its component alive, still answering its buttons' clicks
+function removeDetachedItemUis(elRemoved: Element) {
+  for (const elItemContainer of [elRemoved, ...elRemoved.querySelectorAll(`[${ATTR_YTDL_ITEM}]`)]) {
+    if (!elItemContainer.isConnected) {
+      itemUis.get(elItemContainer)?.remove();
+    }
+  }
+}
 
 function whenTimedOut(milliseconds: number) {
   return new Promise<void>(resolve => {
@@ -36,8 +47,8 @@ async function settleInterruptedState(videoId: string) {
 }
 
 function extractRowVideoId(elVideoItem: Element) {
-  const elVideoIdLink = elVideoItem.querySelector<HTMLAnchorElement>(SELECTOR_VIDEO_ID_LINK);
-  return elVideoIdLink ? getVideoIdFromUrl(elVideoIdLink.href) : extractVideoId(elVideoItem);
+  const elVideoIdLink = elVideoItem.querySelector(SELECTOR_VIDEO_ID_LINK);
+  return isAnchorElement(elVideoIdLink) ? getVideoIdFromUrl(elVideoIdLink.href) : extractVideoId(elVideoItem);
 }
 
 function placeItemContainer({ elVideoItem, elItemContainer }: {
@@ -72,7 +83,7 @@ async function injectPlaylistVideoItemUi({ context, elVideoItem }: InjectPlaylis
   for (const elStale of elVideoItem.querySelectorAll(`[${ATTR_YTDL_ITEM}]`)) {
     const isStaleItem = elStale.getAttribute(ATTR_YTDL_ITEM) !== videoId;
     if (isStaleItem) {
-      elStale.remove();
+      itemUis.get(elStale)?.remove();
     }
   }
 
@@ -105,24 +116,30 @@ async function injectPlaylistVideoItemUi({ context, elVideoItem }: InjectPlaylis
     return;
   }
 
-  // An invalidated run leaves its container behind, which the next run would take for a mounted item
-  context.onInvalidated(() => elItemContainer.remove());
-
   const integratedUi = createIntegratedUi(context, {
     position: "inline",
     anchor: elItemContainer,
     onMount(elUiContainer) {
-      mount(PlaylistVideoItem, {
+      return mount(PlaylistVideoItem, {
         target: elUiContainer,
         props: {
           videoId,
           isPlaylistItem: true
         }
       });
+    },
+    onRemove(component) {
+      if (component) {
+        unmount(component).catch(() => {});
+      }
+
+      // An invalidated run's leftover container would pass for a mounted item in the next run
+      elItemContainer.remove();
     }
   });
 
   integratedUi.mount();
+  itemUis.set(elItemContainer, integratedUi);
 }
 
 interface InjectIntoSubtreeParams {
@@ -171,7 +188,7 @@ function observeRows({ context, elContents }: ObserveRowsParams) {
   const mutationObserver = new MutationObserver(mutations => {
     for (const mutation of mutations) {
       for (const node of mutation.addedNodes) {
-        const isElementNode = node instanceof Element;
+        const isElementNode = isElement(node);
         if (isElementNode) {
           injectIntoSubtree({
             root: node,
@@ -181,12 +198,18 @@ function observeRows({ context, elContents }: ObserveRowsParams) {
       }
 
       for (const node of mutation.removedNodes) {
-        const isSkippableNode = !(node instanceof Element) || !node.hasAttribute(ATTR_YTDL_ITEM);
-        if (isSkippableNode) {
+        const isElementNode = isElement(node);
+        if (!isElementNode) {
           continue;
         }
 
-        const elParentRenderer = mutation.target instanceof Element
+        removeDetachedItemUis(node);
+        const isForeignNode = !node.hasAttribute(ATTR_YTDL_ITEM);
+        if (isForeignNode) {
+          continue;
+        }
+
+        const elParentRenderer = isElement(mutation.target)
           ? mutation.target.closest(ROW_SELECTOR)
           : null;
         const hasParentRenderer = !!elParentRenderer;

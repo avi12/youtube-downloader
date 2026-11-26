@@ -6,11 +6,12 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
-use ytdl_dev_hot::changes::classifier::read_script_outputs;
+pub(crate) use ytdl_dev_hot::changes::classifier::ContentScriptWorld;
+use ytdl_dev_hot::changes::classifier::{read_script_outputs, ManifestContentScript};
+pub(crate) use ytdl_dev_hot::changes::MANIFEST_FILE_NAME as MANIFEST_FILE;
 
 use crate::output::error::{OutputError, Result};
 
-pub(crate) const MANIFEST_FILE: &str = "manifest.json";
 const JS_EXTENSION: &str = ".js";
 const ALL_URLS_PATTERN: &str = "<all_urls>";
 const ANY_HOST: &str = "*";
@@ -18,38 +19,46 @@ const ANY_SUBDOMAIN_PREFIX: &str = "*.";
 const SCHEME_SEPARATOR: &str = "://";
 const PATTERN_SCHEMES: [&str; 7] = ["*", "http", "https", "ws", "wss", "file", "ftp"];
 const ANY_WEB_SCHEMES: [&str; 2] = ["http", "https"];
-const CONTENT_SCRIPTS_KEY: &str = "content_scripts";
-const GECKO_ID_POINTER: &str = "/browser_specific_settings/gecko/id";
 
-/// The JavaScript world a content script runs in; anything but `MAIN` is isolated.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(test, derive(ts_rs::TS), ts(export))]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-pub(crate) enum ContentScriptWorld {
-    /// The page's world.
-    Main,
-    /// The extension's own world.
-    #[default]
-    #[serde(other)]
-    Isolated,
+/// The manifest lists the dev server reads or appends to.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum ManifestList {
+    ContentScripts,
+    WebAccessibleResources,
+    Permissions,
 }
 
+impl ManifestList {
+    pub(crate) const fn key(self) -> &'static str {
+        match self {
+            Self::ContentScripts => "content_scripts",
+            Self::WebAccessibleResources => "web_accessible_resources",
+            Self::Permissions => "permissions",
+        }
+    }
+}
+
+/// The part of the manifest that names Firefox's add-on id.
 #[derive(Debug, Default, Deserialize)]
-#[serde(default)]
-struct RawContentScript {
-    matches: Vec<String>,
-    #[serde(rename = "js")]
-    scripts: Vec<String>,
-    css: Vec<String>,
-    world: ContentScriptWorld,
-    #[serde(rename = "all_frames")]
-    has_all_frames: bool,
+struct GeckoManifest {
+    browser_specific_settings: Option<BrowserSettings>,
+}
+
+#[derive(Debug, Deserialize)]
+struct BrowserSettings {
+    gecko: Option<GeckoSettings>,
+}
+
+#[derive(Debug, Deserialize)]
+struct GeckoSettings {
+    id: Option<String>,
 }
 
 /// One manifest content script with the WXT entrypoint name of each js file.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(test, derive(ts_rs::TS), ts(export))]
 #[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
 pub(crate) struct ContentScriptEntry {
     pub(crate) names: Vec<String>,
     pub(crate) world: ContentScriptWorld,
@@ -64,10 +73,26 @@ impl ContentScriptEntry {
     pub(crate) fn is_main_world(&self) -> bool {
         self.world == ContentScriptWorld::Main
     }
+
+    /// This entry with only the scripts `is_kept` accepts, and their names.
+    pub(crate) fn with_scripts(&self, is_kept: impl Fn(&str) -> bool) -> Self {
+        let (names, scripts) = self
+            .names
+            .iter()
+            .zip(&self.scripts)
+            .filter(|(_, file)| is_kept(file))
+            .map(|(name, file)| (name.clone(), file.clone()))
+            .unzip();
+        Self {
+            names,
+            scripts,
+            ..self.clone()
+        }
+    }
 }
 
-impl From<RawContentScript> for ContentScriptEntry {
-    fn from(raw: RawContentScript) -> Self {
+impl From<ManifestContentScript> for ContentScriptEntry {
+    fn from(raw: ManifestContentScript) -> Self {
         let names = raw
             .scripts
             .iter()
@@ -107,19 +132,34 @@ impl ExtensionManifest {
 
     /// Firefox's runtime id and RDP's add-on id; empty when the manifest has none.
     pub(crate) fn gecko_id(&self) -> String {
-        let id = self.0.pointer(GECKO_ID_POINTER).and_then(Value::as_str);
-        id.unwrap_or_default().to_owned()
+        let manifest = GeckoManifest::deserialize(&self.0).unwrap_or_default();
+        let gecko = manifest
+            .browser_specific_settings
+            .and_then(|settings| settings.gecko);
+        gecko.and_then(|settings| settings.id).unwrap_or_default()
+    }
+
+    /// The named list, created empty when missing; none when the key holds something else.
+    pub(crate) fn list_mut(&mut self, list: ManifestList) -> Result<Option<&mut Vec<Value>>> {
+        let object = self
+            .0
+            .as_object_mut()
+            .ok_or_else(|| OutputError::Invalid("manifest.json is not an object".to_owned()))?;
+        let value = object
+            .entry(list.key())
+            .or_insert_with(|| Value::Array(Vec::new()));
+        Ok(value.as_array_mut())
     }
 
     pub(crate) fn content_scripts_value(&self) -> Option<&Value> {
-        self.0.get(CONTENT_SCRIPTS_KEY)
+        self.0.get(ManifestList::ContentScripts.key())
     }
 
     pub(crate) fn list_content_scripts(&self) -> Result<Vec<ContentScriptEntry>> {
         let Some(value) = self.content_scripts_value() else {
             return Ok(Vec::new());
         };
-        let raw = Vec::<RawContentScript>::deserialize(value)?;
+        let raw = Vec::<ManifestContentScript>::deserialize(value)?;
         Ok(raw.into_iter().map(ContentScriptEntry::from).collect())
     }
 

@@ -1,30 +1,34 @@
-import type {
+import {
   AudioCodecPreference,
-  AudioTrackLanguageMode,
-  CaptionLanguageMode,
-  DownloadType,
+  type AudioTrackLanguageMode,
+  type CaptionLanguageMode,
+  type DownloadType,
   DynamicRangePreference,
-  MaxFrameRate,
-  PlaylistDownloadMode,
-  PlaylistOutputMode,
+  type MaxFrameRate,
+  type PlaylistDownloadMode,
+  type PlaylistOutputMode,
   VideoCodecPreference,
-  VideoQualityMode
+  type VideoQualityMode
 } from "./download-enums";
 import type { Prettify } from "./prettify";
-import type { AdaptiveFormatItem } from "./youtube";
+import { adaptiveFormatSchema } from "./youtube-format-types";
+import { z } from "@/lib/zod";
+import { tolerated, uncheckedArray } from "@/lib/zod-guard";
 
 export type VideoTabParams = Prettify<{
   videoId: string;
   tabId: number;
 }>;
 
-export type SabrConfig = Prettify<{
-  serverAbrStreamingUrl: string;
-  videoPlaybackUstreamerConfig: string;
-  clientName: number;
-  clientVersion: string;
-  formats: AdaptiveFormatItem[];
-}>;
+export const sabrConfigSchema = z.looseObject({
+  serverAbrStreamingUrl: z.string(),
+  videoPlaybackUstreamerConfig: z.string(),
+  clientName: z.number(),
+  clientVersion: z.string(),
+  formats: uncheckedArray(adaptiveFormatSchema)
+});
+
+export type SabrConfig = Prettify<z.infer<typeof sabrConfigSchema>>;
 
 export type SubtitleTrack = Prettify<{
   data: Uint8Array | null;
@@ -32,21 +36,30 @@ export type SubtitleTrack = Prettify<{
   languageCode: string;
 }>;
 
-export type VideoMetadata = Prettify<{
-  title: string;
-  artist: string;
-  albumArtist?: string;
-  album?: string;
-  genres?: string[];
-  date?: string;
-  thumbnailUrl?: string;
-  lengthSeconds?: number;
-  isMusic: boolean;
-}>;
+// Only what names the file is required: the rest is optional tagging that must never fail a download
+export const videoMetadataSchema = z.looseObject({
+  title: z.string(),
+  artist: z.string(),
+  albumArtist: tolerated(z.string()),
+  album: tolerated(z.string()),
+  genres: tolerated(z.array(z.string())),
+  date: tolerated(z.string()),
+  thumbnailUrl: tolerated(z.string()),
+  lengthSeconds: tolerated(z.number()),
+  isMusic: z.boolean()
+});
+
+export type VideoMetadata = Prettify<z.infer<typeof videoMetadataSchema>>;
 
 export type DownloadTypePreference = DownloadType;
 
-export type CodecPreferences = Prettify<Pick<Options, "videoCodec" | "audioCodec" | "dynamicRange">>;
+export const codecPreferencesSchema = z.looseObject({
+  videoCodec: z.enum(VideoCodecPreference),
+  audioCodec: z.enum(AudioCodecPreference),
+  dynamicRange: z.enum(DynamicRangePreference)
+});
+
+export type CodecPreferences = Prettify<z.infer<typeof codecPreferencesSchema>>;
 
 export type Options = Prettify<{
   ext: {

@@ -1,6 +1,6 @@
 //! A build output directory as content hashes plus its manifest.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::Path;
 
@@ -10,6 +10,7 @@ use ytdl_dev_hot::types::ContentHash;
 use crate::output::error::{OutputError, Result};
 use crate::output::manifest::{ExtensionManifest, MANIFEST_FILE};
 use crate::output::patches::hmr_names::HMR_OUT_SUBDIR;
+use crate::output::patches::is_swappable_output;
 
 /// Chrome writes its indexed DNR rulesets into the unpacked extension's own dir.
 const BROWSER_METADATA_DIR_PREFIX: &str = "_metadata/";
@@ -18,10 +19,14 @@ const BROWSER_METADATA_DIR_PREFIX: &str = "_metadata/";
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(test, derive(ts_rs::TS), ts(export))]
 #[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
 pub(crate) struct BuildSnapshot {
     pub(crate) file_hashes: BTreeMap<String, String>,
     #[cfg_attr(test, ts(type = "unknown"))]
     pub(crate) manifest: ExtensionManifest,
+    /// Page-world scripts built to replace their own run in an open tab.
+    #[serde(default)]
+    pub(crate) swappable_files: BTreeSet<String>,
 }
 
 fn is_snapshot_file(file: &str) -> bool {
@@ -66,9 +71,13 @@ pub(crate) fn take_build_snapshot(output_directory: &Path) -> Result<BuildSnapsh
     let files = list_output_files(output_directory)?;
     let has_manifest = files.iter().any(|file| file == MANIFEST_FILE);
     let mut file_hashes = BTreeMap::new();
+    let mut swappable_files = BTreeSet::new();
     for file in files {
         let path = output_directory.join(&file);
         let bytes = fs::read(&path).map_err(OutputError::with_path(&path))?;
+        if is_swappable_output(&bytes) {
+            swappable_files.insert(file.clone());
+        }
         file_hashes.insert(file, ContentHash::from_bytes(&bytes).as_str().to_owned());
     }
     let manifest = if has_manifest {
@@ -79,6 +88,7 @@ pub(crate) fn take_build_snapshot(output_directory: &Path) -> Result<BuildSnapsh
     Ok(BuildSnapshot {
         file_hashes,
         manifest,
+        swappable_files,
     })
 }
 

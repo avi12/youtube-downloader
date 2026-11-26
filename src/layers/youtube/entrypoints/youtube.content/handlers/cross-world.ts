@@ -6,7 +6,15 @@ import { registerDownloadProgressHandlers } from "./cross-world-download";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { CONTENT_OPTIONS } from "@/lib/ui/synced-stores.svelte";
-import { videoDataSchema } from "@/lib/youtube/schemas";
+import { isDownloadRequest, isVideoData } from "@/lib/youtube/schemas";
+import {
+  isNavigationPayload,
+  isPanelContentPayload,
+  isProxyFetchRequest,
+  isStreamDataPayload,
+  isStreamErrorPayload,
+  isVideoIdPayload
+} from "#youtube/lib/messaging/payload-guards";
 import { forwardSabrCredentialsWithRetry } from "#youtube/lib/youtube/sabr/credentials";
 
 interface RegisterCrossWorldHandlersParams {
@@ -15,10 +23,18 @@ interface RegisterCrossWorldHandlersParams {
 }
 export function registerCrossWorldHandlers({ isDownloadIframe, context }: RegisterCrossWorldHandlersParams) {
   crossWorldMessenger.onMessage(CrossWorldMessage.VideoData, async ({ data }) => {
+    if (!isVideoIdPayload(data)) {
+      return;
+    }
+
     await checkInterruptedDownload(data.videoId);
   });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.Navigation, ({ data }) => {
+    if (!isNavigationPayload(data)) {
+      return;
+    }
+
     const isMainFrame = !isDownloadIframe;
     if (isMainFrame) {
       handlePageChange({
@@ -31,33 +47,49 @@ export function registerCrossWorldHandlers({ isDownloadIframe, context }: Regist
   });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.PanelContentReady, ({ data }) => {
-    const parsed = videoDataSchema.safeParse(JSON.parse(data.videoDataJson));
-    if (!parsed.success) {
+    if (!isPanelContentPayload(data)) {
+      return;
+    }
+
+    const videoData: unknown = JSON.parse(data.videoDataJson);
+    if (!isVideoData(videoData)) {
       return;
     }
 
     mountPanelUi({
       context,
       contentId: data.contentId,
-      videoData: parsed.data
+      videoData
     });
   });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.StreamData, ({ data }) => {
+    if (!isStreamDataPayload(data)) {
+      return;
+    }
+
     handleStreamData(data).catch(() => {});
   });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.StreamError, ({ data }) => {
+    if (!isStreamErrorPayload(data)) {
+      return;
+    }
+
     handleStreamError(data);
   });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.DownloadViaIframe, ({ data }) => {
+    if (!isDownloadRequest(data)) {
+      return;
+    }
+
     sendMessage(MessageType.DownloadViaWatchPage, data).catch(() => {});
   });
 
   crossWorldMessenger.onMessage(
     CrossWorldMessage.ProxyFetch,
-    ({ data }) => sendMessage(MessageType.BackgroundProxyFetch, data)
+    ({ data }) => isProxyFetchRequest(data) ? sendMessage(MessageType.BackgroundProxyFetch, data) : null
   );
 
   crossWorldMessenger.onMessage(CrossWorldMessage.RequestOptions, () => ({

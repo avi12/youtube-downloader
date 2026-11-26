@@ -1,3 +1,4 @@
+import { isHtmlElement } from "@/lib/dom-guards";
 import panelFocusStyles from "./helpers/panel-focus.css?inline";
 import { applyInertTrap } from "@/lib/ui/inert-trap";
 
@@ -21,8 +22,7 @@ export function createFocusManager() {
   }
 
   function attach(elPanel: Element) {
-    const isHtmlElement = elPanel instanceof HTMLElement;
-    if (!isHtmlElement) {
+    if (!isHtmlElement(elPanel)) {
       return;
     }
 
@@ -37,7 +37,8 @@ export function createFocusManager() {
       elDropdownMenu.querySelector(POLYMER_INPUT)?.removeAttribute(ATTR_FOCUSED);
     }
 
-    const elDropdownRoot = elPanel.closest<HTMLElement>(POLYMER_IRON_DROPDOWN) ?? elPanel;
+    const elIronDropdown = elPanel.closest(POLYMER_IRON_DROPDOWN);
+    const elDropdownRoot = isHtmlElement(elIronDropdown) ? elIronDropdown : elPanel;
 
     elDropdownRoot.addEventListener(IRON_OVERLAY_OPENED_EVENT, event => {
       const isInnerOverlay = event.target !== elDropdownRoot;
@@ -47,8 +48,8 @@ export function createFocusManager() {
 
       removeInert = applyInertTrap(elDropdownRoot);
 
-      const elFirstControl = elPanel.querySelector<HTMLElement>(PANEL_FIRST_CONTROL_SELECTOR);
-      (elFirstControl ?? elPanel).focus();
+      const elFirstControl = elPanel.querySelector(PANEL_FIRST_CONTROL_SELECTOR);
+      (isHtmlElement(elFirstControl) ? elFirstControl : elPanel).focus();
 
       elDropdownRoot.addEventListener(IRON_OVERLAY_CLOSED_EVENT, handleOverlayClosed);
     });

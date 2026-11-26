@@ -1,7 +1,17 @@
-import type { DownloadType, ProgressType } from "./download-enums";
+import { DownloadType, type ProgressType } from "./download-enums";
 import type { Prettify } from "./prettify";
-import type { CodecPreferences, SabrConfig, SubtitleTrack, VideoMetadata } from "./settings-types";
-import type { AdaptiveFormatItem, CaptionTrack, PlayerResponse, TranslationLanguage } from "./youtube";
+import {
+  codecPreferencesSchema,
+  type SabrConfig,
+  sabrConfigSchema,
+  type SubtitleTrack,
+  type VideoMetadata,
+  videoMetadataSchema
+} from "./settings-types";
+import { adaptiveFormatSchema, captionTrackSchema, translationLanguageSchema } from "./youtube-format-types";
+import { playerResponseSchema } from "./youtube-player-response";
+import { z } from "@/lib/zod";
+import { tolerated, uncheckedArray } from "@/lib/zod-guard";
 
 export type DownloadProgressEntry = Prettify<{
   isDownloading: boolean;
@@ -18,41 +28,43 @@ export type DownloadProgressEntry = Prettify<{
   bytesPerSecond?: number;
 }>;
 
-export type DownloadRequest = Prettify<{
-  type: DownloadType;
-  videoId: string;
-  videoItag: number;
-  audioItag: number;
-  audioTrackId?: string;
-  codecPreferences?: CodecPreferences;
-  selectedCaptionVssId?: string;
-  filenameOutput: string;
-  sabrConfig?: SabrConfig | null;
-  downloadExtras?: boolean;
-  downloadExtraCaptions?: boolean;
-  includeAutoDubbing?: boolean;
-  isIframeFallback?: boolean;
-  isDefaultFormat?: boolean;
-  playlistId?: string;
-  playlistTitle?: string;
-  playlistTotalCount?: number;
-  poToken?: string;
-  sabrUrl?: string;
-  videoFormat?: AdaptiveFormatItem | null;
-  audioFormat?: AdaptiveFormatItem | null;
-  additionalAudioFormats?: AdaptiveFormatItem[];
-  primaryAudioLabel?: string;
-  primaryAudioLanguageCode?: string;
-  captionTracks?: CaptionTrack[];
-  captionVttData?: (string | null)[];
-  metadata?: VideoMetadata | null;
-  resolvedVideoUrl?: string | null;
-  resolvedAudioUrl?: string | null;
-  resolvedExtraAudioUrls?: (string | null)[];
-  progressiveUrl?: string | null;
-  originTabId?: number;
-  sourceUrl?: string;
-}>;
+export const downloadRequestSchema = z.looseObject({
+  type: z.enum(DownloadType),
+  videoId: z.string(),
+  videoItag: z.number(),
+  audioItag: z.number(),
+  audioTrackId: tolerated(z.string()),
+  codecPreferences: tolerated(codecPreferencesSchema),
+  selectedCaptionVssId: tolerated(z.string()),
+  filenameOutput: z.string(),
+  sabrConfig: tolerated(sabrConfigSchema.nullable()),
+  downloadExtras: tolerated(z.boolean()),
+  downloadExtraCaptions: tolerated(z.boolean()),
+  includeAutoDubbing: tolerated(z.boolean()),
+  isIframeFallback: tolerated(z.boolean()),
+  isDefaultFormat: tolerated(z.boolean()),
+  playlistId: tolerated(z.string()),
+  playlistTitle: tolerated(z.string()),
+  playlistTotalCount: tolerated(z.number()),
+  poToken: tolerated(z.string()),
+  sabrUrl: tolerated(z.string()),
+  videoFormat: tolerated(adaptiveFormatSchema.nullable()),
+  audioFormat: tolerated(adaptiveFormatSchema.nullable()),
+  additionalAudioFormats: tolerated(z.array(adaptiveFormatSchema)),
+  primaryAudioLabel: tolerated(z.string()),
+  primaryAudioLanguageCode: tolerated(z.string()),
+  captionTracks: tolerated(z.array(captionTrackSchema)),
+  captionVttData: tolerated(z.array(z.string().nullable())),
+  metadata: tolerated(videoMetadataSchema.nullable()),
+  resolvedVideoUrl: tolerated(z.string().nullable()),
+  resolvedAudioUrl: tolerated(z.string().nullable()),
+  resolvedExtraAudioUrls: tolerated(z.array(z.string().nullable())),
+  progressiveUrl: tolerated(z.string().nullable()),
+  originTabId: tolerated(z.number()),
+  sourceUrl: tolerated(z.string())
+});
+
+export type DownloadRequest = Prettify<z.infer<typeof downloadRequestSchema>>;
 
 export type StreamData = Prettify<{
   type: DownloadType;
@@ -85,20 +97,23 @@ export type ProcessStreamData = Prettify<StreamData & {
   sourceUrl?: string;
 }>;
 
-export type VideoData = Prettify<{
-  playerResponse: PlayerResponse;
-  videoId: string;
-  title: string;
-  isMusic: boolean;
-  isDownloadable: boolean;
-  isLive: boolean;
-  videoFormats: AdaptiveFormatItem[];
+export const videoDataSchema = z.looseObject({
+  // The panel payload drops it to keep the cross-world message small
+  playerResponse: tolerated(playerResponseSchema),
+  videoId: z.string(),
+  title: z.string(),
+  isMusic: z.boolean(),
+  isDownloadable: z.boolean(),
+  isLive: z.boolean(),
+  videoFormats: uncheckedArray(adaptiveFormatSchema),
   // Every codec variant per height; videoFormats keeps one per height for the quality list
-  videoFormatVariants?: AdaptiveFormatItem[];
-  audioFormats: AdaptiveFormatItem[];
-  captionTracks: CaptionTrack[];
-  sourceCaptionLanguageCode?: string;
-  translationLanguages: TranslationLanguage[];
-  sabrConfig: SabrConfig | null;
-  progressiveUrl: string | null;
-}>;
+  videoFormatVariants: tolerated(z.array(adaptiveFormatSchema)),
+  audioFormats: uncheckedArray(adaptiveFormatSchema),
+  captionTracks: uncheckedArray(captionTrackSchema),
+  sourceCaptionLanguageCode: tolerated(z.string()),
+  translationLanguages: uncheckedArray(translationLanguageSchema),
+  sabrConfig: z.custom<SabrConfig | null>(value => typeof value === "object"),
+  progressiveUrl: z.string().nullable()
+});
+
+export type VideoData = Prettify<z.infer<typeof videoDataSchema>>;

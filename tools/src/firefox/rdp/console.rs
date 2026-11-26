@@ -3,16 +3,18 @@
 use std::time::Duration;
 
 use clap::Args;
-use serde::Deserialize;
-use serde_json::{json, Value};
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use tokio::time::Instant;
+use ytdl_dev_hot::driver::rdp::message::{
+    PacketKind, RequestKind, ResourceType, WatchTargetsParameters,
+};
 
-use crate::firefox::rdp::client::{find_rdp_port, Rdp, RequestKind};
+use crate::firefox::rdp::client::{find_rdp_port, Rdp};
 use crate::firefox::Result;
 
 const DEFAULT_DURATION_MS: u64 = 30_000;
 const MARKER: &str = "ytdl";
-const RESOURCES_AVAILABLE: &str = "resources-available-array";
 const REPLY_TIMEOUT: Duration = Duration::from_secs(5);
 
 /// Arguments of `addon-console`.
@@ -23,24 +25,14 @@ pub(crate) struct ConsoleArgs {
     duration_ms: u64,
 }
 
-/// The resource types the console watcher is asked for.
-#[derive(Debug, Clone, Copy, serde::Serialize)]
-enum WatchedResource {
-    #[serde(rename = "console-message")]
-    ConsoleMessage,
-    #[serde(rename = "error-message")]
-    ErrorMessage,
-}
+/// The resources the console watcher is asked for.
+const WATCHED_RESOURCES: [ResourceType; 2] =
+    [ResourceType::ConsoleMessage, ResourceType::ErrorMessage];
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Deserialize)]
-enum ResourceType {
-    #[serde(rename = "console-message")]
-    ConsoleMessage,
-    #[serde(rename = "error-message")]
-    ErrorMessage,
-    #[default]
-    #[serde(other)]
-    Other,
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct WatchResourcesParameters {
+    resource_types: [ResourceType; 2],
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -48,6 +40,7 @@ enum ResourceType {
 struct Resource {
     #[serde(rename = "resourceType")]
     kind: ResourceType,
+    /// What the page logged: arbitrary values.
     arguments: Vec<Value>,
     level: Option<String>,
     page_error: Option<PageError>,
@@ -64,7 +57,7 @@ struct PageError {
 #[serde(default)]
 struct ResourcesPacket {
     #[serde(rename = "type")]
-    kind: Option<String>,
+    kind: Option<PacketKind>,
     array: Vec<(String, Vec<Resource>)>,
 }
 
@@ -103,12 +96,16 @@ pub(in crate::firefox) async fn run(args: ConsoleArgs) -> Result<()> {
     let port = find_rdp_port().await?;
     let mut rdp = Rdp::connect(port, REPLY_TIMEOUT).await?;
     let watcher = rdp.addon_watcher().await?;
-    let frames = json!({"targetType": "frame"});
-    rdp.request(&watcher, RequestKind::WatchTargets, frames)
-        .await?;
-    let resources =
-        json!({"resourceTypes": [WatchedResource::ConsoleMessage, WatchedResource::ErrorMessage]});
-    rdp.request(&watcher, RequestKind::WatchResources, resources)
+    rdp.request(
+        &watcher,
+        RequestKind::WatchTargets,
+        &WatchTargetsParameters::FRAMES,
+    )
+    .await?;
+    let resources = WatchResourcesParameters {
+        resource_types: WATCHED_RESOURCES,
+    };
+    rdp.request(&watcher, RequestKind::WatchResources, &resources)
         .await?;
 
     let duration = Duration::from_millis(args.duration_ms);
@@ -121,7 +118,7 @@ pub(in crate::firefox) async fn run(args: ConsoleArgs) -> Result<()> {
         let Ok(packet) = message.parse::<ResourcesPacket>() else {
             continue;
         };
-        let is_other_packet = packet.kind.as_deref() != Some(RESOURCES_AVAILABLE);
+        let is_other_packet = packet.kind != Some(PacketKind::ResourcesAvailable);
         if is_other_packet {
             continue;
         }
@@ -139,6 +136,8 @@ pub(in crate::firefox) async fn run(args: ConsoleArgs) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
+    use serde_json::json;
+
     use crate::firefox::rdp::console::*;
 
     fn parse(value: Value) -> Resource {

@@ -32,6 +32,7 @@ pub(super) struct WorkerJob<'job> {
 /// What the worker asks of the Rust side while it builds.
 #[derive(Debug, Deserialize)]
 #[serde(tag = "op", rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
 pub(super) enum TransformRequest {
     /// The `$state` rewrite of a component's instance script.
     PreserveLocal { code: String, key: String },
@@ -44,6 +45,7 @@ pub(super) enum TransformRequest {
 /// One line the worker writes.
 #[derive(Debug, Deserialize)]
 #[serde(tag = "type", rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
 pub(super) enum WorkerMessage {
     /// A question the worker waits on.
     Request { id: u64, request: TransformRequest },

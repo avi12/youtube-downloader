@@ -1,6 +1,7 @@
 import { required } from "@/lib/required";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import type { CodecPreferences, DownloadType, Prettify, TpYtIronDropdownElement } from "@/types";
+import { isFilenameChangedPayload } from "#youtube/lib/messaging/payload-guards";
 
 export type MessageEffectsSetters = Prettify<{
   setDefaultFilename(value: string): void;
@@ -32,6 +33,10 @@ export function createMessageEffects({
   }));
 
   $effect(() => crossWorldMessenger.onMessage(CrossWorldMessage.FilenameChanged, ({ data }) => {
+    if (!isFilenameChangedPayload(data)) {
+      return;
+    }
+
     setters.setDefaultFilename(data.filename);
     setters.setDefaultQuality(data.quality ?? "");
 

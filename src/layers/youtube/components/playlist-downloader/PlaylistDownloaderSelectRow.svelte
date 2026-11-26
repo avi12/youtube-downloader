@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isHtmlElement } from "@/lib/dom-guards";
   import type { createPlaylistActionButtons } from "./PlaylistDownloader.action-buttons.svelte";
   import type { createPlaylistDownloaderState } from "./PlaylistDownloader.state.svelte";
   import PlaylistScrollSyncToggle from "./PlaylistScrollSyncToggle.svelte";
@@ -26,8 +27,7 @@
   let elSelectAllCheckbox = $state<HTMLElement | null>(null);
 
   function attachSelectAllCheckbox(elCheckbox: Element) {
-    const isHtmlElement = elCheckbox instanceof HTMLElement;
-    if (isHtmlElement) {
+    if (isHtmlElement(elCheckbox)) {
       elSelectAllCheckbox = elCheckbox;
     }
   }
@@ -55,8 +55,7 @@
     checked={(playlist.isAllSelected || isIndeterminate) ? "" : undefined}
     disabled={isSelectAllDisabled ? "" : undefined}
     onchange={e => {
-      const isHtmlElement = e.target instanceof HTMLElement;
-      if (!isHtmlElement) {
+      if (!isHtmlElement(e.target)) {
         return;
       }
 

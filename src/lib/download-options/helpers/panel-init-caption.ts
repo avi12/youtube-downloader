@@ -1,8 +1,6 @@
 import { CAPTION_KIND_ASR } from "./audio-language-helpers";
 import { IS_WATCH_PAGE } from "./watch-page";
-import { ACTIVE_CAPTION_ATTR } from "@/lib/youtube/movie-player";
-import type { MoviePlayerElement } from "@/lib/youtube/movie-player";
-import { playerCaptionTrackDataSchema } from "@/lib/youtube/schemas";
+import { ACTIVE_CAPTION_ATTR, getMoviePlayer, isPlayerCaptionTrackData } from "@/lib/youtube/movie-player";
 import {
   findOriginalAudioFormat,
   normalizeLanguageCode,
@@ -19,17 +17,15 @@ import {
   type VideoData
 } from "@/types";
 
-const MOVIE_PLAYER_SELECTOR = "#movie_player";
-
 export function getActivePlayerCaption() {
-  const elPlayer = document.querySelector<MoviePlayerElement>(MOVIE_PLAYER_SELECTOR);
-  const stored = elPlayer?.getAttribute(ACTIVE_CAPTION_ATTR);
+  const stored = getMoviePlayer()?.getAttribute(ACTIVE_CAPTION_ATTR);
   if (!stored) {
     return null;
   }
 
   try {
-    return playerCaptionTrackDataSchema.parse(JSON.parse(stored));
+    const track: unknown = JSON.parse(stored);
+    return isPlayerCaptionTrackData(track) ? track : null;
   } catch {
     return null;
   }

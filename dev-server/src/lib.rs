@@ -50,6 +50,7 @@
 
 pub mod bridge;
 pub mod changes;
+pub mod downloads;
 pub mod driver;
 pub mod error;
 pub mod hmr_server;

@@ -1,16 +1,15 @@
 import { botGuardVmEntrySchema, trustedResourceUrlSchema } from "@/lib/youtube/schemas";
+import { z } from "@/lib/zod";
+import { createGuard } from "@/lib/zod-guard";
 import type { Prettify } from "@/types";
+import { isFunction, isString } from "#youtube/lib/value-guards";
 
 const VM_POLL_INTERVAL_MS = 500;
 const VM_POLL_MAX_ATTEMPTS = 60;
 
-interface BotGuardVmEntry {
-  a: (...args: unknown[]) => [((inputs: unknown[]) => string | null)?] | null | undefined;
-}
-
-function isBotGuardVmEntry(value: unknown): value is BotGuardVmEntry {
-  return botGuardVmEntrySchema.safeParse(value).success;
-}
+const isBotGuardVmEntry = createGuard(botGuardVmEntrySchema);
+const isTrustedResourceUrl = createGuard(trustedResourceUrlSchema);
+const isSnapshotResponse = createGuard(z.string().min(1));
 
 export function getBotGuardVm(name: string) {
   const globals: Record<string, unknown> = globalThis;
@@ -28,11 +27,17 @@ async function loadInterpreterScript(interpreterUrl: string) {
   });
 }
 
+function readInterpreterUrl(value: unknown) {
+  if (isString(value)) {
+    return value;
+  }
+
+  return isTrustedResourceUrl(value) ? value.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue : undefined;
+}
+
 type EnsureBotGuardVmParams = Prettify<{
   globalName: string;
-  interpreterUrlRaw: string | {
-    privateDoNotAccessOrElseTrustedResourceUrlWrappedValue: string;
-  } | undefined;
+  interpreterUrlRaw: unknown;
 }>;
 export async function ensureBotGuardVm({ globalName, interpreterUrlRaw }: EnsureBotGuardVmParams) {
   const isVmAlreadyLoaded = Boolean(getBotGuardVm(globalName));
@@ -40,10 +45,7 @@ export async function ensureBotGuardVm({ globalName, interpreterUrlRaw }: Ensure
     return;
   }
 
-  const interpreterUrl = typeof interpreterUrlRaw === "string"
-    ? interpreterUrlRaw
-    : trustedResourceUrlSchema.safeParse(interpreterUrlRaw).data
-      ?.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue;
+  const interpreterUrl = readInterpreterUrl(interpreterUrlRaw);
   if (interpreterUrl) {
     await loadInterpreterScript(interpreterUrl);
   }
@@ -61,21 +63,19 @@ export async function ensureBotGuardVm({ globalName, interpreterUrlRaw }: Ensure
 export type SignalFunction = (input: Uint8Array) => Promise<(input: Uint8Array) => Promise<Uint8Array>>;
 
 type InitBotGuardVmParams = Prettify<{
-  botGuardEntry: BotGuardVmEntry;
+  botGuardEntry: z.infer<typeof botGuardVmEntrySchema>;
   program: string;
   webPoSignalOutput: SignalFunction[];
 }>;
 export function initBotGuardVm({ botGuardEntry, program, webPoSignalOutput }: InitBotGuardVmParams) {
   const initResult = botGuardEntry.a(program, () => {}, true, undefined, () => {}, [[], []]);
   const snapshotFunction = initResult?.[0];
-  const isSnapshotMissing = typeof snapshotFunction !== "function";
-  if (isSnapshotMissing) {
+  if (!isFunction(snapshotFunction)) {
     throw new Error("BotGuard snapshot function not available");
   }
 
   const snapshotResponse = snapshotFunction.call(null, [undefined, undefined, webPoSignalOutput, undefined]);
-  const isResponseEmpty = !snapshotResponse;
-  if (isResponseEmpty) {
+  if (!isSnapshotResponse(snapshotResponse)) {
     throw new Error("Empty snapshot response");
   }
 

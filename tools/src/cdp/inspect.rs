@@ -8,7 +8,7 @@ use ytdl_dev_hot::driver::cdp::CdpTarget;
 
 use crate::cdp::script;
 use crate::cdp::wire::{
-    evaluate_on, open_target, print_json, Method, PortArg, Result, Targets, Wanted,
+    evaluate_on, open_target, print_json, Method, NoParameters, PortArg, Result, Targets, Wanted,
 };
 
 const URL_COLUMN_CHARS: usize = 120;
@@ -99,7 +99,7 @@ async fn downloads(port: PortArg) -> Result<()> {
         return Ok(());
     };
     let mut session = open_target(target).await?;
-    session.call(Method::PageReload, json!({})).await?;
+    session.call(Method::PageReload, &NoParameters {}).await?;
     tokio::time::sleep(DOWNLOADS_RELOAD_SETTLE).await;
     let outcome = session.evaluate(script::DOWNLOAD_ITEMS_FULL).await;
     session.close().await;

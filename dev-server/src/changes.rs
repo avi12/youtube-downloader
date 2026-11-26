@@ -11,7 +11,8 @@ pub mod watcher;
 pub mod workspace;
 
 /// The extension manifest's file name inside the build output.
-pub(crate) const MANIFEST_FILE_NAME: &str = "manifest.json";
+/// The manifest file of a build output.
+pub const MANIFEST_FILE_NAME: &str = "manifest.json";
 
 /// File bytes, `None` when the file does not exist. Blocking.
 fn read_optional(path: &Path) -> Result<Option<Vec<u8>>> {

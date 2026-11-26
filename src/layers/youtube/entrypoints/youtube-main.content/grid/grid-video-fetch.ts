@@ -1,7 +1,7 @@
 import { buildAndDispatchVideoData } from "@/layers/youtube/entrypoints/youtube-main.content/video/capture-dispatch";
 import { readYtcfg } from "@/layers/youtube/entrypoints/youtube-main.content/video/video-data";
 import { InnertubeClientName } from "@/lib/youtube/innertube";
-import { playerResponseSchema } from "@/lib/youtube/schemas";
+import { isPlayerResponse } from "@/lib/youtube/schemas";
 import { extractPlayerResponseFromHtml } from "@/lib/youtube/youtube-api";
 import { buildWatchUrl } from "@/lib/youtube/youtube-url";
 import { getYtcfg, YtcfgKey } from "@/lib/youtube/ytcfg";
@@ -55,8 +55,8 @@ async function fetchPlayerResponseViaApi(videoId: string) {
     }
   );
 
-  const parsed = playerResponseSchema.safeParse(await response.json());
-  return parsed.success ? withVideoId(parsed.data) : null;
+  const data: unknown = await response.json();
+  return isPlayerResponse(data) ? withVideoId(data) : null;
 }
 
 async function fetchPlayerResponseViaHtml(videoId: string) {

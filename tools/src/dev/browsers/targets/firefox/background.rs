@@ -4,12 +4,16 @@
 
 use std::time::Duration;
 
-use serde_json::{json, Value};
+use serde_json::Value;
+use ytdl_dev_hot::driver::rdp::message::{
+    wake_background_script, ActorId, EvaluateParameters, GetProcessParameters,
+    GetWatcherParameters, NoParameters, PacketKind, RequestKind, WatchTargetsParameters,
+};
 use ytdl_dev_hot::types::Port;
 
 use crate::dev::browsers::error::{BrowserError, Result};
-use crate::firefox::rdp::client::{Rdp, RequestKind, ROOT_ACTOR, TARGET_AVAILABLE_FORM};
-use crate::firefox::rdp::replies::{ProcessReply, TargetReply, WatcherEvent};
+use crate::firefox::rdp::client::Rdp;
+use crate::firefox::rdp::replies::{EvaluationReply, ProcessReply, TargetReply, WatcherEvent};
 
 /// How long one reply of the debugger server may take.
 const REPLY_TIMEOUT: Duration = Duration::from_secs(9);
@@ -22,7 +26,6 @@ const SCRIPT_COMPLETED: &str = "completed";
 /// The page Firefox wraps an MV3 `background.scripts` list in; other extension frames (the
 /// offscreen iframe) surface on the same watcher.
 const GENERATED_BACKGROUND_PAGE: &str = "_generated_background_page.html";
-const PARENT_PROCESS_ID: u32 = 0;
 
 /// Which add-on's background to reach, and where.
 #[derive(Debug, Clone, Copy)]
@@ -33,12 +36,12 @@ pub(super) struct BackgroundAddress<'a> {
 }
 
 /// The parent process's console evaluates privileged code.
-async fn find_parent_process_console(rdp: &mut Rdp) -> Result<Option<String>> {
+async fn find_parent_process_console(rdp: &mut Rdp) -> Result<Option<ActorId>> {
     let process = rdp
         .request(
-            ROOT_ACTOR,
+            &ActorId::root(),
             RequestKind::GetProcess,
-            json!({ "id": PARENT_PROCESS_ID }),
+            &GetProcessParameters::PARENT,
         )
         .await?;
     let descriptor = process
@@ -49,7 +52,7 @@ async fn find_parent_process_console(rdp: &mut Rdp) -> Result<Option<String>> {
         return Ok(None);
     };
     let reply = rdp
-        .request(&actor, RequestKind::GetTarget, json!({}))
+        .request(&actor, RequestKind::GetTarget, &NoParameters {})
         .await?;
     let target: TargetReply = reply.parse()?;
     Ok([target.process, target.frame]
@@ -66,12 +69,11 @@ async fn wake_extension_background(rdp: &mut Rdp, extension_id: &str) {
     let Ok(Some(console)) = find_parent_process_console(rdp).await else {
         return;
     };
-    let id = Value::from(extension_id);
-    let text = format!("WebExtensionPolicy.getByID({id})?.extension.wakeupBackground()");
+    let text = wake_background_script(extension_id);
     rdp.send(
         &console,
         RequestKind::EvaluateJsAsync,
-        json!({ "text": text }),
+        &EvaluateParameters::new(&text),
     )
     .await
     .ok();
@@ -79,13 +81,13 @@ async fn wake_extension_background(rdp: &mut Rdp, extension_id: &str) {
 
 async fn wait_for_background_frame_console(
     rdp: &mut Rdp,
-    watcher: &str,
+    watcher: &ActorId,
     page_url: &str,
     limit: Duration,
-) -> Option<String> {
+) -> Option<ActorId> {
     let announcement = rdp
         .wait_matching(watcher, limit, |message| {
-            message.type_is(TARGET_AVAILABLE_FORM)
+            message.kind == Some(PacketKind::TargetAvailable)
                 && message
                     .parse::<WatcherEvent>()
                     .ok()
@@ -102,7 +104,10 @@ async fn wait_for_background_frame_console(
 }
 
 /// The watcher of the add-on and the URL of its generated background page.
-async fn find_addon_watcher(rdp: &mut Rdp, extension_id: &str) -> Result<Option<(String, String)>> {
+async fn find_addon_watcher(
+    rdp: &mut Rdp,
+    extension_id: &str,
+) -> Result<Option<(ActorId, String)>> {
     let addons = rdp.addons().await?;
     let found = addons
         .into_iter()
@@ -115,7 +120,7 @@ async fn find_addon_watcher(rdp: &mut Rdp, extension_id: &str) -> Result<Option<
         .request(
             &actor,
             RequestKind::GetWatcher,
-            json!({ "isServerTargetSwitchingEnabled": true }),
+            &GetWatcherParameters::SWITCHING_TARGETS,
         )
         .await?;
     let Some(watcher_actor) = reply.parse::<WatcherEvent>()?.actor else {
@@ -130,14 +135,14 @@ async fn find_addon_watcher(rdp: &mut Rdp, extension_id: &str) -> Result<Option<
     )))
 }
 
-async fn find_background_console(rdp: &mut Rdp, extension_id: &str) -> Result<Option<String>> {
+async fn find_background_console(rdp: &mut Rdp, extension_id: &str) -> Result<Option<ActorId>> {
     let Some((watcher, page_url)) = find_addon_watcher(rdp, extension_id).await? else {
         return Ok(None);
     };
     rdp.send(
         &watcher,
         RequestKind::WatchTargets,
-        json!({ "targetType": "frame" }),
+        &WatchTargetsParameters::FRAMES,
     )
     .await?;
     if let Some(console) =
@@ -153,7 +158,7 @@ async fn find_background_console(rdp: &mut Rdp, extension_id: &str) -> Result<Op
 /// top-level await input; a whole script goes without it, so its `var`s land on the global.
 async fn evaluate_in_console(
     rdp: &mut Rdp,
-    console: &str,
+    console: &ActorId,
     text: &str,
     is_awaited: bool,
 ) -> Result<String> {
@@ -162,12 +167,15 @@ async fn evaluate_in_console(
     } else {
         rdp.evaluate(console, text, REPLY_TIMEOUT).await?
     };
-    match reply.body.get("result") {
-        Some(Value::String(result)) => Ok(result.clone()),
+    let EvaluationReply {
+        result,
+        exception_message,
+    } = reply.parse()?;
+    match result {
+        Some(Value::String(result)) => Ok(result),
         _ => Err(BrowserError::Exception(
-            reply
-                .body
-                .get("exceptionMessage")
+            exception_message
+                .as_ref()
                 .and_then(Value::as_str)
                 .unwrap_or("the background returned no result")
                 .to_owned(),

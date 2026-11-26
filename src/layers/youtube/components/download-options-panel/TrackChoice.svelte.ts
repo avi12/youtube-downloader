@@ -1,3 +1,4 @@
+import { isHtmlElement } from "@/lib/dom-guards";
 import { required } from "@/lib/required";
 import { buildTrackButtons, refreshButton } from "./TrackChoice.button-data";
 import { onButtonClick } from "@/lib/messaging/cross-world-messenger";
@@ -42,8 +43,7 @@ export function createTrackChoiceState(params: TrackChoiceParams) {
 
   function createAttacher(button: (typeof buttons)[number]) {
     return (elTarget: Element) => {
-      const isHtmlElement = elTarget instanceof HTMLElement;
-      if (!isHtmlElement) {
+      if (!isHtmlElement(elTarget)) {
         return;
       }
 

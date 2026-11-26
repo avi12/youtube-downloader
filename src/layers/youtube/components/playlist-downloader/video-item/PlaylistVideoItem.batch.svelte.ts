@@ -10,7 +10,6 @@ export function createBatchState(params: {
   const isIndividuallyCanceled = $derived(batchCanceledIds.has(params.videoId));
 
   const isActiveInBatch = $derived(batchDownloadStatus.isRunning && isInBatch && !isIndividuallyCanceled);
-  const isCheckboxIndeterminate = $derived(isActiveInBatch && params.itemState.isDownloading);
   const isDownloadingAndNotDone = $derived(params.itemState.isDownloading && !params.itemState.isLocallyDone);
   const isCheckboxDisabled = $derived(batchDownloadStatus.isRunning || isDownloadingAndNotDone);
   const isZipBatchActive = $derived(isActiveInBatch && batchDownloadStatus.isZipBatch);
@@ -37,7 +36,7 @@ export function createBatchState(params: {
       return isInBatch;
     },
     get isCheckboxIndeterminate() {
-      return isCheckboxIndeterminate;
+      return isDownloadingAndNotDone;
     },
     get isCheckboxDisabled() {
       return isCheckboxDisabled;

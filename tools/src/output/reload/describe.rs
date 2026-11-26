@@ -9,6 +9,7 @@ use crate::output::reload::plan::{BackgroundSwapPlan, ExtensionReloadPlan, PageR
 /// A tab reloaded because in-place re-injection failed.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(test, derive(ts_rs::TS), ts(export))]
+#[serde(deny_unknown_fields)]
 pub(crate) struct FailedInjection {
     pub(crate) url: String,
     pub(crate) message: String,
@@ -18,9 +19,13 @@ pub(crate) struct FailedInjection {
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(test, derive(ts_rs::TS), ts(export))]
 #[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
 pub(crate) struct TabUpdateResult {
     pub(crate) stale_tab_count: usize,
     pub(crate) reinjected_tab_count: usize,
+    /// Tabs whose swappable MAIN-world scripts replaced their earlier run.
+    #[serde(default)]
+    pub(crate) swapped_tab_count: usize,
     /// One-shot MAIN-to-ISOLATED messages re-sent to the fresh scripts.
     pub(crate) replayed_handshake_count: usize,
     pub(crate) failed_injections: Vec<FailedInjection>,
@@ -36,6 +41,9 @@ pub(crate) enum PageAction {
     /// A document the background owns; it recreates it on next use.
     #[serde(rename = "closed - recreated on next use")]
     Closed,
+    /// A document with downloads running in it; it closes once they end.
+    #[serde(rename = "busy downloading - closes when downloads end")]
+    Deferred,
 }
 
 impl PageAction {
@@ -43,6 +51,7 @@ impl PageAction {
         match self {
             Self::Reloaded => "reloaded",
             Self::Closed => "closed - recreated on next use",
+            Self::Deferred => "busy downloading - closes when downloads end",
         }
     }
 }
@@ -50,6 +59,7 @@ impl PageAction {
 /// One refreshed extension page.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(test, derive(ts_rs::TS), ts(export))]
+#[serde(deny_unknown_fields)]
 pub(crate) struct RefreshedPage {
     pub(crate) name: String,
     pub(crate) action: PageAction,
@@ -72,6 +82,14 @@ pub(crate) fn describe_extension_reload(
         let count = result.reinjected_tab_count;
         outcomes.push(format!(
             "hot-swapped content script {names} in {count} tab(s), page state kept"
+        ));
+    }
+    let has_swapped_tabs = result.swapped_tab_count > 0;
+    if has_swapped_tabs {
+        let names = describe_content_scripts(&plan.swappable_main_world_scripts);
+        let count = result.swapped_tab_count;
+        outcomes.push(format!(
+            "swapped MAIN-world content script {names} in {count} tab(s), no tab reload"
         ));
     }
     let has_replayed_handshakes = result.replayed_handshake_count > 0;
@@ -107,6 +125,13 @@ pub(crate) fn describe_extension_reload(
     }
     let reasons = plan.reasons.join("; ");
     format!("Reloaded extension ({reasons}) - {}", outcomes.join(" - "))
+}
+
+pub(crate) fn describe_postponed_reload(plan: &ExtensionReloadPlan) -> String {
+    let reasons = plan.reasons.join("; ");
+    format!(
+        "Postponed the extension reload ({reasons}) - downloads are running, it applies once they end"
+    )
 }
 
 pub(crate) fn describe_page_refresh(
@@ -158,6 +183,7 @@ mod tests {
         ExtensionReloadPlan {
             reasons: vec!["a changed".to_owned()],
             main_world_content_scripts: Vec::new(),
+            swappable_main_world_scripts: Vec::new(),
             isolated_content_scripts: Vec::new(),
             changed_isolated_style_sheets: Vec::new(),
         }
@@ -202,5 +228,21 @@ mod tests {
             describe_page_refresh(&plan, &pages),
             "popup, mux-worker.js changed - popup reloaded; extension and YouTube tabs untouched"
         );
+    }
+}
+
+#[cfg(test)]
+mod parsing_tests {
+    use crate::output::reload::describe::*;
+
+    #[test]
+    fn the_tab_update_snippet_result_parses_strictly() -> serde_json::Result<()> {
+        let reply = r#"{"staleTabCount":1,"reinjectedTabCount":2,"swappedTabCount":0,
+            "replayedHandshakeCount":3,"failedInjections":[{"url":"u","message":"m"}]}"#;
+        let result: TabUpdateResult = serde_json::from_str(reply)?;
+        assert_eq!(result.failed_injections.len(), 1);
+        let unknown = r#"{"name":"popup","action":"reloaded","extra":1}"#;
+        assert!(serde_json::from_str::<RefreshedPage>(unknown).is_err());
+        Ok(())
     }
 }
