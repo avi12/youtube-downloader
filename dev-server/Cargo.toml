@@ -49,7 +49,7 @@ lto = true
 opt-level = 3
 strip = true
 
-# avi12-lint:begin rust-config (generated from rust-config-avi12; edit avi12-rust.local.toml)
+# avi12-lint:begin rust-config (generated from lint-config rust-config; edit avi12-rust.local.toml)
 [lints.rust]
 # warnings-are-errors, no-suppression, naming-case, no-unused, no-dead-code
 unsafe_code = "forbid"

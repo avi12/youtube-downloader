@@ -1,8 +1,8 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "extends": [
-    "./node_modules/oxlint-config-avi12/wxt.json",
-    "./node_modules/oxlint-plugin-naming/preset.json"
+    "./node_modules/lint-config/packages/oxlint-config/wxt.json",
+    "./node_modules/lint-config/packages/oxlint-plugin-naming/preset.json"
   ],
   "rules": {
     "naming/convention": [

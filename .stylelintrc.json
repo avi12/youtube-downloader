@@ -1,6 +1,6 @@
 {
   "extends": [
-    "stylelint-config-avi12"
+    "lint-config/stylelint"
   ],
   "overrides": [
     {
