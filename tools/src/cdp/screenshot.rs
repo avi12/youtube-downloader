@@ -6,15 +6,14 @@ use std::time::Duration;
 use base64::engine::general_purpose::STANDARD;
 use base64::Engine;
 use clap::Subcommand;
-use serde::Deserialize;
-use serde_json::json;
+use serde::{Deserialize, Serialize};
 use tokio::fs;
 use ytdl_dev_hot::driver::cdp::{CdpTarget, TargetKind};
 
 use super::wire::EXTENSION_ID;
 use super::wire::{
-    browser_websocket_url, close_target, open_target, print_json, CdpError, Method, PortArg,
-    Result, Session, Targets, Wanted,
+    browser_websocket_url, close_target, open_target, print_json, CdpError, Method, NoParams,
+    PortArg, Result, Session, Targets, Wanted,
 };
 use crate::port::parse_port_number;
 
@@ -74,13 +73,46 @@ pub(crate) async fn run(command: Screenshot) -> Result<()> {
     }
 }
 
+/// The image format a capture is asked in.
+#[derive(Debug, Clone, Copy, Serialize)]
+#[serde(rename_all = "lowercase")]
+enum ImageFormat {
+    Png,
+}
+
+#[derive(Debug, Clone, Copy, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct CaptureParams {
+    format: ImageFormat,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    capture_beyond_viewport: Option<bool>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct CreateTargetParams {
+    url: String,
+    width: u32,
+    height: u32,
+    new_window: bool,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct DeviceMetricsParams {
+    width: u32,
+    height: u32,
+    device_scale_factor: u32,
+    mobile: bool,
+}
+
 async fn write_capture(
     session: &mut Session,
     output: &PathBuf,
-    params: serde_json::Value,
+    params: CaptureParams,
 ) -> Result<()> {
     let capture: Capture =
-        serde_json::from_value(session.call(Method::PageCaptureScreenshot, params).await?)?;
+        serde_json::from_value(session.call(Method::PageCaptureScreenshot, &params).await?)?;
     fs::write(output, STANDARD.decode(capture.data)?).await?;
     println!("Saved {}", output.display());
     Ok(())
@@ -99,7 +131,11 @@ async fn page(
     if let Some(expression) = expression {
         print_json(&session.evaluate_raw(expression).await?)?;
     }
-    let outcome = write_capture(&mut session, output, json!({ "format": "png" })).await;
+    let params = CaptureParams {
+        format: ImageFormat::Png,
+        capture_beyond_viewport: None,
+    };
+    let outcome = write_capture(&mut session, output, params).await;
     session.close().await;
     outcome
 }
@@ -133,13 +169,13 @@ async fn popup(port: PortArg, output: &PathBuf) -> Result<()> {
 
 async fn create_popup(browser_url: &str) -> Result<String> {
     let mut session = Session::open(browser_url).await?;
-    let params = json!({
-        "url": format!("chrome-extension://{EXTENSION_ID}/popup.html"),
-        "width": POPUP_WIDTH,
-        "height": POPUP_HEIGHT,
-        "newWindow": true,
-    });
-    let outcome = session.call(Method::TargetCreateTarget, params).await;
+    let params = CreateTargetParams {
+        url: format!("chrome-extension://{EXTENSION_ID}/popup.html"),
+        width: POPUP_WIDTH,
+        height: POPUP_HEIGHT,
+        new_window: true,
+    };
+    let outcome = session.call(Method::TargetCreateTarget, &params).await;
     session.close().await;
     let created: Created = serde_json::from_value(outcome?)?;
     Ok(created.target_id)
@@ -159,21 +195,24 @@ async fn capture_popup(port: PortArg, target_id: &str, output: &PathBuf) -> Resu
 }
 
 async fn emulate_and_capture(session: &mut Session, output: &PathBuf) -> Result<()> {
-    session.call(Method::PageEnable, json!({})).await?;
-    let metrics = json!({
-        "width": POPUP_WIDTH,
-        "height": POPUP_HEIGHT,
-        "deviceScaleFactor": POPUP_SCALE,
-        "mobile": false,
-    });
+    session.call(Method::PageEnable, &NoParams {}).await?;
+    let metrics = DeviceMetricsParams {
+        width: POPUP_WIDTH,
+        height: POPUP_HEIGHT,
+        device_scale_factor: POPUP_SCALE,
+        mobile: false,
+    };
     session
-        .call(Method::EmulationSetDeviceMetricsOverride, metrics)
+        .call(Method::EmulationSetDeviceMetricsOverride, &metrics)
         .await?;
     tokio::time::sleep(POPUP_EMULATION_SETTLE).await;
     write_capture(
         session,
         output,
-        json!({ "format": "png", "captureBeyondViewport": true }),
+        CaptureParams {
+            format: ImageFormat::Png,
+            capture_beyond_viewport: Some(true),
+        },
     )
     .await
 }

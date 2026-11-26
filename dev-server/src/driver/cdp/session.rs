@@ -5,43 +5,31 @@ use std::time::Duration;
 
 use futures_util::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::Value;
 use tokio::net::TcpStream;
 use tokio_tungstenite::tungstenite::{Error as WebSocketError, Message};
 use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
 
 use super::frames::FrameTreeResult;
+use super::protocol::{encode_command, EvaluateParams, Incoming, Method, NoParams};
 use crate::driver::net::within;
 use crate::error::{Error, Result};
 
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(3);
 const REPLY_TIMEOUT: Duration = Duration::from_secs(5);
-/// The `Runtime.evaluate` result field present only when the expression threw.
-const EXCEPTION_DETAILS_FIELD: &str = "exceptionDetails";
-
-/// The CDP commands this client sends.
-#[derive(Debug, Clone, Copy, Serialize)]
-enum Method {
-    #[serde(rename = "Runtime.evaluate")]
-    RuntimeEvaluate,
-    #[serde(rename = "Page.getFrameTree")]
-    PageGetFrameTree,
-    #[serde(rename = "Page.navigate")]
-    PageNavigate,
+/// The part of a `Runtime.evaluate` result this client reads.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct Outcome {
+    /// Present only when the expression threw; printed as Chrome sent it.
+    exception_details: Option<Value>,
 }
 
 #[derive(Debug, Serialize)]
-struct Command {
-    id: u64,
-    method: Method,
-    params: Value,
-}
-
-#[derive(Debug, Deserialize)]
-struct Reply {
-    id: Option<u64>,
-    result: Option<Value>,
-    error: Option<Value>,
+#[serde(rename_all = "camelCase")]
+struct NavigateParams<'frame> {
+    url: &'frame str,
+    frame_id: &'frame str,
 }
 
 /// One CDP session: a WebSocket to one target and a command counter.
@@ -65,10 +53,10 @@ impl Session {
         self.socket.close(None).await.ok();
     }
 
-    async fn call(&mut self, method: Method, params: Value) -> Result<Value> {
+    async fn call<P: Serialize + Sync>(&mut self, method: Method, params: &P) -> Result<Value> {
         let id = self.next_id;
         self.next_id += 1;
-        let payload = serde_json::to_string(&Command { id, method, params })?;
+        let payload = encode_command(id, method, params)?;
         within(
             REPLY_TIMEOUT,
             "sending a CDP command",
@@ -83,7 +71,7 @@ impl Session {
             let Message::Text(text) = frame? else {
                 continue;
             };
-            let reply: Reply = serde_json::from_str(text.as_str())?;
+            let reply: Incoming = serde_json::from_str(text.as_str())?;
             if reply.id != Some(id) {
                 continue;
             }
@@ -98,11 +86,11 @@ impl Session {
     /// Runs `expression` (awaited, by value) in the target at `url`; a thrown exception is an error.
     pub(super) async fn evaluate(url: &str, expression: &str) -> Result<()> {
         let mut session = Self::open(url).await?;
-        let params =
-            json!({ "expression": expression, "awaitPromise": true, "returnByValue": true });
-        let outcome = session.call(Method::RuntimeEvaluate, params).await;
+        let params = EvaluateParams::awaited(expression);
+        let outcome = session.call(Method::RuntimeEvaluate, &params).await;
         session.close().await;
-        if let Some(details) = outcome?.get(EXCEPTION_DETAILS_FIELD) {
+        let Outcome { exception_details } = serde_json::from_value(outcome?)?;
+        if let Some(details) = exception_details {
             return Err(Error::Protocol(format!("evaluation threw: {details}")));
         }
         Ok(())
@@ -118,7 +106,7 @@ impl Session {
     }
 
     async fn navigate_matching_frame(&mut self, needle: &str) -> Result<bool> {
-        let tree = self.call(Method::PageGetFrameTree, json!({})).await?;
+        let tree = self.call(Method::PageGetFrameTree, &NoParams {}).await?;
         let parsed: FrameTreeResult = serde_json::from_value(tree)?;
         let Some(frame) = parsed
             .into_frames()
@@ -127,8 +115,11 @@ impl Session {
         else {
             return Ok(false);
         };
-        let params = json!({ "url": frame.url, "frameId": frame.id });
-        self.call(Method::PageNavigate, params).await?;
+        let params = NavigateParams {
+            url: &frame.url,
+            frame_id: &frame.id,
+        };
+        self.call(Method::PageNavigate, &params).await?;
         Ok(true)
     }
 }

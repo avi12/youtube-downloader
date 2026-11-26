@@ -3,12 +3,11 @@
 use std::time::Duration;
 
 use clap::{Args, Subcommand};
-use serde_json::json;
 
 use super::script;
 use super::wire::{
-    evaluate_on, open_target, print_json, Method, PortArg, Result, Session, Targets, Wanted,
-    EXTENSION_ID,
+    evaluate_on, open_target, print_json, Method, PortArg, ReloadParams, Result, Session, Targets,
+    Wanted, EXTENSION_ID,
 };
 
 const BISECT_REPLY_TIMEOUT: Duration = Duration::from_secs(8);
@@ -58,7 +57,7 @@ async fn reload_page(target: &ytdl_dev_hot::driver::cdp::CdpTarget) -> Result<()
         .await?
         .with_reply_timeout(BISECT_REPLY_TIMEOUT);
     let outcome = session
-        .call(Method::PageReload, json!({ "ignoreCache": false }))
+        .call(Method::PageReload, &ReloadParams::KEEPING_CACHE)
         .await;
     session.close().await;
     outcome.map(drop)

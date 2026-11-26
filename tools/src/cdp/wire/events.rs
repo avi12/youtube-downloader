@@ -40,9 +40,21 @@ pub(crate) struct ExecutionContext {
 /// What kind of context it is.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize)]
 pub(crate) struct ContextAux {
-    /// `default`, `isolated` or `worker`.
+    /// What runs in it.
     #[serde(default, rename = "type")]
-    pub(crate) kind: String,
+    pub(crate) kind: ContextKind,
+}
+
+/// What runs in a JavaScript context.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub(crate) enum ContextKind {
+    /// A content script's own world.
+    Isolated,
+    /// The page's world, a worker or anything else.
+    #[default]
+    #[serde(other)]
+    Other,
 }
 
 #[derive(Debug, Deserialize)]

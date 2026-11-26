@@ -3,12 +3,11 @@
 use std::time::Duration;
 
 use serde::de::DeserializeOwned;
-use serde_json::json;
 use tokio::time::sleep;
 use ytdl_dev_hot::driver::cdp::{CdpClient, CdpTarget, TargetKind};
 use ytdl_dev_hot::types::Port;
 
-use crate::cdp::wire::{evaluate_on, open_target, CdpError, Method};
+use crate::cdp::wire::{evaluate_on, open_target, CdpError, Method, ReloadParams};
 use crate::release::ReleaseError;
 
 const WATCH_URL_PART: &str = "youtube.com/watch";
@@ -55,7 +54,7 @@ async fn evaluate_value<T: DeserializeOwned>(
 async fn reload(target: &CdpTarget) -> Result<(), CdpError> {
     let mut session = open_target(target).await?;
     let outcome = session
-        .call(Method::PageReload, json!({ "ignoreCache": false }))
+        .call(Method::PageReload, &ReloadParams::KEEPING_CACHE)
         .await;
     session.close().await;
     outcome.map(drop)

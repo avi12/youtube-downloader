@@ -11,7 +11,7 @@ use ytdl_dev_hot::types::Port;
 
 use super::extensions_page::evaluate_on_extensions_page;
 use super::worlds::neutralize_orphaned_worlds_in_page;
-use crate::cdp::wire::{close_target, evaluate_on, Method, Session};
+use crate::cdp::wire::{close_target, evaluate_on, Method, NoParams, Session};
 use crate::dev::browsers::error::{BrowserError, Result};
 use crate::dev::browsers::scripts::{self, MANIFEST_NAME};
 use crate::dev::browsers::target::{BoxFuture, ReloadTarget};
@@ -264,9 +264,7 @@ impl ChromeTarget {
         match target.kind {
             TargetKind::Page => {
                 let mut session = Session::open(debugger_url_of(target)?).await?;
-                let outcome = session
-                    .call(Method::PageReload, serde_json::json!({}))
-                    .await;
+                let outcome = session.call(Method::PageReload, &NoParams {}).await;
                 session.close().await;
                 outcome?;
                 Ok(Some(PageAction::Reloaded))

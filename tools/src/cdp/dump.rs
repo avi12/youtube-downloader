@@ -3,13 +3,12 @@
 use std::time::Duration;
 
 use clap::{Args, Subcommand};
-use serde_json::json;
 use tokio::task::JoinSet;
 use tokio::time::{timeout_at, Instant};
 
 use super::wire::{
-    open_target, render, CdpError, Method, PortArg, Result, Session, Style, Targets, Wanted, DUMP,
-    MONITOR, SW_LOGS,
+    open_target, render, CdpError, Method, NoParams, PortArg, Result, Session, Style, Targets,
+    Wanted, DUMP, MONITOR, SW_LOGS,
 };
 
 const MONITOR_DEFAULT_MS: u64 = 30_000;
@@ -147,7 +146,7 @@ async fn listen(
     duration: Duration,
 ) -> Result<()> {
     for method in enable {
-        session.call(*method, json!({})).await?;
+        session.call(*method, &NoParams {}).await?;
     }
     let deadline = Instant::now() + duration;
     while let Ok(next) = timeout_at(deadline, session.next_event()).await {

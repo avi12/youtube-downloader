@@ -23,6 +23,7 @@
 
 mod frames;
 mod http;
+pub mod protocol;
 mod session;
 mod target;
 

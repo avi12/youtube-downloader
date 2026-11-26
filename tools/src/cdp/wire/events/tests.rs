@@ -44,9 +44,20 @@ fn an_execution_context_is_parsed_for_the_session_to_record() {
         panic!("not a context event");
     };
     assert_eq!((context.id, context.name.as_str()), (7, "Ext"));
-    assert_eq!(context.aux.kind, "isolated");
+    assert_eq!(context.aux.kind, ContextKind::Isolated);
     assert_eq!(
         render(&Event::ExecutionContextCreated(context), DUMP, None),
         None
     );
+}
+
+#[test]
+fn other_context_types_and_extra_fields_are_tolerated() {
+    let params = json!({"context": {"id": 1, "origin": "x", "auxData": {"type": "default"}}});
+    let Some(Event::ExecutionContextCreated(context)) =
+        Event::parse("Runtime.executionContextCreated", params)
+    else {
+        panic!("not a context event");
+    };
+    assert_eq!(context.aux.kind, ContextKind::Other);
 }

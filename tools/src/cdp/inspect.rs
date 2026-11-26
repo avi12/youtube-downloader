@@ -7,7 +7,9 @@ use serde_json::{json, Value};
 use ytdl_dev_hot::driver::cdp::CdpTarget;
 
 use super::script;
-use super::wire::{evaluate_on, open_target, print_json, Method, PortArg, Result, Targets, Wanted};
+use super::wire::{
+    evaluate_on, open_target, print_json, Method, NoParams, PortArg, Result, Targets, Wanted,
+};
 
 const URL_COLUMN_CHARS: usize = 120;
 const TYPE_COLUMN_WIDTH: usize = 20;
@@ -97,7 +99,7 @@ async fn downloads(port: PortArg) -> Result<()> {
         return Ok(());
     };
     let mut session = open_target(target).await?;
-    session.call(Method::PageReload, json!({})).await?;
+    session.call(Method::PageReload, &NoParams {}).await?;
     tokio::time::sleep(DOWNLOADS_RELOAD_SETTLE).await;
     let outcome = session.evaluate(script::DOWNLOAD_ITEMS_FULL).await;
     session.close().await;
