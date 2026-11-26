@@ -88,23 +88,26 @@ pub(crate) fn short_hash(content: &[u8]) -> String {
 #[derive(Debug, Clone)]
 pub(crate) struct ProjectPaths {
     root: String,
-    src_prefix: String,
+    source_prefix: String,
 }
 
 impl ProjectPaths {
     pub(crate) fn new(root: &Path) -> Self {
         let spelled = root.to_string_lossy().replace('\\', "/");
         let root = spelled.trim_end_matches('/').to_owned();
-        let src_prefix = format!("{root}/src/");
-        Self { root, src_prefix }
+        let source_prefix = format!("{root}/src/");
+        Self {
+            root,
+            source_prefix,
+        }
     }
 
     pub(crate) fn root(&self) -> &str {
         &self.root
     }
 
-    pub(crate) fn src_prefix(&self) -> &str {
-        &self.src_prefix
+    pub(crate) fn source_prefix(&self) -> &str {
+        &self.source_prefix
     }
 
     /// The absolute, forward-slash path of a project-relative one.
@@ -116,13 +119,13 @@ impl ProjectPaths {
     pub(crate) fn is_source(&self, module_path: &str) -> bool {
         without_query(module_path)
             .replace('\\', "/")
-            .starts_with(&self.src_prefix)
+            .starts_with(&self.source_prefix)
     }
 
     /// The project-relative `src/...` id of a module path, or `None` for anything outside `src/`.
-    pub(crate) fn src_id_of(&self, module_path: &str) -> Option<String> {
+    pub(crate) fn source_id_of(&self, module_path: &str) -> Option<String> {
         let spelled = without_query(module_path).replace('\\', "/");
-        let rest = spelled.strip_prefix(&self.src_prefix)?;
+        let rest = spelled.strip_prefix(&self.source_prefix)?;
         Some(format!("{SOURCE_ID_PREFIX}{rest}"))
     }
 }
@@ -142,10 +145,10 @@ mod tests {
     fn source_ids_are_project_relative() {
         let paths = ProjectPaths::new(Path::new(r"C:\repo"));
         assert_eq!(
-            paths.src_id_of(r"C:\repo\src\a\b.svelte?x=1").as_deref(),
+            paths.source_id_of(r"C:\repo\src\a\b.svelte?x=1").as_deref(),
             Some("src/a/b.svelte")
         );
-        assert_eq!(paths.src_id_of("C:/repo/node_modules/x.js"), None);
+        assert_eq!(paths.source_id_of("C:/repo/node_modules/x.js"), None);
     }
 
     #[test]

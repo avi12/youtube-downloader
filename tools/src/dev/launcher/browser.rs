@@ -21,7 +21,7 @@ use crate::output::options::{BuildBrowser, DevOptions, HostEnvironment};
 pub(super) struct BrowserLaunch<'a> {
     pub(super) options: &'a DevOptions,
     pub(super) host: &'a HostEnvironment,
-    pub(super) output_dir: &'a Path,
+    pub(super) output_directory: &'a Path,
 }
 
 /// The ids Firefox is reached by once it runs.

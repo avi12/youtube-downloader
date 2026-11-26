@@ -98,8 +98,8 @@ fn recorder_content_script(manifest: &ExtensionManifest) -> Result<Value> {
 }
 
 /// Adds the recorder content script and makes the HMR modules web-accessible to `YouTube`.
-pub(crate) fn patch_manifest(output_dir: &Path) -> Result<()> {
-    let mut manifest = ExtensionManifest::read(output_dir)?;
+pub(crate) fn patch_manifest(output_directory: &Path) -> Result<()> {
+    let mut manifest = ExtensionManifest::read(output_directory)?;
     let recorder = recorder_content_script(&manifest)?;
     let object = manifest_object(&mut manifest.0)?;
     push_entry(object, "content_scripts", recorder)?;
@@ -109,7 +109,7 @@ pub(crate) fn patch_manifest(output_dir: &Path) -> Result<()> {
     });
     push_entry(object, "web_accessible_resources", resources)?;
     write_text(
-        &output_dir.join(MANIFEST_FILE),
+        &output_directory.join(MANIFEST_FILE),
         &serde_json::to_string_pretty(&manifest.0)?,
     )
 }
@@ -144,8 +144,8 @@ fn strip_module_scripts(html: &str) -> String {
     kept
 }
 
-fn patch_popup_html(output_dir: &Path, built_file: &str) -> Result<()> {
-    let html_path = output_dir.join(built_file);
+fn patch_popup_html(output_directory: &Path, built_file: &str) -> Result<()> {
+    let html_path = output_directory.join(built_file);
     if !html_path.exists() {
         return Ok(());
     }
@@ -166,17 +166,17 @@ fn patch_popup_html(output_dir: &Path, built_file: &str) -> Result<()> {
 
 /// The prelude goes first in the first background script, so it sees every registration the
 /// background makes and a swap can undo them.
-fn patch_background(output_dir: &Path, prelude: &str) -> Result<()> {
-    let manifest = ExtensionManifest::read(output_dir)?;
+fn patch_background(output_directory: &Path, prelude: &str) -> Result<()> {
+    let manifest = ExtensionManifest::read(output_directory)?;
     let Some(first_file) = manifest.background_files()?.into_iter().next() else {
         return Ok(());
     };
-    let path = output_dir.join(first_file);
+    let path = output_directory.join(first_file);
     write_text(&path, &format!("{prelude}{}", read_text(&path)?))
 }
 
-fn patch_content_script(output_dir: &Path, file: &str) -> Result<()> {
-    let path = output_dir.join(file);
+fn patch_content_script(output_directory: &Path, file: &str) -> Result<()> {
+    let path = output_directory.join(file);
     let original = read_text(&path)?;
     let loader_entry = HMR_ENTRIES.iter().find_map(|entry| match entry {
         HmrEntry::ContentScript { name, built_file } if *built_file == file => Some(*name),
@@ -197,25 +197,25 @@ fn patch_content_script(output_dir: &Path, file: &str) -> Result<()> {
 
 /// Runs once WXT has written the build: adds the background prelude and the recorder, points the
 /// hot-swappable entrypoints at the HMR modules and guards every other content script.
-pub(crate) fn patch_built_output(output_dir: &Path, background_prelude: &str) -> Result<()> {
-    patch_background(output_dir, background_prelude)?;
+pub(crate) fn patch_built_output(output_directory: &Path, background_prelude: &str) -> Result<()> {
+    patch_background(output_directory, background_prelude)?;
     for entry in &HMR_ENTRIES {
         if let HmrEntry::Page { built_file } = entry {
-            patch_popup_html(output_dir, built_file)?;
+            patch_popup_html(output_directory, built_file)?;
         }
     }
-    let recorder_path = output_dir.join(CROSS_WORLD_RECORDER_FILE);
+    let recorder_path = output_directory.join(CROSS_WORLD_RECORDER_FILE);
     if let Some(directory) = recorder_path.parent() {
         fs::create_dir_all(directory).map_err(OutputError::with_path(directory))?;
     }
     write_text(&recorder_path, &recorder_source())?;
-    let manifest = ExtensionManifest::read(output_dir)?;
+    let manifest = ExtensionManifest::read(output_directory)?;
     let files = manifest
         .list_content_scripts()?
         .into_iter()
         .flat_map(|entry| entry.scripts);
     for file in files {
-        patch_content_script(output_dir, &file)?;
+        patch_content_script(output_directory, &file)?;
     }
     Ok(())
 }

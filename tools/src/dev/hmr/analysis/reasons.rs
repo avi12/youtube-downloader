@@ -31,7 +31,7 @@ fn describe_chunk(paths: &ProjectPaths, chunk: &OutputChunk) -> ChunkInfo {
         source_id: chunk
             .facade_module_id
             .as_deref()
-            .and_then(|id| paths.src_id_of(id)),
+            .and_then(|id| paths.source_id_of(id)),
         entry_name: if chunk.is_entry {
             chunk.name.clone()
         } else {

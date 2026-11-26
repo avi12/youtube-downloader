@@ -61,7 +61,8 @@ pub(crate) enum Method {
 struct Command {
     id: u64,
     method: Method,
-    params: Value,
+    #[serde(rename = "params")]
+    parameters: Value,
 }
 
 #[derive(Debug, Deserialize)]
@@ -69,7 +70,8 @@ struct Frame {
     id: Option<u64>,
     method: Option<String>,
     #[serde(default)]
-    params: Value,
+    #[serde(rename = "params")]
+    parameters: Value,
     result: Option<Value>,
     error: Option<ErrorBody>,
 }
@@ -157,10 +159,14 @@ impl Session {
     }
 
     /// Sends a command and returns its `result`; events that arrive meanwhile are queued.
-    pub(crate) async fn call(&mut self, method: Method, params: Value) -> Result<Value> {
+    pub(crate) async fn call(&mut self, method: Method, parameters: Value) -> Result<Value> {
         let id = self.next_id;
         self.next_id += 1;
-        let payload = serde_json::to_string(&Command { id, method, params })?;
+        let payload = serde_json::to_string(&Command {
+            id,
+            method,
+            parameters,
+        })?;
         self.socket.send(Message::text(payload)).await?;
         timeout(self.reply_timeout, self.reply_to(id, method))
             .await
@@ -185,7 +191,7 @@ impl Session {
     fn absorb(&mut self, frame: Frame) -> Option<Event> {
         let event = frame
             .method
-            .and_then(|name| Event::parse(&name, frame.params))?;
+            .and_then(|name| Event::parse(&name, frame.parameters))?;
         let Event::ExecutionContextCreated(context) = event else {
             return Some(event);
         };
@@ -227,22 +233,22 @@ impl Session {
 
     /// `Runtime.evaluate` (awaiting a promise, by value), returning the raw `result` object.
     pub(crate) async fn evaluate_raw(&mut self, expression: &str) -> Result<Value> {
-        let params =
+        let parameters =
             json!({ "expression": expression, "awaitPromise": true, "returnByValue": true });
-        self.call(Method::RuntimeEvaluate, params).await
+        self.call(Method::RuntimeEvaluate, parameters).await
     }
 
     /// `Runtime.evaluate` in one context, by value or as a remote object in an object group.
     pub(crate) async fn evaluate_in(&mut self, request: ContextEvaluation<'_>) -> Result<Value> {
-        let mut params = json!({
+        let mut parameters = json!({
             "expression": request.expression,
             "contextId": request.context_id,
             "returnByValue": request.group.is_none(),
         });
-        if let (Some(group), Some(fields)) = (request.group, params.as_object_mut()) {
+        if let (Some(group), Some(fields)) = (request.group, parameters.as_object_mut()) {
             fields.insert("objectGroup".to_owned(), Value::from(group));
         }
-        self.call(Method::RuntimeEvaluate, params).await
+        self.call(Method::RuntimeEvaluate, parameters).await
     }
 
     /// `Runtime.evaluate`, with the value and the exception split apart.

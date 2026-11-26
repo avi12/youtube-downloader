@@ -107,7 +107,7 @@ pub fn read_script_outputs(manifest_json: &str) -> Result<ScriptOutputs> {
 /// Content hash of every declared script output that exists. Blocking: run under `spawn_blocking`.
 /// Port of `hashScriptOutputs`; the caller reads `manifest.json` and passes the declared outputs.
 pub fn hash_script_outputs(
-    output_dir: &Path,
+    output_directory: &Path,
     outputs: &ScriptOutputs,
 ) -> Result<BTreeMap<RelPath, ContentHash>> {
     let mut hashes = BTreeMap::new();
@@ -116,7 +116,7 @@ pub fn hash_script_outputs(
         .iter()
         .chain(&outputs.content_script_files);
     for file in files {
-        let Some(bytes) = read_optional(&output_dir.join(file.as_str()))? else {
+        let Some(bytes) = read_optional(&output_directory.join(file.as_str()))? else {
             continue;
         };
         hashes.insert(file.clone(), ContentHash::from_bytes(&bytes));
@@ -166,14 +166,14 @@ pub fn classify_changed_outputs(
 
 /// Hash of every `world: "MAIN"` content-script output, so an effective change flips it.
 /// Blocking. Port of `hashMainWorldContentScripts`.
-pub fn hash_main_world_content_scripts(output_dir: &Path) -> Result<ContentHash> {
-    let Some(manifest) = read_optional(&output_dir.join(MANIFEST_FILE_NAME))? else {
+pub fn hash_main_world_content_scripts(output_directory: &Path) -> Result<ContentHash> {
+    let Some(manifest) = read_optional(&output_directory.join(MANIFEST_FILE_NAME))? else {
         return Ok(ContentHash::from_bytes(&[]));
     };
     let manifest_text = String::from_utf8_lossy(&manifest);
     let mut material = Vec::new();
     for file in main_world_script_files(&manifest_text)? {
-        let Some(bytes) = read_optional(&output_dir.join(file.as_str()))? else {
+        let Some(bytes) = read_optional(&output_directory.join(file.as_str()))? else {
             continue;
         };
         material.extend_from_slice(file.as_str().as_bytes());

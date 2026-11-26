@@ -50,13 +50,13 @@ const PING_INTERVAL: Duration = Duration::from_secs(10);
 /// task end when `shutdown` is cancelled.
 pub async fn serve(
     port: Port,
-    output_dir: &Path,
+    output_directory: &Path,
     shutdown: CancellationToken,
 ) -> Result<HmrHandle> {
     let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, port.get())).await?;
     Ok(serve_listener_pinging(
         listener,
-        output_dir,
+        output_directory,
         shutdown,
         PING_INTERVAL,
     ))
@@ -66,14 +66,14 @@ pub async fn serve(
 /// use with an ephemeral port, so they need not wait ten seconds.
 pub fn serve_listener_pinging(
     listener: TcpListener,
-    output_dir: &Path,
+    output_directory: &Path,
     shutdown: CancellationToken,
     ping_interval: Duration,
 ) -> HmrHandle {
     let handle = HmrHandle::new();
     let context = ClientContext {
         handle: handle.clone(),
-        output_dir: Arc::from(output_dir),
+        output_directory: Arc::from(output_directory),
         ping_interval,
     };
     tokio::spawn(accept_loop(listener, context, shutdown));

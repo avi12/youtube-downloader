@@ -83,16 +83,20 @@ pub trait Workspace: Send + Sync {
 #[derive(Debug, Clone)]
 pub struct DiskWorkspace {
     project_root: Arc<Path>,
-    output_dir: Arc<Path>,
+    output_directory: Arc<Path>,
     installed_lockfile: Arc<Path>,
 }
 
 impl DiskWorkspace {
     /// A workspace over the project and its build output.
-    pub fn new(project_root: PathBuf, output_dir: PathBuf, installed_lockfile: PathBuf) -> Self {
+    pub fn new(
+        project_root: PathBuf,
+        output_directory: PathBuf,
+        installed_lockfile: PathBuf,
+    ) -> Self {
         Self {
             project_root: project_root.into(),
-            output_dir: output_dir.into(),
+            output_directory: output_directory.into(),
             installed_lockfile: installed_lockfile.into(),
         }
     }
@@ -108,14 +112,14 @@ where
         .map_err(|error| Error::Io(std::io::Error::other(error)))?
 }
 
-fn snapshot_outputs(output_dir: &Path) -> Result<ScriptSnapshot> {
-    let outputs = read_optional(&output_dir.join(MANIFEST_FILE_NAME))?
+fn snapshot_outputs(output_directory: &Path) -> Result<ScriptSnapshot> {
+    let outputs = read_optional(&output_directory.join(MANIFEST_FILE_NAME))?
         .map(|bytes| read_script_outputs(&String::from_utf8_lossy(&bytes)))
         .transpose()?
         .unwrap_or_default();
     Ok(ScriptSnapshot {
-        hashes: hash_script_outputs(output_dir, &outputs)?,
-        main_world: hash_main_world_content_scripts(output_dir)?,
+        hashes: hash_script_outputs(output_directory, &outputs)?,
+        main_world: hash_main_world_content_scripts(output_directory)?,
         outputs,
     })
 }
@@ -135,8 +139,8 @@ fn count_files(directory: &Path) -> usize {
 
 fn read_locale_catalogs(project_root: &Path) -> BTreeMap<RelPath, Value> {
     let mut catalogs = BTreeMap::new();
-    let locales_dir = project_root.join(LOCALES_SOURCE_PREFIX);
-    let Ok(entries) = fs::read_dir(locales_dir) else {
+    let locales_directory = project_root.join(LOCALES_SOURCE_PREFIX);
+    let Ok(entries) = fs::read_dir(locales_directory) else {
         return catalogs;
     };
     for entry in entries.flatten() {
@@ -159,8 +163,8 @@ fn read_locale_catalogs(project_root: &Path) -> BTreeMap<RelPath, Value> {
 
 impl Workspace for DiskWorkspace {
     async fn script_snapshot(&self) -> Result<ScriptSnapshot> {
-        let output_dir = Arc::clone(&self.output_dir);
-        blocking(move || snapshot_outputs(&output_dir)).await
+        let output_directory = Arc::clone(&self.output_directory);
+        blocking(move || snapshot_outputs(&output_directory)).await
     }
 
     async fn read_public_file(&self, path: &RelPath) -> Result<Option<Vec<u8>>> {
@@ -169,12 +173,12 @@ impl Workspace for DiskWorkspace {
     }
 
     async fn read_output(&self, relative: &str) -> Result<Option<Vec<u8>>> {
-        let absolute = self.output_dir.join(relative);
+        let absolute = self.output_directory.join(relative);
         blocking(move || read_optional(&absolute)).await
     }
 
     async fn write_output(&self, relative: &str, bytes: Vec<u8>) -> Result<()> {
-        let absolute = self.output_dir.join(relative);
+        let absolute = self.output_directory.join(relative);
         blocking(move || {
             if let Some(parent) = absolute.parent() {
                 fs::create_dir_all(parent)?;
@@ -185,13 +189,13 @@ impl Workspace for DiskWorkspace {
     }
 
     async fn write_manifest_extras(&self, extras: ManifestExtras) -> Result<()> {
-        let output_dir = Arc::clone(&self.output_dir);
-        blocking(move || write_manifest_extras(&output_dir, &extras)).await
+        let output_directory = Arc::clone(&self.output_directory);
+        blocking(move || write_manifest_extras(&output_directory, &extras)).await
     }
 
     async fn manifest_payload(&self) -> Result<Option<Arc<str>>> {
-        let output_dir = Arc::clone(&self.output_dir);
-        blocking(move || manifest_payload(&output_dir)).await
+        let output_directory = Arc::clone(&self.output_directory);
+        blocking(move || manifest_payload(&output_directory)).await
     }
 
     async fn installed_lockfile_hash(&self) -> Result<Option<ContentHash>> {
@@ -205,14 +209,14 @@ impl Workspace for DiskWorkspace {
     }
 
     async fn build_artifacts(&self) -> Result<Option<BuildArtifacts>> {
-        let output_dir = Arc::clone(&self.output_dir);
+        let output_directory = Arc::clone(&self.output_directory);
         blocking(move || {
-            let Some(manifest) = read_optional(&output_dir.join(MANIFEST_FILE_NAME))? else {
+            let Some(manifest) = read_optional(&output_directory.join(MANIFEST_FILE_NAME))? else {
                 return Ok(None);
             };
             Ok(Some(BuildArtifacts {
                 manifest_bytes: u64::try_from(manifest.len()).unwrap_or(u64::MAX),
-                hmr_file_count: count_files(&output_dir.join(HMR_DIRECTORY)),
+                hmr_file_count: count_files(&output_directory.join(HMR_DIRECTORY)),
             }))
         })
         .await

@@ -69,8 +69,8 @@ pub(crate) struct ApplyArgs {
     /// The reload plan JSON file
     plan: PathBuf,
     /// The build output directory (the rebuilt background script is read from it)
-    #[arg(long)]
-    out_dir: PathBuf,
+    #[arg(long = "out-dir", value_name = "OUT_DIR")]
+    out_directory: PathBuf,
     /// The browser family
     #[arg(long, value_enum, default_value_t = Family::Chrome)]
     browser: Family,
@@ -144,7 +144,7 @@ async fn apply(args: ApplyArgs) -> Result<()> {
         plan: &plan,
         target: target.as_ref(),
         swapper: &swapper,
-        output_dir: &args.out_dir,
+        output_directory: &args.out_directory,
     })
     .await?;
     println!("{outcome}");

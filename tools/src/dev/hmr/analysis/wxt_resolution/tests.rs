@@ -31,7 +31,7 @@ fn declared_imported_and_member_uses_are_left_alone() {
 }
 
 #[test]
-fn aliases_keep_declaration_order_and_resolve_against_the_wxt_dir() {
+fn aliases_keep_declaration_order_and_resolve_against_the_wxt_directory() {
     let tsconfig: Tsconfig = serde_json::from_str(
         r##"{"compilerOptions":{"paths":{"#lib/*":["../src/lib/*"],"@":["../src"]}}}"##,
     )

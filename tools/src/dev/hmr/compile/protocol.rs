@@ -17,7 +17,8 @@ pub(super) const MODE_DEVELOPMENT: &str = "development";
 #[serde(rename_all = "camelCase")]
 pub(super) struct WorkerJob<'job> {
     pub(super) project_root: &'job str,
-    pub(super) src_prefix: &'job str,
+    #[serde(rename = "srcPrefix")]
+    pub(super) source_prefix: &'job str,
     pub(super) runtime_global: &'job str,
     pub(super) mode: &'static str,
     pub(super) browser: BuildBrowser,

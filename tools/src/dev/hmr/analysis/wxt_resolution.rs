@@ -187,7 +187,7 @@ fn resolve_posix(base: &str, relative: &str) -> String {
     parts.join("/")
 }
 
-fn aliases_of(wxt_dir: &str, tsconfig: Tsconfig) -> Vec<PathAlias> {
+fn aliases_of(wxt_directory: &str, tsconfig: Tsconfig) -> Vec<PathAlias> {
     tsconfig
         .compiler_options
         .paths
@@ -198,7 +198,7 @@ fn aliases_of(wxt_dir: &str, tsconfig: Tsconfig) -> Vec<PathAlias> {
             Some(PathAlias {
                 prefix: pattern.trim_end_matches('*').to_owned(),
                 is_wildcard: pattern.ends_with('*'),
-                target_base: resolve_posix(wxt_dir, target.trim_end_matches('*')),
+                target_base: resolve_posix(wxt_directory, target.trim_end_matches('*')),
             })
         })
         .collect()
@@ -206,13 +206,13 @@ fn aliases_of(wxt_dir: &str, tsconfig: Tsconfig) -> Vec<PathAlias> {
 
 /// The path aliases WXT generated, in declaration order.
 pub(crate) fn read_path_aliases(paths: &ProjectPaths) -> Result<Vec<PathAlias>> {
-    let wxt_dir = paths.absolute(WXT_DIR);
-    let path = Path::new(&wxt_dir).join("tsconfig.json");
+    let wxt_directory = paths.absolute(WXT_DIR);
+    let path = Path::new(&wxt_directory).join("tsconfig.json");
     let text = fs::read_to_string(&path).map_err(|source| HmrError::Read {
         path: path.clone(),
         source,
     })?;
-    Ok(aliases_of(&wxt_dir, serde_json::from_str(&text)?))
+    Ok(aliases_of(&wxt_directory, serde_json::from_str(&text)?))
 }
 
 /// The names WXT auto-imports, from its generated declarations.

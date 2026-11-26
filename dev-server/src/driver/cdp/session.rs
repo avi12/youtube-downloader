@@ -34,7 +34,8 @@ enum Method {
 struct Command {
     id: u64,
     method: Method,
-    params: Value,
+    #[serde(rename = "params")]
+    parameters: Value,
 }
 
 #[derive(Debug, Deserialize)]
@@ -65,10 +66,14 @@ impl Session {
         self.socket.close(None).await.ok();
     }
 
-    async fn call(&mut self, method: Method, params: Value) -> Result<Value> {
+    async fn call(&mut self, method: Method, parameters: Value) -> Result<Value> {
         let id = self.next_id;
         self.next_id += 1;
-        let payload = serde_json::to_string(&Command { id, method, params })?;
+        let payload = serde_json::to_string(&Command {
+            id,
+            method,
+            parameters,
+        })?;
         within(
             REPLY_TIMEOUT,
             "sending a CDP command",
@@ -98,9 +103,9 @@ impl Session {
     /// Runs `expression` (awaited, by value) in the target at `url`; a thrown exception is an error.
     pub(super) async fn evaluate(url: &str, expression: &str) -> Result<()> {
         let mut session = Self::open(url).await?;
-        let params =
+        let parameters =
             json!({ "expression": expression, "awaitPromise": true, "returnByValue": true });
-        let outcome = session.call(Method::RuntimeEvaluate, params).await;
+        let outcome = session.call(Method::RuntimeEvaluate, parameters).await;
         session.close().await;
         if let Some(details) = outcome?.get(EXCEPTION_DETAILS_FIELD) {
             return Err(Error::Protocol(format!("evaluation threw: {details}")));
@@ -127,8 +132,8 @@ impl Session {
         else {
             return Ok(false);
         };
-        let params = json!({ "url": frame.url, "frameId": frame.id });
-        self.call(Method::PageNavigate, params).await?;
+        let parameters = json!({ "url": frame.url, "frameId": frame.id });
+        self.call(Method::PageNavigate, parameters).await?;
         Ok(true)
     }
 }

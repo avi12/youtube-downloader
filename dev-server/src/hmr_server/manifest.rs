@@ -21,8 +21,10 @@ pub const HMR_DIRECTORY: &str = "hmr";
 const TEMPORARY_EXTENSION: &str = "json.tmp";
 
 /// The manifest file the runtime reads, under `output_dir`.
-pub fn manifest_path(output_dir: &Path) -> PathBuf {
-    output_dir.join(HMR_DIRECTORY).join(MANIFEST_FILE_NAME)
+pub fn manifest_path(output_directory: &Path) -> PathBuf {
+    output_directory
+        .join(HMR_DIRECTORY)
+        .join(MANIFEST_FILE_NAME)
 }
 
 /// Session-wide edits that ride the HMR manifest, merged in under their camelCase names.
@@ -46,16 +48,16 @@ fn read_manifest(path: &Path) -> Result<Option<String>> {
 
 /// The manifest payload text, or `None` when the manifest file does not exist (yet).
 /// Port of `hmrManifestPayload`. Blocking read: run under `spawn_blocking`.
-pub fn manifest_payload(output_dir: &Path) -> Result<Option<Arc<str>>> {
-    let raw = read_manifest(&manifest_path(output_dir))?;
+pub fn manifest_payload(output_directory: &Path) -> Result<Option<Arc<str>>> {
+    let raw = read_manifest(&manifest_path(output_directory))?;
     Ok(raw.map(|raw| Arc::from(PushKind::manifest_payload(&raw))))
 }
 
 /// Adds the session extras to the built manifest, a no-op when the manifest does not exist.
 /// Port of `writeHmrManifestExtras`. Blocking. The rewrite goes through a temporary file and a
 /// rename, so the runtime's manifest poll never reads a half-written file.
-pub fn write_manifest_extras(output_dir: &Path, extras: &ManifestExtras) -> Result<()> {
-    let manifest_path = manifest_path(output_dir);
+pub fn write_manifest_extras(output_directory: &Path, extras: &ManifestExtras) -> Result<()> {
+    let manifest_path = manifest_path(output_directory);
     let Some(raw) = read_manifest(&manifest_path)? else {
         return Ok(());
     };

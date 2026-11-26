@@ -73,34 +73,34 @@ async fn start(args: &RunArgs) -> Result<()> {
 
     let name = browser_name(&options);
     println!("Building extension for {name} (production)...");
-    let output_dir = build_with_lock_retry(&options).await?;
-    let hmr_source_files = build_hmr_modules(&options, &output_dir)
+    let output_directory = build_with_lock_retry(&options).await?;
+    let hmr_source_files = build_hmr_modules(&options, &output_directory)
         .await?
         .source_modules;
-    let relative_output = output_dir
+    let relative_output = output_directory
         .strip_prefix(&options.project_root)
-        .unwrap_or(&output_dir);
+        .unwrap_or(&output_directory);
     println!("Build complete: {}\n", relative_output.display());
 
     let running = launch(BrowserLaunch {
         options: &options,
         host: &environment,
-        output_dir: &output_dir,
+        output_directory: &output_directory,
     })
     .await?;
     println!(
         "{name} launched with extension sideloaded (debug port {}, profile {}).",
         options.cdp_port,
         options
-            .profile_dir
+            .profile_directory
             .strip_prefix(&options.project_root)
-            .unwrap_or(&options.profile_dir)
+            .unwrap_or(&options.profile_directory)
             .display()
     );
     let target = running.reload_target(&options)?;
-    let host = DevHost::new(options.clone(), output_dir.clone(), target)?;
+    let host = DevHost::new(options.clone(), output_directory.clone(), target)?;
     host.reload_if_background_stale().await?;
-    let config = sidecar_config(&options, &running, &output_dir, hmr_source_files)?;
+    let config = sidecar_config(&options, &running, &output_directory, hmr_source_files)?;
     Box::pin(serve(host, config, running)).await
 }
 
@@ -111,7 +111,7 @@ fn relative_paths(paths: &[&str]) -> Vec<RelPath> {
 fn sidecar_config(
     options: &DevOptions,
     running: &RunningBrowser,
-    output_dir: &Path,
+    output_directory: &Path,
     hmr_source_files: Vec<RelPath>,
 ) -> Result<SidecarConfig> {
     let hmr_port = u32::from(options.cdp_port) + options.hmr_port_offset;
@@ -121,7 +121,7 @@ fn sidecar_config(
     watch_paths.extend(options.env_files.iter().map(String::as_str));
     Ok(SidecarConfig {
         project_root: options.project_root.clone(),
-        output_dir: output_dir.to_owned(),
+        output_directory: output_directory.to_owned(),
         browser: match options.browser() {
             BuildBrowser::Chrome => BrowserKind::Chromium,
             BuildBrowser::Firefox => BrowserKind::Firefox,
@@ -153,7 +153,8 @@ enum Stop {
 
 async fn serve(host: DevHost, config: SidecarConfig, mut running: RunningBrowser) -> Result<()> {
     let shutdown = CancellationToken::new();
-    let hmr = hmr_server::serve(config.hmr_port, &config.output_dir, shutdown.clone()).await?;
+    let hmr =
+        hmr_server::serve(config.hmr_port, &config.output_directory, shutdown.clone()).await?;
     let changes = watcher::spawn(
         WatchConfig {
             root: config.project_root.clone(),
@@ -170,7 +171,7 @@ async fn serve(host: DevHost, config: SidecarConfig, mut running: RunningBrowser
         driver: Driver::from_config(&config)?,
         workspace: DiskWorkspace::new(
             config.project_root.clone(),
-            config.output_dir.clone(),
+            config.output_directory.clone(),
             config.installed_lockfile.clone(),
         ),
         hmr,

@@ -31,8 +31,11 @@ const MAX_BUILD_ATTEMPTS: u32 = 3;
 const BUILD_RETRY_DELAY: Duration = Duration::from_millis(300);
 
 /// Where WXT writes this browser's build: `<outDir>/<browser>-mv3`.
-pub(super) fn output_dir_of(options: &DevOptions) -> PathBuf {
-    let base = options.out_dir.as_deref().unwrap_or(WXT_DEFAULT_OUT_DIR);
+pub(super) fn output_directory_of(options: &DevOptions) -> PathBuf {
+    let base = options
+        .out_directory
+        .as_deref()
+        .unwrap_or(WXT_DEFAULT_OUT_DIR);
     options
         .project_root
         .join(base)
@@ -64,7 +67,7 @@ fn wxt_setup(options: &DevOptions) -> Result<WxtSetup> {
     if let Some(paths) = node_path(options) {
         environment.push((OsString::from(NODE_PATH_VARIABLE), paths));
     }
-    let Some(out_dir) = &options.out_dir else {
+    let Some(out_directory) = &options.out_directory else {
         return Ok(WxtSetup {
             config_file: None,
             environment,
@@ -78,7 +81,7 @@ fn wxt_setup(options: &DevOptions) -> Result<WxtSetup> {
     ));
     environment.push((
         OsString::from(OUT_DIR_VARIABLE),
-        options.project_root.join(out_dir).into_os_string(),
+        options.project_root.join(out_directory).into_os_string(),
     ));
     Ok(WxtSetup {
         config_file: Some(override_path),
@@ -86,8 +89,8 @@ fn wxt_setup(options: &DevOptions) -> Result<WxtSetup> {
     })
 }
 
-fn add_dev_permission(output_dir: &Path) -> Result<()> {
-    let mut manifest = ExtensionManifest::read(output_dir)?;
+fn add_dev_permission(output_directory: &Path) -> Result<()> {
+    let mut manifest = ExtensionManifest::read(output_directory)?;
     let Some(object) = manifest.0.as_object_mut() else {
         return Err(LauncherError::Invalid(
             "the built manifest is not an object".to_owned(),
@@ -104,7 +107,7 @@ fn add_dev_permission(output_dir: &Path) -> Result<()> {
         list.push(permission);
     }
     std::fs::write(
-        output_dir.join(MANIFEST_FILE),
+        output_directory.join(MANIFEST_FILE),
         serde_json::to_string_pretty(&manifest.0)?,
     )?;
     Ok(())
@@ -120,11 +123,11 @@ async fn build_extension(options: &DevOptions) -> Result<PathBuf> {
         environment: setup.environment,
     })
     .await?;
-    let output_dir = output_dir_of(options);
-    add_dev_permission(&output_dir)?;
-    patch_manifest(&output_dir)?;
-    patch_built_output(&output_dir, &prelude)?;
-    Ok(output_dir)
+    let output_directory = output_directory_of(options);
+    add_dev_permission(&output_directory)?;
+    patch_manifest(&output_directory)?;
+    patch_built_output(&output_directory, &prelude)?;
+    Ok(output_directory)
 }
 
 fn is_retryable(error: &LauncherError, attempt: u32) -> bool {
@@ -142,7 +145,7 @@ pub(super) async fn build_with_lock_retry(options: &DevOptions) -> Result<PathBu
     let mut attempt = 1;
     loop {
         let error = match build_extension(options).await {
-            Ok(output_dir) => return Ok(output_dir),
+            Ok(output_directory) => return Ok(output_directory),
             Err(error) => error,
         };
         if !is_retryable(&error, attempt) {
@@ -158,10 +161,13 @@ pub(super) async fn build_with_lock_retry(options: &DevOptions) -> Result<PathBu
 
 /// The hot-swappable entrypoints run from these modules, so every WXT build, which empties the
 /// output dir, is followed by this.
-pub(super) async fn build_hmr_modules(options: &DevOptions, output_dir: &Path) -> Result<HmrBuild> {
+pub(super) async fn build_hmr_modules(
+    options: &DevOptions,
+    output_directory: &Path,
+) -> Result<HmrBuild> {
     let request = HmrRequest {
         project_root: options.project_root.clone(),
-        output_dir: output_dir.to_owned(),
+        output_directory: output_directory.to_owned(),
         browser: options.browser(),
         runtime_source: runtime_source(&PayloadConfig::dev_default())?,
     };
@@ -176,7 +182,7 @@ pub(super) async fn build_hmr_modules(options: &DevOptions, output_dir: &Path) -
 mod tests {
     use crate::dev::launcher::build::*;
 
-    fn options(out_dir: Option<&str>) -> DevOptions {
+    fn options(out_directory: Option<&str>) -> DevOptions {
         DevOptions {
             project_root: PathBuf::from("repo"),
             is_firefox: false,
@@ -185,8 +191,8 @@ mod tests {
             profile_platform_suffix: "linux".to_owned(),
             cdp_port: 9229,
             marionette_port: 2828,
-            profile_dir: PathBuf::from("profile"),
-            out_dir: out_dir.map(str::to_owned),
+            profile_directory: PathBuf::from("profile"),
+            out_directory: out_directory.map(str::to_owned),
             start_url: String::new(),
             lang: "en".to_owned(),
             rebuild_debounce_ms: 800,
@@ -199,10 +205,10 @@ mod tests {
     }
 
     #[test]
-    fn the_output_dir_follows_wxt_naming() {
-        let default = output_dir_of(&options(None));
+    fn the_output_directory_follows_wxt_naming() {
+        let default = output_directory_of(&options(None));
         assert_eq!(default, PathBuf::from("repo/.output/chrome-mv3"));
-        let custom = output_dir_of(&options(Some("out-two")));
+        let custom = output_directory_of(&options(Some("out-two")));
         assert_eq!(custom, PathBuf::from("repo/out-two/chrome-mv3"));
     }
 

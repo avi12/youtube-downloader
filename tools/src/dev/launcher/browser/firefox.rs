@@ -79,7 +79,7 @@ fn find_firefox(host: &HostEnvironment) -> Result<PathBuf> {
 fn firefox_args(options: &DevOptions, rdp_port: u16) -> Vec<String> {
     vec![
         "-profile".to_owned(),
-        options.profile_dir.display().to_string(),
+        options.profile_directory.display().to_string(),
         "-no-remote".to_owned(),
         "--marionette".to_owned(),
         format!("--remote-debugging-port={}", options.cdp_port),
@@ -90,9 +90,9 @@ fn firefox_args(options: &DevOptions, rdp_port: u16) -> Vec<String> {
     ]
 }
 
-fn write_user_prefs(profile_dir: &Path, prefs: &str) -> Result<()> {
-    std::fs::create_dir_all(profile_dir)?;
-    std::fs::write(profile_dir.join(USER_PREFS_FILE), prefs)?;
+fn write_user_prefs(profile_directory: &Path, prefs: &str) -> Result<()> {
+    std::fs::create_dir_all(profile_directory)?;
+    std::fs::write(profile_directory.join(USER_PREFS_FILE), prefs)?;
     Ok(())
 }
 
@@ -101,19 +101,19 @@ pub(super) async fn launch(launch: BrowserLaunch<'_>) -> Result<(Child, FirefoxI
     let BrowserLaunch {
         options,
         host,
-        output_dir,
+        output_directory,
     } = launch;
-    let extension_id = ExtensionManifest::read(output_dir)?.gecko_id();
+    let extension_id = ExtensionManifest::read(output_directory)?.gecko_id();
     let rdp_port = free_port()?;
     write_user_prefs(
-        &options.profile_dir,
+        &options.profile_directory,
         &user_prefs(options, &extension_id, rdp_port)?,
     )?;
     let child = Invocation::new(find_firefox(host)?)
         .args(firefox_args(options, rdp_port))
         .env(ALLOW_SYSTEM_ACCESS_VARIABLE, ENABLED_VALUE)
         .spawn_kill_on_drop()?;
-    install_temporary_addon(options.marionette_port, output_dir).await?;
+    install_temporary_addon(options.marionette_port, output_directory).await?;
     let identity = FirefoxIdentity {
         rdp_port,
         extension_id,

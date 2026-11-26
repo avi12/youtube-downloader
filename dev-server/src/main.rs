@@ -53,7 +53,8 @@ async fn start() -> Result<()> {
     let link = connect(stdin, tokio::io::stdout(), shutdown.clone())?;
     logging::install(link.client.log_layer())?;
 
-    let hmr = hmr_server::serve(config.hmr_port, &config.output_dir, shutdown.clone()).await?;
+    let hmr =
+        hmr_server::serve(config.hmr_port, &config.output_directory, shutdown.clone()).await?;
     tracing::info!(
         "HMR push channel listening on ws://127.0.0.1:{}",
         config.hmr_port.get()
@@ -75,7 +76,7 @@ async fn start() -> Result<()> {
         driver: Driver::from_config(&config)?,
         workspace: DiskWorkspace::new(
             config.project_root.clone(),
-            config.output_dir.clone(),
+            config.output_directory.clone(),
             config.installed_lockfile.clone(),
         ),
         hmr,

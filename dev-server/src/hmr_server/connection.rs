@@ -41,7 +41,7 @@ enum ClientMessage {
 #[derive(Debug, Clone)]
 pub(super) struct ClientContext {
     pub(super) handle: HmrHandle,
-    pub(super) output_dir: Arc<Path>,
+    pub(super) output_directory: Arc<Path>,
     pub(super) ping_interval: Duration,
 }
 
@@ -103,8 +103,8 @@ async fn send_text(socket: &mut Socket, text: &str) -> Result<()> {
 }
 
 async fn initial_sync(socket: &mut Socket, context: &ClientContext) -> Result<()> {
-    let output_dir = Arc::clone(&context.output_dir);
-    let payload = tokio::task::spawn_blocking(move || manifest_payload(&output_dir))
+    let output_directory = Arc::clone(&context.output_directory);
+    let payload = tokio::task::spawn_blocking(move || manifest_payload(&output_directory))
         .await
         .map_err(std::io::Error::other)??;
     let Some(payload) = payload else {

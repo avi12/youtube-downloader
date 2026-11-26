@@ -123,10 +123,14 @@ impl Marionette {
         }
     }
 
-    async fn send<T: DeserializeOwned>(&mut self, name: CommandName, params: Value) -> Result<T> {
+    async fn send<T: DeserializeOwned>(
+        &mut self,
+        name: CommandName,
+        parameters: Value,
+    ) -> Result<T> {
         let id = self.next_id;
         self.next_id += 1;
-        let command = json!([REQUEST_MESSAGE, id, name, params]);
+        let command = json!([REQUEST_MESSAGE, id, name, parameters]);
         self.framed.send(&command).await?;
         timeout(COMMAND_TIMEOUT, self.exchange(id))
             .await
@@ -184,8 +188,8 @@ impl Marionette {
     }
 
     pub(super) async fn execute_async(&mut self, script: &str) -> Result<Value> {
-        let params = json!({"script": script, "args": [], "scriptTimeout": SCRIPT_TIMEOUT_MS});
-        self.send(CommandName::ExecuteAsyncScript, params).await
+        let parameters = json!({"script": script, "args": [], "scriptTimeout": SCRIPT_TIMEOUT_MS});
+        self.send(CommandName::ExecuteAsyncScript, parameters).await
     }
 
     pub(super) async fn press_key(&mut self, key: &str) -> Result<()> {

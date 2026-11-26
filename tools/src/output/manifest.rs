@@ -98,8 +98,8 @@ impl Default for ExtensionManifest {
 }
 
 impl ExtensionManifest {
-    pub(crate) fn read(output_dir: &Path) -> Result<Self> {
-        let path = output_dir.join(MANIFEST_FILE);
+    pub(crate) fn read(output_directory: &Path) -> Result<Self> {
+        let path = output_directory.join(MANIFEST_FILE);
         let text = fs::read_to_string(&path).map_err(OutputError::with_path(&path))?;
         Ok(Self(serde_json::from_str(&text)?))
     }

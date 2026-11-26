@@ -39,7 +39,8 @@ pub struct SidecarConfig {
     /// The extension project directory (`PROJECT_ROOT` in `scripts/dev/project.ts`).
     pub project_root: PathBuf,
     /// The build output directory of this browser target.
-    pub output_dir: PathBuf,
+    #[serde(rename = "outputDir")]
+    pub output_directory: PathBuf,
     /// Chromium or Firefox.
     pub browser: BrowserKind,
     /// The CDP port (Chromium) or the RDP port (Firefox).

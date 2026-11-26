@@ -40,7 +40,7 @@ fn host_error(error: impl std::fmt::Display) -> ytdl_dev_hot::Error {
 /// The launcher side of the hot loop.
 pub(super) struct DevHost {
     options: DevOptions,
-    output_dir: PathBuf,
+    output_directory: PathBuf,
     target: Arc<dyn ReloadTarget>,
     swapper: BackgroundSwapper,
     last_snapshot: Mutex<BuildSnapshot>,
@@ -51,14 +51,14 @@ pub(super) struct DevHost {
 impl DevHost {
     pub(super) fn new(
         options: DevOptions,
-        output_dir: PathBuf,
+        output_directory: PathBuf,
         target: Arc<dyn ReloadTarget>,
     ) -> Result<Self> {
-        let last_snapshot = Mutex::new(take_build_snapshot(&output_dir)?);
+        let last_snapshot = Mutex::new(take_build_snapshot(&output_directory)?);
         let swapper = BackgroundSwapper::new(Arc::clone(&target), Arc::new(log_event));
         Ok(Self {
             options,
-            output_dir,
+            output_directory,
             target,
             swapper,
             last_snapshot,
@@ -72,7 +72,7 @@ impl DevHost {
             content_script_update: *self.content_script_update.lock().await,
             target: self.target.as_ref(),
             swapper: &self.swapper,
-            output_dir: &self.output_dir,
+            output_directory: &self.output_directory,
         })
         .await?)
     }
@@ -90,7 +90,7 @@ impl DevHost {
         if has_dev_prelude {
             return Ok(());
         }
-        let plan = plan_stale_background_reload(&ExtensionManifest::read(&self.output_dir)?)?;
+        let plan = plan_stale_background_reload(&ExtensionManifest::read(&self.output_directory)?)?;
         log_event(&self.apply(&plan).await?);
         Ok(())
     }
@@ -106,7 +106,7 @@ impl Host for DevHost {
     }
 
     async fn rebuild_hmr(&self) -> ytdl_dev_hot::Result<RebuildHmrResult> {
-        let build = build_hmr_modules(&self.options, &self.output_dir)
+        let build = build_hmr_modules(&self.options, &self.output_directory)
             .await
             .map_err(host_error)?;
         // A retried build compares against its own first attempt, so the stronger answer stays
@@ -117,12 +117,15 @@ impl Host for DevHost {
         })
     }
 
-    async fn reload_extension(&self, params: ReloadExtensionParams) -> ytdl_dev_hot::Result<()> {
-        let next = take_build_snapshot(&self.output_dir).map_err(host_error)?;
+    async fn reload_extension(
+        &self,
+        parameters: ReloadExtensionParams,
+    ) -> ytdl_dev_hot::Result<()> {
+        let next = take_build_snapshot(&self.output_directory).map_err(host_error)?;
         let mut last = self.last_snapshot.lock().await;
         let plan = plan_reload(&last, &next).map_err(host_error)?;
         let outcome = self.apply(&plan).await.map_err(host_error)?;
-        let elapsed = now_epoch_milliseconds().saturating_sub(params.started_at_ms);
+        let elapsed = now_epoch_milliseconds().saturating_sub(parameters.started_at_ms);
         log_event(&format!("{outcome} ({})", format_elapsed(elapsed)));
         *last = next;
         Ok(())

@@ -26,7 +26,7 @@ pub(crate) enum Command {
         project_root: PathBuf,
         /// The extension build output the HMR modules are added under
         #[arg(long)]
-        output_dir: PathBuf,
+        output_directory: PathBuf,
         /// The browser the build targets
         #[arg(long, value_enum, default_value_t = BuildBrowser::Chrome)]
         browser: BuildBrowser,
@@ -46,14 +46,14 @@ pub(crate) async fn run(command: Command) -> Result<(), HmrError> {
     match command {
         Command::Build {
             project_root,
-            output_dir,
+            output_directory,
             browser,
             runtime_file,
         } => {
             let runtime_source = tokio::fs::read_to_string(&runtime_file).await?;
             let request = HmrRequest {
                 project_root,
-                output_dir,
+                output_directory,
                 browser,
                 runtime_source,
             };

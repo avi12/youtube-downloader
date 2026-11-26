@@ -128,13 +128,13 @@ impl Peer {
             .as_str()
             .unwrap()
             .to_owned();
-        let HostRequest::ReloadExtension(params) = request else {
+        let HostRequest::ReloadExtension(parameters) = request else {
             return method;
         };
         format!(
             "{method} background={} mainWorld={}",
-            params.changed.is_background_changed,
-            params.changed.is_main_world_content_script_changed
+            parameters.changed.is_background_changed,
+            parameters.changed.is_main_world_content_script_changed
         )
     }
 

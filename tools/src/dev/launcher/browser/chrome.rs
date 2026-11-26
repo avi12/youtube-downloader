@@ -47,11 +47,11 @@ async fn detect_windows_dark_mode(host: &HostEnvironment) -> bool {
         .is_ok_and(|output| is_dark_theme_output(&output))
 }
 
-fn chrome_args(options: &DevOptions, output_dir: &Path, extras: &[&str]) -> Vec<String> {
+fn chrome_args(options: &DevOptions, output_directory: &Path, extras: &[&str]) -> Vec<String> {
     let mut args = vec![
-        format!("--user-data-dir={}", options.profile_dir.display()),
+        format!("--user-data-dir={}", options.profile_directory.display()),
         format!("--profile-directory={PROFILE_DIRECTORY_NAME}"),
-        format!("--load-extension={}", output_dir.display()),
+        format!("--load-extension={}", output_directory.display()),
         format!("--lang={}", options.lang),
         format!("--remote-debugging-port={}", options.cdp_port),
         "--disable-blink-features=AutomationControlled".to_owned(),
@@ -71,7 +71,7 @@ pub(super) async fn launch(launch: BrowserLaunch<'_>) -> Result<Child> {
     let BrowserLaunch {
         options,
         host,
-        output_dir,
+        output_directory,
     } = launch;
     let executable = ensure_chrome(&options.project_root, host.platform).await?;
     let mut extras: Vec<&str> = Vec::new();
@@ -82,7 +82,7 @@ pub(super) async fn launch(launch: BrowserLaunch<'_>) -> Result<Child> {
         extras.extend(LINUX_ARGS);
     }
     Invocation::new(executable)
-        .args(chrome_args(options, output_dir, &extras))
+        .args(chrome_args(options, output_directory, &extras))
         .spawn_kill_on_drop()
         .map_err(Into::into)
 }

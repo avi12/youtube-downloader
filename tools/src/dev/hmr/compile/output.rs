@@ -131,7 +131,7 @@ fn describe_modules(
         let Some(facade) = chunk.facade_module_id.as_deref() else {
             continue;
         };
-        let Some(source_id) = paths.src_id_of(facade) else {
+        let Some(source_id) = paths.source_id_of(facade) else {
             continue;
         };
         if !facade.ends_with(SVELTE_EXTENSION) || main_world_modules.contains(&source_id) {

@@ -118,11 +118,11 @@ impl<H: Host, D: BrowserDriver, W: Workspace> Orchestrator<H, D, W> {
     /// applies the smallest update: refresh pages, reload the extension and re-inject its isolated
     /// content scripts in place, or reload the tabs a MAIN-world script runs in.
     async fn reload_scripts(&self, changed: ChangedOutputs, started: Started) -> Result<()> {
-        let params = ReloadExtensionParams {
+        let parameters = ReloadExtensionParams {
             changed,
             started_at_ms: started.epoch_ms,
         };
-        self.host.reload_extension(params).await?;
+        self.host.reload_extension(parameters).await?;
         tracing::info!("Applied the rebuild ({}ms)", started.elapsed_ms());
         Ok(())
     }

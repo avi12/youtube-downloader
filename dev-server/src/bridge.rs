@@ -39,7 +39,7 @@ pub trait Host: Send + Sync {
     /// `reloadExtension`: `runner.reloadAllExtensions()` and browser-specific teardown.
     fn reload_extension(
         &self,
-        params: ReloadExtensionParams,
+        parameters: ReloadExtensionParams,
     ) -> impl Future<Output = Result<()>> + Send;
     /// `injectHmr`: injects the HMR runtime into open `YouTube` tabs; true when it injected.
     fn inject_hmr(&self) -> impl Future<Output = Result<bool>> + Send;

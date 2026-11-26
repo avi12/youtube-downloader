@@ -121,11 +121,15 @@ pub(crate) struct OptionArgs {
     #[arg(long, env = "YTDL_DEV_MARIONETTE_PORT", value_parser = parse_port_number)]
     marionette_port: Option<u16>,
     /// The dev browser's profile directory
-    #[arg(long, env = "YTDL_DEV_PROFILE_DIR")]
-    profile_dir: Option<PathBuf>,
+    #[arg(
+        long = "profile-dir",
+        value_name = "PROFILE_DIR",
+        env = "YTDL_DEV_PROFILE_DIR"
+    )]
+    profile_directory: Option<PathBuf>,
     /// WXT's outDir; unset keeps WXT's own `.output`
-    #[arg(long, env = "YTDL_DEV_OUT_DIR")]
-    out_dir: Option<String>,
+    #[arg(long = "out-dir", value_name = "OUT_DIR", env = "YTDL_DEV_OUT_DIR")]
+    out_directory: Option<String>,
     /// The page the browser opens
     #[arg(long, env = "YTDL_DEV_START_URL")]
     start_url: Option<String>,
@@ -146,8 +150,10 @@ pub(crate) struct DevOptions {
     pub(crate) profile_platform_suffix: String,
     pub(crate) cdp_port: u16,
     pub(crate) marionette_port: u16,
-    pub(crate) profile_dir: PathBuf,
-    pub(crate) out_dir: Option<String>,
+    #[serde(rename = "profileDir")]
+    pub(crate) profile_directory: PathBuf,
+    #[serde(rename = "outDir")]
+    pub(crate) out_directory: Option<String>,
     pub(crate) start_url: String,
     pub(crate) lang: String,
     pub(crate) rebuild_debounce_ms: u32,
@@ -196,10 +202,10 @@ pub(crate) fn resolve_options(args: &OptionArgs, host: &HostEnvironment) -> Resu
     let default_profile = project_root
         .join(USER_PROFILES_DIR)
         .join(default_profile_name(args.firefox, platform_suffix));
-    let profile_dir = args
-        .profile_dir
+    let profile_directory = args
+        .profile_directory
         .as_ref()
-        .map_or(default_profile, |dir| project_root.join(dir));
+        .map_or(default_profile, |directory| project_root.join(directory));
     Ok(DevOptions {
         is_firefox: args.firefox,
         is_audio_muted: args.mute_audio,
@@ -209,8 +215,8 @@ pub(crate) fn resolve_options(args: &OptionArgs, host: &HostEnvironment) -> Resu
             .cdp_port
             .unwrap_or_else(|| default_cdp_port(args.firefox, host.platform)),
         marionette_port: args.marionette_port.unwrap_or(MARIONETTE_PORT_DEFAULT),
-        profile_dir,
-        out_dir: args.out_dir.clone(),
+        profile_directory,
+        out_directory: args.out_directory.clone(),
         start_url: args
             .start_url
             .clone()
@@ -267,10 +273,10 @@ mod tests {
     fn chrome_defaults_follow_the_platform() -> Result<()> {
         let windows = resolve(&[], &host(OsPlatform::Windows, false))?;
         assert_eq!(windows.cdp_port, 9229);
-        assert!(windows.profile_dir.ends_with("chrome-win32"));
+        assert!(windows.profile_directory.ends_with("chrome-win32"));
         let wsl = resolve(&[], &host(OsPlatform::Linux, true))?;
         assert_eq!(wsl.cdp_port, 9233);
-        assert!(wsl.profile_dir.ends_with("chrome-wsl"));
+        assert!(wsl.profile_directory.ends_with("chrome-wsl"));
         Ok(())
     }
 
@@ -283,7 +289,7 @@ mod tests {
         assert_eq!(options.cdp_port, 9300);
         assert_eq!(options.marionette_port, 2828);
         assert_eq!(options.browser(), BuildBrowser::Firefox);
-        assert!(options.profile_dir.ends_with("p"));
+        assert!(options.profile_directory.ends_with("p"));
         Ok(())
     }
 

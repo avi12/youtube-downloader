@@ -86,11 +86,11 @@ impl Host for FakeHost {
 
     fn reload_extension(
         &self,
-        params: ReloadExtensionParams,
+        parameters: ReloadExtensionParams,
     ) -> impl Future<Output = Result<()>> + Send {
         ready({
             self.log.push("reload");
-            self.disk.lock().unwrap().reloads.push(params.changed);
+            self.disk.lock().unwrap().reloads.push(parameters.changed);
             Ok(())
         })
     }

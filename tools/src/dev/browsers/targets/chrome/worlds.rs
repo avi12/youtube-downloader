@@ -96,7 +96,7 @@ async fn invalidate_wxt_contexts(session: &mut Session, object_id: &str) -> Resu
             continue;
         }
         let script_name = listener.kind.split(':').nth(1).unwrap_or_default();
-        let params = json!({
+        let parameters = json!({
             "objectId": object_id,
             "functionDeclaration": INVOKE_STARTED_LISTENER.trim(),
             "arguments": [
@@ -106,14 +106,16 @@ async fn invalidate_wxt_contexts(session: &mut Session, object_id: &str) -> Resu
                 { "value": WXT_SCRIPT_STARTED_MESSAGE_ID },
             ],
         });
-        session.call(Method::RuntimeCallFunctionOn, params).await?;
+        session
+            .call(Method::RuntimeCallFunctionOn, parameters)
+            .await?;
     }
     Ok(())
 }
 
 async fn remove_world_listeners(session: &mut Session, object_id: &str) -> Result<()> {
     for listener in list_world_listeners(session, object_id).await? {
-        let params = json!({
+        let parameters = json!({
             "objectId": object_id,
             "functionDeclaration": REMOVE_LISTENER.trim(),
             "arguments": [
@@ -122,7 +124,9 @@ async fn remove_world_listeners(session: &mut Session, object_id: &str) -> Resul
                 { "value": listener.use_capture },
             ],
         });
-        session.call(Method::RuntimeCallFunctionOn, params).await?;
+        session
+            .call(Method::RuntimeCallFunctionOn, parameters)
+            .await?;
     }
     Ok(())
 }

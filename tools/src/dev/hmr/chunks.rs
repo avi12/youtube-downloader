@@ -84,7 +84,7 @@ impl GraphCollector {
     pub(crate) fn from_modules(paths: &ProjectPaths, modules: &[ModuleRecord]) -> Self {
         let mut graph = Self::default();
         for module in modules {
-            let Some(source_id) = paths.src_id_of(&module.id) else {
+            let Some(source_id) = paths.source_id_of(&module.id) else {
                 continue;
             };
             graph.files.insert(source_id.clone());
@@ -97,7 +97,7 @@ impl GraphCollector {
             let importers = module
                 .importers
                 .iter()
-                .filter_map(|importer| paths.src_id_of(importer))
+                .filter_map(|importer| paths.source_id_of(importer))
                 .collect();
             graph.css_importers.insert(source_id, importers);
         }

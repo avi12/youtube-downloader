@@ -25,7 +25,7 @@ pub(crate) enum Command {
     /// Print the content hashes and manifest of a build output directory as JSON
     Snapshot {
         /// The build output directory
-        dir: PathBuf,
+        directory: PathBuf,
     },
     /// Print the reload plan between two build output directories as JSON
     PlanReload {
@@ -39,7 +39,7 @@ pub(crate) enum Command {
     /// Print the plan that replaces a possibly stale cached background as JSON
     PlanStaleBackground {
         /// The build output directory
-        dir: PathBuf,
+        directory: PathBuf,
     },
     /// Word the outcome of a reload plan the way the dev server logs it
     DescribeReload {
@@ -56,7 +56,7 @@ pub(crate) enum Command {
     /// Print the content scripts, background files and gecko id of a build as JSON
     Manifest {
         /// The build output directory
-        dir: PathBuf,
+        directory: PathBuf,
     },
     /// Test a URL against a manifest match pattern; prints true or false
     MatchUrl {
@@ -70,12 +70,12 @@ pub(crate) enum Command {
     /// Add the dev recorder content script and the HMR web-accessible resources to manifest.json
     PatchManifest {
         /// The build output directory
-        dir: PathBuf,
+        directory: PathBuf,
     },
     /// Patch a finished dev build: background prelude, popup loader, recorder and run-once guards
     PatchOutput {
         /// The build output directory
-        dir: PathBuf,
+        directory: PathBuf,
         /// A file holding the background prelude source
         #[arg(long)]
         prelude_file: PathBuf,
@@ -139,8 +139,8 @@ fn describe_reload(
     Ok(())
 }
 
-fn print_manifest(dir: &Path) -> OutputResult<()> {
-    let manifest = ExtensionManifest::read(dir)?;
+fn print_manifest(directory: &Path) -> OutputResult<()> {
+    let manifest = ExtensionManifest::read(directory)?;
     print_json(&serde_json::json!({
         "geckoId": manifest.gecko_id(),
         "backgroundFiles": manifest.background_files()?,
@@ -154,7 +154,7 @@ async fn run_profile(command: ProfileCommand) -> OutputResult<()> {
         ProfileCommand::Clone(args) => {
             let options = resolve_options(&args, &host)?;
             profile::setup_profile(&options, &host)?;
-            println!("{}", options.profile_dir.display());
+            println!("{}", options.profile_directory.display());
             Ok(())
         }
         ProfileCommand::Clean(args) => {
@@ -166,7 +166,7 @@ async fn run_profile(command: ProfileCommand) -> OutputResult<()> {
 
 async fn execute(command: Command) -> OutputResult<()> {
     match command {
-        Command::Snapshot { dir } => print_json(&reload::take_build_snapshot(&dir)?),
+        Command::Snapshot { directory } => print_json(&reload::take_build_snapshot(&directory)?),
         Command::PlanReload { before, after } => {
             let plan = reload::plan_reload(
                 &reload::take_build_snapshot(&before)?,
@@ -174,24 +174,27 @@ async fn execute(command: Command) -> OutputResult<()> {
             )?;
             print_json(&plan)
         }
-        Command::PlanStaleBackground { dir } => print_json(&reload::plan_stale_background_reload(
-            &ExtensionManifest::read(&dir)?,
-        )?),
+        Command::PlanStaleBackground { directory } => print_json(
+            &reload::plan_stale_background_reload(&ExtensionManifest::read(&directory)?)?,
+        ),
         Command::DescribeReload {
             plan,
             tab_result,
             refreshed_pages,
         } => describe_reload(&plan, tab_result.as_deref(), refreshed_pages.as_deref()),
-        Command::Manifest { dir } => print_manifest(&dir),
+        Command::Manifest { directory } => print_manifest(&directory),
         Command::MatchUrl { url, pattern } => {
             println!("{}", matches_url_pattern(&url, &pattern));
             Ok(())
         }
-        Command::PatchManifest { dir } => patches::patch_manifest(&dir),
-        Command::PatchOutput { dir, prelude_file } => {
+        Command::PatchManifest { directory } => patches::patch_manifest(&directory),
+        Command::PatchOutput {
+            directory,
+            prelude_file,
+        } => {
             let prelude = std::fs::read_to_string(&prelude_file)
                 .map_err(OutputError::with_path(&prelude_file))?;
-            patches::patch_built_output(&dir, &prelude)
+            patches::patch_built_output(&directory, &prelude)
         }
         Command::JsSource { kind } => {
             let source = match kind {

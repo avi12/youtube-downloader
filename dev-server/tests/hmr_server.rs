@@ -54,11 +54,11 @@ impl Drop for Scratch {
     }
 }
 
-async fn start(dir: &Path) -> Result<(HmrHandle, SocketAddr, CancellationToken)> {
+async fn start(directory: &Path) -> Result<(HmrHandle, SocketAddr, CancellationToken)> {
     let listener = TcpListener::bind("127.0.0.1:0").await?;
     let address = listener.local_addr()?;
     let shutdown = CancellationToken::new();
-    let handle = serve_listener_pinging(listener, dir, shutdown.clone(), PING_INTERVAL);
+    let handle = serve_listener_pinging(listener, directory, shutdown.clone(), PING_INTERVAL);
     Ok((handle, address, shutdown))
 }
 

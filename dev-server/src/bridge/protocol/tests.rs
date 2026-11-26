@@ -10,7 +10,7 @@ fn request_line(request: HostRequest) -> Result<String> {
 }
 
 #[test]
-fn unit_request_has_no_params() -> Result<()> {
+fn unit_request_has_no_parameters() -> Result<()> {
     assert_eq!(
         request_line(HostRequest::BuildExtension)?,
         "{\"id\":7,\"method\":\"buildExtension\"}\n"

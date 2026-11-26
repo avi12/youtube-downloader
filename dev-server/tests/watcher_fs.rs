@@ -12,7 +12,7 @@ use ytdl_dev_hot::Result;
 
 const WAIT: Duration = Duration::from_secs(20);
 
-fn scratch_dir(name: &str) -> PathBuf {
+fn scratch_directory(name: &str) -> PathBuf {
     std::env::temp_dir().join(format!("ytdl-watcher-{name}-{}", std::process::id()))
 }
 
@@ -38,7 +38,7 @@ async fn next_paths(batches: &mut tokio::sync::mpsc::Receiver<ChangeBatch>) -> V
 
 #[tokio::test]
 async fn reports_edits_and_late_files_relative_to_the_root() -> Result<()> {
-    let root = scratch_dir("fs");
+    let root = scratch_directory("fs");
     std::fs::create_dir_all(root.join("src"))?;
     std::fs::write(root.join("src").join("a.ts"), b"1")?;
     let shutdown = CancellationToken::new();

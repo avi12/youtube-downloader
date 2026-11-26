@@ -20,7 +20,7 @@ const RELATIVE_IMPORT_PATTERN: &str = r#"((?-u:\b)from\s*|(?-u:\b)import\s*\(\s*
 #[derive(Debug, Clone)]
 pub(super) struct HmrChunk {
     pub(super) code: String,
-    pub(super) src_hash: String,
+    pub(super) source_hash: String,
     pub(super) is_svelte: bool,
     pub(super) is_vendor: bool,
     pub(super) dependencies: Vec<String>,
@@ -49,7 +49,7 @@ pub(super) fn describe_chunks(
     for chunk in chunks.iter().filter(|chunk| chunk.kind == ChunkType::Chunk) {
         let code = codes.get(&chunk.file_name).cloned().unwrap_or_default();
         let is_vendor = chunk.module_ids.iter().all(|id| !paths.is_source(id));
-        let src_hash = if is_vendor {
+        let source_hash = if is_vendor {
             vendor_chunk_hash(&chunk.module_ids, &code)
         } else {
             short_hash(code.as_bytes())
@@ -63,7 +63,7 @@ pub(super) fn describe_chunks(
                     .is_some_and(|id| id.ends_with(SVELTE_EXTENSION)),
                 dependencies: chunk.dependencies().cloned().collect(),
                 code,
-                src_hash,
+                source_hash,
                 is_vendor,
             },
         );
@@ -84,9 +84,9 @@ fn version_of(
         return NO_VERSION.to_owned();
     };
     if !visiting.insert(file_name.to_owned()) {
-        return chunk.src_hash.clone();
+        return chunk.source_hash.clone();
     }
-    let mut parts = vec![chunk.src_hash.clone()];
+    let mut parts = vec![chunk.source_hash.clone()];
     for dependency in &chunk.dependencies {
         if chunks.get(dependency).is_some_and(|found| found.is_svelte) {
             continue;
@@ -119,7 +119,7 @@ pub(super) fn hash_vendor_chunks(chunks: &BTreeMap<String, HmrChunk>) -> String 
     let mut entries: Vec<String> = chunks
         .iter()
         .filter(|(_, chunk)| chunk.is_vendor)
-        .map(|(file_name, chunk)| format!("{file_name}:{}", chunk.src_hash))
+        .map(|(file_name, chunk)| format!("{file_name}:{}", chunk.source_hash))
         .collect();
     entries.sort();
     let mut joined = Vec::new();
@@ -208,7 +208,7 @@ mod tests {
     fn chunk(code: &str, dependencies: &[&str], is_svelte: bool) -> HmrChunk {
         HmrChunk {
             code: code.to_owned(),
-            src_hash: short_hash(code.as_bytes()),
+            source_hash: short_hash(code.as_bytes()),
             is_svelte,
             is_vendor: false,
             dependencies: dependencies.iter().map(|name| (*name).to_owned()).collect(),

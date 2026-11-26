@@ -31,19 +31,22 @@ pub(crate) struct ApplyRequest<'a> {
     /// Keeps a swapped background swapped; told to forget on a full reload.
     pub(crate) swapper: &'a BackgroundSwapper,
     /// The build output directory the rebuilt background is read from.
-    pub(crate) output_dir: &'a Path,
+    pub(crate) output_directory: &'a Path,
 }
 
-async fn read_background_script(output_dir: &Path, plan: &BackgroundSwapPlan) -> Result<String> {
+async fn read_background_script(
+    output_directory: &Path,
+    plan: &BackgroundSwapPlan,
+) -> Result<String> {
     let mut sources = Vec::new();
     for file in &plan.background_files {
-        sources.push(tokio::fs::read_to_string(output_dir.join(file)).await?);
+        sources.push(tokio::fs::read_to_string(output_directory.join(file)).await?);
     }
     Ok(sources.join(SCRIPT_SEPARATOR))
 }
 
 async fn try_swap(request: &ApplyRequest<'_>, plan: &BackgroundSwapPlan) -> Result<()> {
-    let script = read_background_script(request.output_dir, plan).await?;
+    let script = read_background_script(request.output_directory, plan).await?;
     request.swapper.swap(&script).await
 }
 
@@ -198,14 +201,14 @@ mod tests {
         })
     }
 
-    async fn apply(plan: &ReloadPlan, fake: &Arc<FakeTarget>, dir: &Path) -> String {
+    async fn apply(plan: &ReloadPlan, fake: &Arc<FakeTarget>, directory: &Path) -> String {
         let swapper = BackgroundSwapper::new(fake.clone(), Arc::new(|_| {}));
         let request = ApplyRequest {
             plan,
             content_script_update: ContentScriptUpdate::Unchanged,
             target: fake.as_ref(),
             swapper: &swapper,
-            output_dir: dir,
+            output_directory: directory,
         };
         let outcome = apply_reload_plan(&request).await.unwrap();
         swapper.forget();
@@ -228,13 +231,13 @@ mod tests {
 
     #[tokio::test]
     async fn a_swap_runs_the_background_and_refreshes_pages() {
-        let dir = std::env::temp_dir().join("ytdl-browsers-swap-ok");
-        tokio::fs::create_dir_all(&dir).await.unwrap();
-        tokio::fs::write(dir.join("background.js"), "var a = 1")
+        let directory = std::env::temp_dir().join("ytdl-browsers-swap-ok");
+        tokio::fs::create_dir_all(&directory).await.unwrap();
+        tokio::fs::write(directory.join("background.js"), "var a = 1")
             .await
             .unwrap();
         let fake = Arc::new(FakeTarget::default());
-        let outcome = apply(&swap_plan("background.js"), &fake, &dir).await;
+        let outcome = apply(&swap_plan("background.js"), &fake, &directory).await;
         assert!(outcome.starts_with("Swapped background background.js in place"));
         assert!(outcome.contains("popup reloaded"));
         assert_eq!(fake.reloads(), 0);
@@ -242,13 +245,13 @@ mod tests {
 
     #[tokio::test]
     async fn a_failed_swap_falls_back_to_the_reload() {
-        let dir = std::env::temp_dir().join("ytdl-browsers-swap-fail");
-        tokio::fs::create_dir_all(&dir).await.unwrap();
-        tokio::fs::write(dir.join("background.js"), "var a = 1")
+        let directory = std::env::temp_dir().join("ytdl-browsers-swap-fail");
+        tokio::fs::create_dir_all(&directory).await.unwrap();
+        tokio::fs::write(directory.join("background.js"), "var a = 1")
             .await
             .unwrap();
         let fake = Arc::new(FakeTarget::failing());
-        let outcome = apply(&swap_plan("background.js"), &fake, &dir).await;
+        let outcome = apply(&swap_plan("background.js"), &fake, &directory).await;
         assert!(outcome.starts_with("Swapping the background in place failed"));
         assert!(outcome.contains("Reloaded extension (manifest.json changed)"));
         assert_eq!(fake.reloads(), 1);

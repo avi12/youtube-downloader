@@ -27,7 +27,7 @@ pub(crate) struct HmrRequest {
     /// The project (the repository root).
     pub(crate) project_root: PathBuf,
     /// The extension build output the HMR modules are added under.
-    pub(crate) output_dir: PathBuf,
+    pub(crate) output_directory: PathBuf,
     /// The browser the build targets.
     pub(crate) browser: BuildBrowser,
     /// The in-page runtime, written as `runtime.js`.
@@ -66,7 +66,7 @@ impl SharedJobParts {
     ) -> WorkerJob<'job> {
         WorkerJob {
             project_root: self.paths.root(),
-            src_prefix: self.paths.src_prefix(),
+            source_prefix: self.paths.source_prefix(),
             runtime_global: HMR_RUNTIME_GLOBAL,
             mode: MODE_DEVELOPMENT,
             browser,
@@ -82,7 +82,7 @@ impl SharedJobParts {
 /// Builds the HMR modules and the manifest the in-page runtime polls under `<output>/hmr/`.
 pub(crate) async fn build_hmr(request: &HmrRequest) -> Result<HmrBuild> {
     let paths = ProjectPaths::new(&request.project_root);
-    let output_directory = request.output_dir.join(HMR_OUT_SUBDIR);
+    let output_directory = request.output_directory.join(HMR_OUT_SUBDIR);
     fs::create_dir_all(&output_directory).await?;
     let transforms = Transforms::new(read_auto_imports(&paths)?)?;
     let shared = SharedJobParts {

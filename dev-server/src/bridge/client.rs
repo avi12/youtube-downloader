@@ -63,8 +63,8 @@ impl Host for BridgeClient {
         self.call(HostRequest::RebuildHmr).await
     }
 
-    async fn reload_extension(&self, params: ReloadExtensionParams) -> Result<()> {
-        self.call(HostRequest::ReloadExtension(params)).await
+    async fn reload_extension(&self, parameters: ReloadExtensionParams) -> Result<()> {
+        self.call(HostRequest::ReloadExtension(parameters)).await
     }
 
     async fn inject_hmr(&self) -> Result<bool> {

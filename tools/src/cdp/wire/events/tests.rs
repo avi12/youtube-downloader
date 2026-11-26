@@ -6,17 +6,17 @@ use crate::cdp::wire::events::*;
 
 #[test]
 fn parses_and_renders_a_console_call() {
-    let params = json!({"type": "log", "args": [{"value": "hi"}, {"description": "Object"}]});
-    let event = Event::parse("Runtime.consoleAPICalled", params);
+    let parameters = json!({"type": "log", "args": [{"value": "hi"}, {"description": "Object"}]});
+    let event = Event::parse("Runtime.consoleAPICalled", parameters);
     let line = event.and_then(|parsed| render(&parsed, DUMP, None));
     assert_eq!(line.as_deref(), Some("[console:log] hi Object"));
 }
 
 #[test]
 fn prefers_the_exception_description() {
-    let params =
+    let parameters =
         json!({"exceptionDetails": {"text": "Uncaught", "exception": {"description": "Error: x"}}});
-    let event = Event::parse("Runtime.exceptionThrown", params);
+    let event = Event::parse("Runtime.exceptionThrown", parameters);
     let line = event.and_then(|parsed| render(&parsed, MONITOR, Some("SW")));
     assert_eq!(line.as_deref(), Some("[SW][EX] Error: x"));
 }
@@ -37,9 +37,9 @@ fn unknown_methods_are_not_events() {
 
 #[test]
 fn an_execution_context_is_parsed_for_the_session_to_record() {
-    let params = json!({"context": {"id": 7, "name": "Ext", "auxData": {"type": "isolated"}}});
+    let parameters = json!({"context": {"id": 7, "name": "Ext", "auxData": {"type": "isolated"}}});
     let Some(Event::ExecutionContextCreated(context)) =
-        Event::parse("Runtime.executionContextCreated", params)
+        Event::parse("Runtime.executionContextCreated", parameters)
     else {
         panic!("not a context event");
     };

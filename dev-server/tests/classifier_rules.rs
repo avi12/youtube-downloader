@@ -213,23 +213,23 @@ fn main_world_manifest_files_are_listed() -> Result<()> {
 
 #[test]
 fn hashing_reads_real_files_and_skips_missing_ones() -> Result<()> {
-    let dir = std::env::temp_dir().join(format!("ytdl-classifier-{}", std::process::id()));
-    std::fs::create_dir_all(&dir)?;
-    std::fs::write(dir.join("bg.js"), b"1")?;
+    let directory = std::env::temp_dir().join(format!("ytdl-classifier-{}", std::process::id()));
+    std::fs::create_dir_all(&directory)?;
+    std::fs::write(directory.join("bg.js"), b"1")?;
     std::fs::write(
-        dir.join("manifest.json"),
+        directory.join("manifest.json"),
         r#"{"content_scripts":[{"world":"MAIN","js":["m.js"]}]}"#,
     )?;
-    std::fs::write(dir.join("m.js"), b"main")?;
+    std::fs::write(directory.join("m.js"), b"main")?;
     let outputs = ScriptOutputs {
         background_files: vec![rel("bg.js"), rel("absent.js")],
         content_script_files: Vec::new(),
     };
-    assert_eq!(hash_script_outputs(&dir, &outputs)?.len(), 1);
-    let first = hash_main_world_content_scripts(&dir)?;
-    std::fs::write(dir.join("m.js"), b"main2")?;
-    assert_ne!(first, hash_main_world_content_scripts(&dir)?);
-    assert_eq!(hash_installed_lockfile(&dir.join("none.yaml"))?, None);
-    std::fs::remove_dir_all(&dir)?;
+    assert_eq!(hash_script_outputs(&directory, &outputs)?.len(), 1);
+    let first = hash_main_world_content_scripts(&directory)?;
+    std::fs::write(directory.join("m.js"), b"main2")?;
+    assert_ne!(first, hash_main_world_content_scripts(&directory)?);
+    assert_eq!(hash_installed_lockfile(&directory.join("none.yaml"))?, None);
+    std::fs::remove_dir_all(&directory)?;
     Ok(())
 }

@@ -78,7 +78,9 @@ fn own_css_of_entry<'graph>(
         .chunks
         .iter()
         .filter_map(|chunk| {
-            let source_id = input.paths.src_id_of(chunk.facade_module_id.as_deref()?)?;
+            let source_id = input
+                .paths
+                .source_id_of(chunk.facade_module_id.as_deref()?)?;
             Some((source_id, chunk.file_name.as_str()))
         })
         .collect();

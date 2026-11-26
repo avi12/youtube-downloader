@@ -170,11 +170,11 @@ pub(crate) enum Event {
 
 impl Event {
     /// Reads an event frame; unknown methods and unparseable params are not events.
-    pub(super) fn parse(method: &str, params: Value) -> Option<Self> {
+    pub(super) fn parse(method: &str, parameters: Value) -> Option<Self> {
         let method: EventMethod = serde_json::from_value(Value::String(method.to_owned())).ok()?;
         match method {
             EventMethod::Console => {
-                let parsed: ConsoleParams = serde_json::from_value(params).ok()?;
+                let parsed: ConsoleParams = serde_json::from_value(parameters).ok()?;
                 let text = parsed
                     .args
                     .iter()
@@ -187,39 +187,39 @@ impl Event {
                 })
             }
             EventMethod::Log => {
-                let LogParams { entry } = serde_json::from_value(params).ok()?;
+                let LogParams { entry } = serde_json::from_value(parameters).ok()?;
                 Some(Self::Log {
                     level: entry.level,
                     text: entry.text,
                 })
             }
             EventMethod::Exception => {
-                let parsed: ExceptionParams = serde_json::from_value(params).ok()?;
+                let parsed: ExceptionParams = serde_json::from_value(parameters).ok()?;
                 Some(Self::Exception(parsed.exception_details.message()))
             }
             EventMethod::RequestSent => {
-                let RequestParams { request } = serde_json::from_value(params).ok()?;
+                let RequestParams { request } = serde_json::from_value(parameters).ok()?;
                 Some(Self::RequestSent {
                     method: request.method,
                     url: request.url,
                 })
             }
             EventMethod::ResponseReceived => {
-                let ResponseParams { response } = serde_json::from_value(params).ok()?;
+                let ResponseParams { response } = serde_json::from_value(parameters).ok()?;
                 Some(Self::ResponseReceived {
                     status: response.status,
                     url: response.url,
                 })
             }
             EventMethod::LoadingFailed => {
-                let parsed: FailedParams = serde_json::from_value(params).ok()?;
+                let parsed: FailedParams = serde_json::from_value(parameters).ok()?;
                 Some(Self::LoadingFailed {
                     error: parsed.error_text,
                     kind: parsed.kind,
                 })
             }
             EventMethod::ExecutionContextCreated => {
-                let ContextCreated { context } = serde_json::from_value(params).ok()?;
+                let ContextCreated { context } = serde_json::from_value(parameters).ok()?;
                 Some(Self::ExecutionContextCreated(context))
             }
         }

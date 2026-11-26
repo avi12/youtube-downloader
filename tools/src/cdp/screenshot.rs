@@ -77,10 +77,13 @@ pub(crate) async fn run(command: Screenshot) -> Result<()> {
 async fn write_capture(
     session: &mut Session,
     output: &PathBuf,
-    params: serde_json::Value,
+    parameters: serde_json::Value,
 ) -> Result<()> {
-    let capture: Capture =
-        serde_json::from_value(session.call(Method::PageCaptureScreenshot, params).await?)?;
+    let capture: Capture = serde_json::from_value(
+        session
+            .call(Method::PageCaptureScreenshot, parameters)
+            .await?,
+    )?;
     fs::write(output, STANDARD.decode(capture.data)?).await?;
     println!("Saved {}", output.display());
     Ok(())
@@ -133,13 +136,13 @@ async fn popup(port: PortArg, output: &PathBuf) -> Result<()> {
 
 async fn create_popup(browser_url: &str) -> Result<String> {
     let mut session = Session::open(browser_url).await?;
-    let params = json!({
+    let parameters = json!({
         "url": format!("chrome-extension://{EXTENSION_ID}/popup.html"),
         "width": POPUP_WIDTH,
         "height": POPUP_HEIGHT,
         "newWindow": true,
     });
-    let outcome = session.call(Method::TargetCreateTarget, params).await;
+    let outcome = session.call(Method::TargetCreateTarget, parameters).await;
     session.close().await;
     let created: Created = serde_json::from_value(outcome?)?;
     Ok(created.target_id)
