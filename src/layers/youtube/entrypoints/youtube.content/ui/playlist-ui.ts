@@ -1,3 +1,4 @@
+import { isElement } from "@/lib/dom-guards";
 import { handlePlaylistVideoAdditions } from "./playlist-video-items";
 import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
 import PlaylistDownloader from "#youtube/components/playlist-downloader/PlaylistDownloader.svelte";
@@ -106,7 +107,7 @@ function makeTooltipHandlers() {
   let elHoveredYtdlButton: HTMLElement | null = null;
 
   function trackHoveredButton(event: MouseEvent) {
-    const isTargetElement = event.target instanceof Element;
+    const isTargetElement = isElement(event.target);
     if (!isTargetElement) {
       return;
     }

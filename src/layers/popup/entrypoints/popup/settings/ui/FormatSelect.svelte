@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isSelectElement } from "@/lib/dom-guards";
   import { AUTO_EXTENSION, AUTO_EXTENSION_LABEL } from "@/lib/utils/containers";
   import type { FormatItem } from "@/lib/utils/containers";
 
@@ -29,8 +30,7 @@
     {id}
     class="format-select-control"
     onchange={e => {
-      const isSelectElement = e.target instanceof HTMLSelectElement;
-      if (!isSelectElement) {
+      if (!isSelectElement(e.target)) {
         return;
       }
 

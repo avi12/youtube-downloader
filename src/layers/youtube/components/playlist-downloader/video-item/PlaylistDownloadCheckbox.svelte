@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isHtmlElement } from "@/lib/dom-guards";
   import { checkedPlaylistVideos } from "#youtube/lib/ui/playlist-selection.svelte";
 
   interface Props {
@@ -13,8 +14,7 @@
   let elCheckbox = $state<HTMLElement | null>(null);
 
   function attachCheckbox(elTarget: Element) {
-    const isHtmlElement = elTarget instanceof HTMLElement;
-    if (isHtmlElement) {
+    if (isHtmlElement(elTarget)) {
       elCheckbox = elTarget;
     }
   }
@@ -41,8 +41,7 @@
   checked={(isIndeterminate || isChecked) ? "" : undefined}
   disabled={isDisabled ? "" : undefined}
   onchange={e => {
-    const isHtmlElement = e.target instanceof HTMLElement;
-    const isChangeBlocked = !isHtmlElement || isDisabled;
+    const isChangeBlocked = !isHtmlElement(e.target) || isDisabled;
     if (isChangeBlocked) {
       return;
     }

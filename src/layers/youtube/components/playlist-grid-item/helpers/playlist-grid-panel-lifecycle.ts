@@ -1,3 +1,4 @@
+import { isHtmlElement } from "@/lib/dom-guards";
 import type { createPlaylistGridItemState } from "@/layers/youtube/components/playlist-grid-item/PlaylistGridItem.state.svelte";
 import PlaylistGridPanel from "@/layers/youtube/components/playlist-grid-item/PlaylistGridPanel.svelte";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
@@ -49,7 +50,7 @@ export function mountPlaylistPanelInContent({ contentId, playlistId, state }: Mo
   }
 
   const elDropdownCandidate = elContent.closest(POLYMER_IRON_DROPDOWN);
-  const elDropdown = elDropdownCandidate instanceof HTMLElement ? elDropdownCandidate : null;
+  const elDropdown = isHtmlElement(elDropdownCandidate) ? elDropdownCandidate : null;
   const panelInstance = mount(PlaylistGridPanel, {
     target: elContent,
     props: {

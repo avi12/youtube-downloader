@@ -1,3 +1,4 @@
+import { isHtmlElement } from "@/lib/dom-guards";
 import panelFocusStyles from "./helpers/panel-focus.css?inline";
 import { applyInertTrap } from "@/lib/ui/inert-trap";
 
@@ -21,8 +22,7 @@ export function createFocusManager() {
   }
 
   function attach(elPanel: Element) {
-    const isHtmlElement = elPanel instanceof HTMLElement;
-    if (!isHtmlElement) {
+    if (!isHtmlElement(elPanel)) {
       return;
     }
 

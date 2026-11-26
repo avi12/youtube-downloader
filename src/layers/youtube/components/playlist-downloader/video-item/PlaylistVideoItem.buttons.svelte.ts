@@ -1,3 +1,4 @@
+import { isHtmlElement } from "@/lib/dom-guards";
 import { sendChevronButtonData, sendDownloadButtonData } from "./PlaylistVideoItem.button-data";
 import { attachChevronButton, attachDownloadButton } from "./PlaylistVideoItem.buttons.attach";
 import { buildButtonTooltip } from "./PlaylistVideoItem.helpers";
@@ -84,8 +85,7 @@ export function createButtonManager(params: {
   }
 
   function attachButtonGroup(elTarget: Element) {
-    const isHtmlElement = elTarget instanceof HTMLElement;
-    if (isHtmlElement) {
+    if (isHtmlElement(elTarget)) {
       elButtonGroup = elTarget;
     }
   }

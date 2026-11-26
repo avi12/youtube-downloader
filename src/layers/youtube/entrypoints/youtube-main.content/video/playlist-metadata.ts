@@ -1,8 +1,12 @@
+import { isCustomEvent } from "@/lib/dom-guards";
 import { cleanupSegmentedButton } from "@/layers/youtube/entrypoints/youtube-main.content/watch-button/watch-button";
-import { buildAndDispatchVideoData, type ShortsPageData } from "./capture-dispatch";
+import { buildAndDispatchVideoData, shortsPageDataSchema } from "./capture-dispatch";
 import { getPageRoute, getRouteVideoId, PageRoute } from "./page-route";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { playlistMetadataSignal } from "@/lib/ui/synced-stores.svelte";
+import { isPlayerResponse } from "@/lib/youtube/schemas";
+import { z } from "@/lib/zod";
+import { createGuard } from "@/lib/zod-guard";
 import { type PlayerResponse } from "@/types";
 
 const WATCH_FLEXY_TAG = "ytd-watch-flexy";
@@ -50,19 +54,22 @@ function handleNavigation() {
   extractPlaylistMetadata();
 }
 
-interface NavigateResponse {
-  playerResponse?: PlayerResponse;
-  response?: ShortsPageData;
-}
+const isNavigateDetail = createGuard(
+  z.looseObject({
+    response: z.looseObject({
+      playerResponse: z.unknown(),
+      response: shortsPageDataSchema.optional()
+    })
+  })
+);
 
 function readNavigateResponse(event: Event) {
-  const isCustomEvent = event instanceof CustomEvent;
-  if (!isCustomEvent) {
+  if (!isCustomEvent(event)) {
     return null;
   }
 
-  const detail: { response?: NavigateResponse } | null = event.detail;
-  return detail?.response ?? null;
+  const { detail } = event;
+  return isNavigateDetail(detail) ? detail.response : null;
 }
 
 export async function handleNavigateSuccess(event: Event) {
@@ -73,7 +80,7 @@ export async function handleNavigateSuccess(event: Event) {
   if (route === PageRoute.Shorts) {
     const navigateResponse = readNavigateResponse(event);
     const playerResponse = navigateResponse?.playerResponse;
-    const isMatchingShort = playerResponse?.videoDetails?.videoId === expectedVideoId;
+    const isMatchingShort = isPlayerResponse(playerResponse) && playerResponse.videoDetails?.videoId === expectedVideoId;
     if (isMatchingShort) {
       await buildAndDispatchVideoData({
         playerResponse,

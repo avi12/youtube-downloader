@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isNode } from "@/lib/dom-guards";
   import moreActionsIcon from "@/layers/popup/entrypoints/popup/icons/more-actions.svg?raw";
   import RecentMenuItems from "./RecentMenuItems.svelte";
 
@@ -37,7 +38,7 @@
   }
 
   function handleDocumentClick(event: MouseEvent) {
-    const isOutsideClickWhileOpen = isMenuOpen && event.target instanceof Node && isOutsideMenu(event.target);
+    const isOutsideClickWhileOpen = isMenuOpen && isNode(event.target) && isOutsideMenu(event.target);
     if (isOutsideClickWhileOpen) {
       closeMenu();
     }

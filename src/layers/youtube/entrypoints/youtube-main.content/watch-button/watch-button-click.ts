@@ -1,3 +1,4 @@
+import { isNode } from "@/lib/dom-guards";
 import { required } from "@/lib/required";
 import { cancelActiveDownload, startDownload } from "@/layers/youtube/entrypoints/youtube-main.content/video/download";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
@@ -33,8 +34,7 @@ type BuildClickHandlerParams = Prettify<{
 export function buildClickHandler({ videoData, elDropdown, state }: BuildClickHandlerParams) {
   return function handleClick(event: Event) {
     const { target } = event;
-    const isNode = target instanceof Node;
-    if (!isNode) {
+    if (!isNode(target)) {
       return;
     }
 

@@ -3,6 +3,7 @@
 </script>
 
 <script lang="ts">
+  import { isElement, isHtmlElement, isKeyboardEvent, isToggleEvent } from "@/lib/dom-guards";
   import { attachIcon } from "@/lib/ui/polymer-utils";
   import { type Choice, formatChoiceLabel } from "@/lib/utils/choices";
   import { YtIconName } from "@/types";
@@ -52,8 +53,7 @@
   }
 
   function attachTrigger(elTarget: Element) {
-    const isHtmlElement = elTarget instanceof HTMLElement;
-    if (!isHtmlElement) {
+    if (!isHtmlElement(elTarget)) {
       return;
     }
 
@@ -64,8 +64,7 @@
     }
 
     function handleKeydown(event: Event) {
-      const isKeyboardEvent = event instanceof KeyboardEvent;
-      const isArrowDown = isKeyboardEvent && event.key === "ArrowDown";
+      const isArrowDown = isKeyboardEvent(event) && event.key === "ArrowDown";
       if (!isArrowDown) {
         return;
       }
@@ -83,8 +82,7 @@
   }
 
   function attachPopover(elTarget: Element) {
-    const isHtmlElement = elTarget instanceof HTMLElement;
-    if (!isHtmlElement) {
+    if (!isHtmlElement(elTarget)) {
       return;
     }
 
@@ -116,7 +114,7 @@
     }
 
     function handleToggle(event: Event) {
-      if (!(event instanceof ToggleEvent)) {
+      if (!isToggleEvent(event)) {
         return;
       }
 
@@ -135,8 +133,7 @@
   }
 
   function attachMenu(elTarget: Element) {
-    const isHtmlElement = elTarget instanceof HTMLElement;
-    if (!isHtmlElement) {
+    if (!isHtmlElement(elTarget)) {
       return;
     }
 
@@ -169,7 +166,7 @@
     }
 
     function handleClick(event: Event) {
-      if (!(event.target instanceof Element)) {
+      if (!(isElement(event.target))) {
         return;
       }
 
@@ -183,7 +180,7 @@
 
     function handleConfirmKey(event: KeyboardEvent) {
       const elActive = document.activeElement;
-      const isNotPaperItem = !(elActive instanceof HTMLElement) || !elActive.matches(POLYMER_PAPER_ITEM);
+      const isNotPaperItem = !isHtmlElement(elActive) || !elActive.matches(POLYMER_PAPER_ITEM);
       if (isNotPaperItem) {
         return;
       }
@@ -202,7 +199,7 @@
     }
 
     function handleKeydown(event: Event) {
-      if (!(event instanceof KeyboardEvent)) {
+      if (!isKeyboardEvent(event)) {
         return;
       }
 

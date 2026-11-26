@@ -1,3 +1,4 @@
+import { isBlob } from "@/lib/dom-guards";
 import type { Prettify } from "@/types";
 
 const DB_NAME = "ytdl-recent-downloads";
@@ -209,7 +210,7 @@ export async function getRecentDownloadBlob(id: string) {
   const database = await getDatabase();
   const transaction = database.transaction(Store.Blobs, "readonly");
   const blob = await awaitRequest(transaction.objectStore(Store.Blobs).get(id));
-  return blob instanceof Blob ? blob : null;
+  return isBlob(blob) ? blob : null;
 }
 
 export async function deleteRecentDownload(id: string) {

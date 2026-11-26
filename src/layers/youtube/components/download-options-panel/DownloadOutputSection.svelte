@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isInputElement } from "@/lib/dom-guards";
   import PolymerSelect from "@/layers/youtube/components/polymer-select/PolymerSelect.svelte";
   import OptionHint from "./OptionHint.svelte";
   import { createOutputSelectState, type OutputSelectProps } from "@/lib/download-options/output-select.svelte.ts";
@@ -27,8 +28,7 @@
   }
 
   function handleInput(event: Event) {
-    const isInputElement = event.target instanceof HTMLInputElement;
-    if (!isInputElement) {
+    if (!isInputElement(event.target)) {
       return;
     }
 

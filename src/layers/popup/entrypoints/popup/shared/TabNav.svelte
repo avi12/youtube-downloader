@@ -1,4 +1,5 @@
 <script generics="T extends string" lang="ts">
+  import { isButtonElement } from "@/lib/dom-guards";
   import { required } from "@/lib/required";
   interface Props {
     tabs: {
@@ -22,7 +23,7 @@
 
   function registerTabButton(tabId: T) {
     return (element: Element) => {
-      if (element instanceof HTMLButtonElement) {
+      if (isButtonElement(element)) {
         tabButtonElements[tabId] = element;
       }
     };

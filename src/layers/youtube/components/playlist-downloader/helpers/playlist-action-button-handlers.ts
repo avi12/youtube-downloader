@@ -1,3 +1,4 @@
+import { isHtmlElement } from "@/lib/dom-guards";
 import { ACTION_BUTTON_IDS } from "./playlist-action-button-data";
 import { DATA_BUTTON_ID_ATTR } from "@/lib/ui/polymer-utils";
 import type { Prettify } from "@/types";
@@ -8,8 +9,7 @@ type AttachButtonParams = Prettify<{
 }>;
 export function attachButton({ buttonId, setter }: AttachButtonParams) {
   return (elButton: Element) => {
-    const isHtmlElement = elButton instanceof HTMLElement;
-    if (!isHtmlElement) {
+    if (!isHtmlElement(elButton)) {
       return;
     }
 

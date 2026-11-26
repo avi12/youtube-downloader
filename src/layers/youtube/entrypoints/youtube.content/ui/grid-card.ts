@@ -1,3 +1,4 @@
+import { isAnchorElement } from "@/lib/dom-guards";
 import { getVideoIdFromUrl } from "@/lib/youtube/youtube-url";
 import type { Prettify } from "@/types";
 import PlaylistVideoItem from "#youtube/components/playlist-downloader/video-item/PlaylistVideoItem.svelte";
@@ -110,7 +111,7 @@ export function extractCardContent(elCard: Element) {
     elCard,
     selector: SELECTOR_VIDEO_TITLE_LINK
   });
-  if (!(elLink instanceof HTMLAnchorElement)) {
+  if (!isAnchorElement(elLink)) {
     return null;
   }
 

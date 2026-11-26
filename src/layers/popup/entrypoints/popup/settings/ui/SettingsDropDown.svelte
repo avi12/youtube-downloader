@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isNode } from "@/lib/dom-guards";
   import { required } from "@/lib/required";
   import checkIcon from "@/layers/popup/entrypoints/popup/icons/check.svg?raw";
   import chevronRightIcon from "@/layers/popup/entrypoints/popup/icons/chevron-right.svg?raw";
@@ -91,7 +92,7 @@
   }
 
   function handleDocumentPointerDown(event: PointerEvent) {
-    if (!(event.target instanceof Node)) {
+    if (!(isNode(event.target))) {
       return;
     }
 
@@ -104,7 +105,7 @@
   }
 
   function preventOuterScroll(event: Event) {
-    const isScrollInsideList = !(event.target instanceof Node) || elList?.contains(event.target);
+    const isScrollInsideList = !(isNode(event.target)) || elList?.contains(event.target);
     if (isScrollInsideList) {
       return;
     }

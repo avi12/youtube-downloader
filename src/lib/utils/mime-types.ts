@@ -1,4 +1,6 @@
 import { required } from "@/lib/required";
+import { z } from "@/lib/zod";
+import { createGuard } from "@/lib/zod-guard";
 import { extractBaseCodec, isAudioMimeNativeForContainer } from "./container-specs";
 import { getFileExtension } from "./file-extension";
 
@@ -64,9 +66,7 @@ const EXTENSION_TO_MIME = {
 
 export type SupportedExtension = keyof typeof EXTENSION_TO_MIME_ALL;
 
-function isSupportedExtension(extension: string): extension is SupportedExtension {
-  return extension in EXTENSION_TO_MIME_ALL;
-}
+const isSupportedExtension = createGuard(z.literal(Object.keys(EXTENSION_TO_MIME_ALL)));
 
 export function getMimeType(filename: string) {
   const extension = getFileExtension(filename);

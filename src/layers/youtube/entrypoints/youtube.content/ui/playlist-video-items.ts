@@ -1,3 +1,4 @@
+import { isElement } from "@/lib/dom-guards";
 import { extractVideoId } from "./grid-card";
 import { resolveVideoDownloadability } from "./video-downloadability.svelte";
 import { checkInterruptedDownload } from "@/layers/youtube/entrypoints/youtube.content/download/interrupted-downloads";
@@ -187,7 +188,7 @@ function observeRows({ context, elContents }: ObserveRowsParams) {
   const mutationObserver = new MutationObserver(mutations => {
     for (const mutation of mutations) {
       for (const node of mutation.addedNodes) {
-        const isElementNode = node instanceof Element;
+        const isElementNode = isElement(node);
         if (isElementNode) {
           injectIntoSubtree({
             root: node,
@@ -197,7 +198,7 @@ function observeRows({ context, elContents }: ObserveRowsParams) {
       }
 
       for (const node of mutation.removedNodes) {
-        const isElementNode = node instanceof Element;
+        const isElementNode = isElement(node);
         if (!isElementNode) {
           continue;
         }
@@ -208,7 +209,7 @@ function observeRows({ context, elContents }: ObserveRowsParams) {
           continue;
         }
 
-        const elParentRenderer = mutation.target instanceof Element
+        const elParentRenderer = isElement(mutation.target)
           ? mutation.target.closest(ROW_SELECTOR)
           : null;
         const hasParentRenderer = !!elParentRenderer;

@@ -1,3 +1,4 @@
+import { isHtmlElement } from "@/lib/dom-guards";
 import { onButtonClick } from "@/lib/messaging/cross-world-messenger";
 
 const CHEVRON_MARGIN_OVERRIDE_STYLE = "margin-left: 0 !important";
@@ -15,8 +16,7 @@ export function attachDownloadButton({
   refreshDownload: () => void;
   setDownloadButtonElement: (element: Element) => void;
 }) {
-  const isHtmlElement = elButton instanceof HTMLElement;
-  if (!isHtmlElement) {
+  if (!isHtmlElement(elButton)) {
     return;
   }
 
@@ -43,8 +43,7 @@ export function attachChevronButton({
   refreshChevron: () => void;
   setChevronButtonElement: (element: Element) => void;
 }) {
-  const isHtmlElement = elButton instanceof HTMLElement;
-  if (!isHtmlElement) {
+  if (!isHtmlElement(elButton)) {
     return;
   }
 

@@ -6,6 +6,7 @@ import { generatePoTokenIfNeeded, readYtcfg, videoDataCache } from "./video-data
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { videoDataStore } from "@/lib/ui/synced-stores.svelte";
 import { createLogger, LogScope } from "@/lib/utils/logger";
+import { z } from "@/lib/zod";
 import { getMoviePlayer } from "@/lib/youtube/movie-player";
 import { buildVideoData } from "@/lib/youtube/youtube-api";
 import { type PlayerResponse, type YtdlCaptureState } from "@/types";
@@ -60,25 +61,31 @@ function readInitialDataTitle(videoId: string) {
     ?.videoPrimaryInfoRenderer?.title?.runs?.[0]?.text ?? "";
 }
 
-export interface ShortsPageData {
-  overlay?: {
-    reelPlayerOverlayRenderer?: {
-      playerOverlay?: {
-        reelPlayerOverlayViewModel?: {
-          metapanel?: {
-            reelMetapanelViewModel?: {
-              metadataItems?: {
-                shortsVideoTitleViewModel?: {
-                  text?: { content?: string };
-                };
-              }[];
-            };
-          };
-        };
-      };
-    };
-  };
-}
+const shortsMetadataItemSchema = z.looseObject({
+  shortsVideoTitleViewModel: z.looseObject({
+    text: z.looseObject({ content: z.string().optional() }).optional()
+  }).optional()
+});
+
+const shortsMetapanelSchema = z.looseObject({
+  reelMetapanelViewModel: z.looseObject({
+    metadataItems: z.array(shortsMetadataItemSchema).optional()
+  }).optional()
+});
+
+export const shortsPageDataSchema = z.looseObject({
+  overlay: z.looseObject({
+    reelPlayerOverlayRenderer: z.looseObject({
+      playerOverlay: z.looseObject({
+        reelPlayerOverlayViewModel: z.looseObject({
+          metapanel: shortsMetapanelSchema.optional()
+        }).optional()
+      }).optional()
+    }).optional()
+  }).optional()
+});
+
+export type ShortsPageData = z.infer<typeof shortsPageDataSchema>;
 
 function readShortsDisplayTitle(pageData: ShortsPageData | undefined) {
   const metadataItems = pageData?.overlay?.reelPlayerOverlayRenderer?.playerOverlay

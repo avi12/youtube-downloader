@@ -1,3 +1,4 @@
+import { isHtmlElement } from "@/lib/dom-guards";
 import { sendButtonData } from "@/lib/ui/polymer-utils";
 import {
   ButtonSize,
@@ -33,8 +34,7 @@ export function attachPrimaryButton(
     const isNotIdle = state !== PrimaryButtonState.Idle;
     const isDownloadReady = getIsDownloadable() && getIsFilenameValid();
     const isActive = isNotIdle || isDownloadReady;
-    const isHtmlElement = elButton instanceof HTMLElement;
-    if (isHtmlElement) {
+    if (isHtmlElement(elButton)) {
       elButton.classList.toggle("ytdl-cancel-state", state === PrimaryButtonState.Downloading);
     }
 

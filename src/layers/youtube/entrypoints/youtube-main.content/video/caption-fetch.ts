@@ -1,3 +1,4 @@
+import { isVttCue } from "@/lib/dom-guards";
 import { required } from "@/lib/required";
 import { fetchFreshCaptionUrls } from "./caption-urls";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
@@ -36,7 +37,7 @@ function formatWebVttTimestamp(seconds: number) {
 function cuesToWebVtt(cues: TextTrackCueList) {
   const lines = ["WEBVTT", ""];
   for (const cue of cues) {
-    if (!(cue instanceof VTTCue)) {
+    if (!isVttCue(cue)) {
       continue;
     }
 

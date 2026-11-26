@@ -1,3 +1,4 @@
+import { isHtmlElement } from "@/lib/dom-guards";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import type {
   ButtonIconPosition,
@@ -16,8 +17,7 @@ export { attachSettingsOptions, DATA_SETTINGS_OPTIONS_ID_ATTR, isYtdSettingsOpti
 
 export function attachIcon(icon: YtIconName) {
   return (elTarget: Element) => {
-    const isHtmlElement = elTarget instanceof HTMLElement;
-    if (!isHtmlElement) {
+    if (!isHtmlElement(elTarget)) {
       return;
     }
 
@@ -41,8 +41,7 @@ export function applyPolymerCustomStyles({ element, styles }: {
   element: Element;
   styles: Record<string, string>;
 }) {
-  const isHtmlElement = element instanceof HTMLElement;
-  if (!isHtmlElement) {
+  if (!isHtmlElement(element)) {
     return;
   }
 

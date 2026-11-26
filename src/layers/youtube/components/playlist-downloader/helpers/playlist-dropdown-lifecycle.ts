@@ -1,3 +1,4 @@
+import { isHtmlElement } from "@/lib/dom-guards";
 import { PANEL_CLOSED_EVENT } from "@/layers/youtube/components/download-options-panel/DownloadOptionsPanel.handlers.ts";
 import DownloadOptionsPanel from "@/layers/youtube/components/download-options-panel/DownloadOptionsPanel.svelte";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
@@ -39,7 +40,7 @@ export function mountPanelInContent({ contentId, videoData }: MountPanelInConten
   }
 
   const elDropdownCandidate = elContent.closest(POLYMER_IRON_DROPDOWN);
-  const elDropdown = elDropdownCandidate instanceof HTMLElement ? elDropdownCandidate : null;
+  const elDropdown = isHtmlElement(elDropdownCandidate) ? elDropdownCandidate : null;
   const panelInstance = mount(DownloadOptionsPanel, {
     target: elContent,
     props: {
