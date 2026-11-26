@@ -1,4 +1,4 @@
-//! The two builds of the dev server: the production WXT build (a `pnpm wxt build` process, WXT
+//! The two builds of the dev server: the production WXT build (a `bun run wxt build` process, WXT
 //! stays Node) with the dev patches applied to its output, and the HMR module build.
 
 use std::ffi::OsString;

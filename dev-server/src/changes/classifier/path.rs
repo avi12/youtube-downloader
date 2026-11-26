@@ -15,7 +15,7 @@ pub enum PathClass {
     PublicResource,
     /// A dotenv file of the build's cascade: rebuild, refresh env, reload.
     Env,
-    /// pnpm's install marker; counts only if the installed dependency set changed.
+    /// The install marker; counts only if the installed dependency set changed.
     InstallMarker,
     /// Under an entrypoint this browser's build skips: ignore.
     SkippedEntrypoint,

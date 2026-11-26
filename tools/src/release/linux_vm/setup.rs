@@ -44,7 +44,7 @@ async fn ensure_mount(project: &Path) -> Result<(), ReleaseError> {
 }
 
 async fn provision() -> Result<(), ReleaseError> {
-    println!("Provisioning VM toolchain (Node 22, pnpm, bun, ffmpeg, Xvfb, Chrome deps)...");
+    println!("Provisioning VM toolchain (Node 22, Bun, ffmpeg, Xvfb, Chrome deps)...");
     let script = render(PROVISION_SCRIPT, &[]);
     match multipass::run_script(&script).await? {
         Some(0) => Ok(()),

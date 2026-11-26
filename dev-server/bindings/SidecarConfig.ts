@@ -37,11 +37,11 @@ watchPaths: Array<RelPath>,
  */
 envFiles: Array<RelPath>, 
 /**
- * pnpm's install marker, project-relative (`../node_modules/.modules.yaml`).
+ * The install marker, project-relative (`bun.lock`).
  */
 installMarker: RelPath, 
 /**
- * pnpm's installed-state lockfile; its hash tells a real install from a no-op.
+ * The installed-state lockfile; its hash tells a real install from a no-op.
  */
 installedLockfile: string, 
 /**

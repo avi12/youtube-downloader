@@ -8,12 +8,12 @@ use std::process::Stdio;
 use thiserror::Error;
 use tokio::process::{Child, Command};
 
-const PNPM_PROGRAM: &str = "pnpm";
+const BUN_PROGRAM: &str = "bun";
 /// The extensions Windows runs directly, in the order `CreateProcess` would prefer them.
 const WINDOWS_EXECUTABLE_EXTENSIONS: [&str; 4] = ["exe", "cmd", "bat", "com"];
 
 /// The first file of `program` found on `PATH` (with a Windows executable extension when the name
-/// has none), else the bare name. pnpm is an `.exe` when installed through winget and a `.cmd`
+/// has none), else the bare name. Bun is an `.exe` when installed on its own and a `.cmd`
 /// shim when installed through npm, and a spawned process does not search `PATHEXT` for it.
 fn resolve_program(program: &str, search_path: &OsStr) -> OsString {
     let candidates: Vec<String> = if cfg!(windows) && !program.contains('.') {
@@ -83,10 +83,10 @@ impl Invocation {
         }
     }
 
-    /// `pnpm`, resolved on `PATH` (an `.exe` or a `.cmd` shim on Windows).
-    pub(crate) fn pnpm() -> Self {
+    /// `bun`, resolved on `PATH` (an `.exe` or a `.cmd` shim on Windows).
+    pub(crate) fn bun() -> Self {
         let search_path = std::env::var_os("PATH").unwrap_or_default();
-        Self::new(resolve_program(PNPM_PROGRAM, &search_path))
+        Self::new(resolve_program(BUN_PROGRAM, &search_path))
     }
 
     /// Appends one argument.

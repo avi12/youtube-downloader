@@ -18,15 +18,11 @@ sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
   libxrandr2 libgbm1 libpango-1.0-0 libcairo2 libasound2t64 \
   fonts-liberation libu2f-udev libvulkan1
 
-PNPM_PIN=10.30.1
-if ! command -v pnpm >/dev/null || [ "$(pnpm -v 2>/dev/null)" != "$PNPM_PIN" ]; then
-  echo "[provision] Installing pnpm@$PNPM_PIN (matches Windows host)..."
-  sudo npm i -g "pnpm@$PNPM_PIN"
-fi
-
-if ! command -v bun >/dev/null && [ ! -x "$HOME/.bun/bin/bun" ]; then
-  echo "[provision] Installing bun..."
-  curl -fsSL https://bun.sh/install | bash
+BUN_PIN=1.4.5
+if [ "$("$HOME/.bun/bin/bun" -v 2>/dev/null)" != "$BUN_PIN" ]; then
+  echo "[provision] Installing bun@$BUN_PIN..."
+  curl -fsSL https://bun.sh/install | bash -s "bun-v$BUN_PIN"
+  export PATH="$HOME/.bun/bin:$PATH"
   if ! grep -q 'BUN_INSTALL' ~/.bashrc 2>/dev/null; then
     {
       echo 'export BUN_INSTALL="$HOME/.bun"'
@@ -47,7 +43,7 @@ if [ ! -d ~/youtube-downloader/.git ]; then
 fi
 
 cd ~/youtube-downloader
-echo "[provision] pnpm install --frozen-lockfile..."
-CI=true pnpm install --frozen-lockfile
+echo "[provision] bun install --frozen-lockfile..."
+CI=true bun install --frozen-lockfile
 
 echo "[provision] Done."

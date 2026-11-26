@@ -50,9 +50,9 @@ pub struct SidecarConfig {
     pub watch_paths: Vec<RelPath>,
     /// The dotenv cascade for this build mode, project-relative.
     pub env_files: Vec<RelPath>,
-    /// pnpm's install marker, project-relative (`../node_modules/.modules.yaml`).
+    /// The install marker, project-relative (`bun.lock`).
     pub install_marker: RelPath,
-    /// pnpm's installed-state lockfile; its hash tells a real install from a no-op.
+    /// The installed-state lockfile; its hash tells a real install from a no-op.
     pub installed_lockfile: PathBuf,
     /// Watch paths of entrypoints this browser's build skips; edits there are ignored.
     pub skipped_entrypoints: Vec<RelPath>,

@@ -1,5 +1,5 @@
 //! `release package`: builds Chrome and Firefox, packs the CRX, signs the XPI through AMO and
-//! writes `docs/updates.json`. The builds themselves stay in Node (`pnpm build`, `web-ext`).
+//! writes `docs/updates.json`. The builds themselves stay in Node (`bun run build`, `web-ext`).
 
 use std::path::{Path, PathBuf};
 
@@ -151,12 +151,12 @@ async fn find_chrome_binary(
 }
 
 async fn build_and_package_chrome(layout: &Layout) -> Result<(), ReleaseError> {
-    Invocation::pnpm()
-        .arg("build")
+    Invocation::bun()
+        .args(["run", "build"])
         .in_directory(&layout.root)
         .run_inherited()
         .await?;
-    Invocation::pnpm()
+    Invocation::bun()
         .args(["run", "pack"])
         .in_directory(&layout.root)
         .run_inherited()
@@ -217,8 +217,8 @@ async fn sign_firefox_xpi(layout: &Layout, issuer: &str, secret: &str) -> Result
         return Ok(());
     }
     let source = assert_build(layout, "Firefox", FIREFOX_BUILD_DIRECTORY).await?;
-    Invocation::pnpm()
-        .args(["dlx", "web-ext", "sign"])
+    Invocation::bun()
+        .args(["x", "web-ext", "sign"])
         .arg(format!("--source-dir={}", source.display()))
         .arg(format!("--artifacts-dir={}", layout.artifacts.display()))
         .arg(format!("--api-key={issuer}"))
@@ -242,8 +242,8 @@ pub(super) async fn run(args: Args) -> Result<(), ReleaseError> {
 
     build_and_package_chrome(&layout).await?;
     pack_chrome_crx(&layout, &environment, &key_path).await?;
-    Invocation::pnpm()
-        .arg("build:firefox")
+    Invocation::bun()
+        .args(["run", "build:firefox"])
         .in_directory(&layout.root)
         .run_inherited()
         .await?;

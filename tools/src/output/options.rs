@@ -19,7 +19,7 @@ const REBUILD_DEBOUNCE_MS: u32 = 800;
 const WATCH_POLL_INTERVAL_MS: u32 = 500;
 const HMR_PORT_OFFSET: u32 = 1000;
 const ENV_FILES: [&str; 2] = [".env", ".env.local"];
-const INSTALL_MARKER_PATH: &str = "node_modules/.modules.yaml";
+const INSTALL_MARKER_PATH: &str = "bun.lock";
 const USER_PROFILES_DIR: &str = "user-profiles";
 const DEFAULT_START_URL: &str = "https://www.youtube.com/feed/subscriptions";
 const DEFAULT_LANG: &str = "en";
@@ -227,10 +227,7 @@ pub(crate) fn resolve_options(args: &OptionArgs, host: &HostEnvironment) -> Resu
 }
 
 fn lockfile_path(project_root: &Path) -> PathBuf {
-    project_root
-        .join("node_modules")
-        .join(".pnpm")
-        .join("lock.yaml")
+    project_root.join("bun.lock")
 }
 
 #[cfg(test)]

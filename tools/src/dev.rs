@@ -16,7 +16,7 @@ use crate::error::Result;
 /// The commands of this group.
 #[derive(Debug, Subcommand)]
 pub(crate) enum Command {
-    /// Runs the dev server (replaces `pnpm dev` and `scripts/dev/server/main.ts`)
+    /// Runs the dev server (replaces `bun run dev` and `scripts/dev/server/main.ts`)
     Run(launcher::RunArgs),
     /// The HMR build and analysis commands
     #[command(subcommand)]

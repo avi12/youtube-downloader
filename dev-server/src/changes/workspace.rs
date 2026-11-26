@@ -71,7 +71,7 @@ pub trait Workspace: Send + Sync {
     ) -> impl Future<Output = Result<()>> + Send;
     /// The HMR manifest push payload, `None` when the manifest does not exist.
     fn manifest_payload(&self) -> impl Future<Output = Result<Option<Arc<str>>>> + Send;
-    /// Hash of pnpm's installed lockfile, `None` when absent.
+    /// Hash of the installed lockfile, `None` when absent.
     fn installed_lockfile_hash(&self) -> impl Future<Output = Result<Option<ContentHash>>> + Send;
     /// The parsed locale catalogs at startup, the baseline of the first diff.
     fn locale_catalogs(&self) -> impl Future<Output = Result<BTreeMap<RelPath, Value>>> + Send;

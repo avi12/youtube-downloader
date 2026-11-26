@@ -1,9 +1,10 @@
 set -euo pipefail
+export PATH="$HOME/.bun/bin:$PATH"
 cd {{WORK_DIR}}
 git fetch host
 git reset --hard HEAD 2>/dev/null || true
 git checkout -B {{BRANCH}} host/{{BRANCH}} 2>/dev/null || git checkout -B {{BRANCH}} FETCH_HEAD
-CI=true pnpm install --frozen-lockfile
+CI=true bun install --frozen-lockfile
 
 # x11vnc supervisor: restart whenever Xvfb is up but x11vnc isn't running.
 # set +e: ps/grep return 1 when Xvfb not yet up; must not kill the loop.
@@ -26,4 +27,4 @@ pkill -f "[c]hrome-linux64" 2>/dev/null || true
 sleep 1
 
 echo 'Launching dev-server under xvfb-run...'
-exec xvfb-run -a pnpm dev </dev/null
+exec xvfb-run -a bun run dev </dev/null
