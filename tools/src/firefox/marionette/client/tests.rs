@@ -2,6 +2,8 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
 use ytdl_dev_hot::driver::rdp::encode_packet;
 
+use serde_json::json;
+
 use super::*;
 
 #[test]
@@ -27,6 +29,45 @@ fn the_element_id_is_found_under_any_element_key() {
     let reference = HashMap::from([("element-6066-11e4".to_owned(), "id-1".to_owned())]);
     assert_eq!(element_id(&reference), Some("id-1"));
     assert_eq!(element_id(&HashMap::new()), None);
+}
+
+#[test]
+fn command_parameters_keep_their_wire_shape() -> Result<()> {
+    let cases = [
+        (
+            serde_json::to_value(NewSession::default())?,
+            json!({"capabilities": {}}),
+        ),
+        (
+            serde_json::to_value(SwitchToWindow::new("w"))?,
+            json!({"name": "w", "handle": "w"}),
+        ),
+        (
+            serde_json::to_value(NewWindow::FOCUSED_TAB)?,
+            json!({"type": "tab", "focus": true}),
+        ),
+        (
+            serde_json::to_value(ExecuteScript::new("s"))?,
+            json!({"script": "s", "args": [], "scriptTimeout": 30_000}),
+        ),
+        (
+            serde_json::to_value(PerformActions::key_press("k"))?,
+            json!({"actions": [{"type": "key", "id": "kbd", "actions":
+                [{"type": "keyDown", "value": "k"}, {"type": "keyUp", "value": "k"}]}]}),
+        ),
+        (
+            serde_json::to_value(FindElement::css("a"))?,
+            json!({"using": "css selector", "value": "a"}),
+        ),
+        (
+            serde_json::to_value(InstallAddon::temporary("p"))?,
+            json!({"path": "p", "temporary": true}),
+        ),
+    ];
+    for (sent, expected) in cases {
+        assert_eq!(sent, expected);
+    }
+    Ok(())
 }
 
 #[test]

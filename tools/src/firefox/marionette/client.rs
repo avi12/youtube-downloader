@@ -4,19 +4,26 @@
 use std::collections::HashMap;
 use std::time::Duration;
 
-use serde::de::DeserializeOwned;
+use serde::de::{DeserializeOwned, IgnoredAny};
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::Value;
 use tokio::time::timeout;
+
+use self::params::{
+    ById, ExecuteScript, FindElement, InstallAddon, Navigate, NewSession, NewWindow, NoParams,
+    PerformActions, SwitchToWindow,
+};
 
 use crate::firefox::framed::Framed;
 use crate::firefox::{FirefoxError, Result};
 
 pub(super) const DEFAULT_PORT: u16 = 2828;
 const COMMAND_TIMEOUT: Duration = Duration::from_secs(60);
-const SCRIPT_TIMEOUT_MS: u64 = 30_000;
 const REQUEST_MESSAGE: u8 = 0;
 const YOUTUBE_PAGES: [&str; 2] = ["youtube.com/watch", "youtube.com/feed"];
+
+/// `[1, id, error, result]`; the error and the result depend on the command.
+type Response = (IgnoredAny, u64, Value, Value);
 
 /// The Marionette commands this client sends.
 #[derive(Debug, Clone, Copy, Serialize)]
@@ -99,7 +106,7 @@ impl Marionette {
             next_id: 1,
         };
         let _: Value = client
-            .send(CommandName::NewSession, json!({"capabilities": {}}))
+            .send(CommandName::NewSession, &NewSession::default())
             .await?;
         Ok(client)
     }
@@ -107,26 +114,28 @@ impl Marionette {
     async fn exchange<T: DeserializeOwned>(&mut self, id: u64) -> Result<T> {
         loop {
             let packet = self.framed.recv().await?;
-            let Value::Array(items) = packet else {
+            let Ok((_, answered, error, result)) = serde_json::from_value::<Response>(packet)
+            else {
                 continue;
             };
-            let [_, answered, error, result] = items.as_slice() else {
-                continue;
-            };
-            if answered.as_u64() != Some(id) {
+            if answered != id {
                 continue;
             }
             if !error.is_null() {
                 return Err(FirefoxError::Failed(format!("Marionette error: {error}")));
             }
-            return Ok(T::deserialize(result)?);
+            return Ok(serde_json::from_value(result)?);
         }
     }
 
-    async fn send<T: DeserializeOwned>(&mut self, name: CommandName, params: Value) -> Result<T> {
+    async fn send<T: DeserializeOwned>(
+        &mut self,
+        name: CommandName,
+        params: &(impl Serialize + Sync),
+    ) -> Result<T> {
         let id = self.next_id;
         self.next_id += 1;
-        let command = json!([REQUEST_MESSAGE, id, name, params]);
+        let command = (REQUEST_MESSAGE, id, name, params);
         self.framed.send(&command).await?;
         timeout(COMMAND_TIMEOUT, self.exchange(id))
             .await
@@ -134,23 +143,21 @@ impl Marionette {
     }
 
     pub(super) async fn windows(&mut self) -> Result<Vec<String>> {
-        let handles: MaybeWrapped<Vec<String>> =
-            self.send(CommandName::GetWindowHandles, json!({})).await?;
+        let handles: MaybeWrapped<Vec<String>> = self
+            .send(CommandName::GetWindowHandles, &NoParams {})
+            .await?;
         Ok(handles.into_inner())
     }
 
     pub(super) async fn switch_to(&mut self, handle: &str) -> Result<()> {
         let _: Value = self
-            .send(
-                CommandName::SwitchToWindow,
-                json!({"name": handle, "handle": handle}),
-            )
+            .send(CommandName::SwitchToWindow, &SwitchToWindow::new(handle))
             .await?;
         Ok(())
     }
 
     pub(super) async fn current_url(&mut self) -> Result<String> {
-        let url: MaybeWrapped<String> = self.send(CommandName::GetCurrentUrl, json!({})).await?;
+        let url: MaybeWrapped<String> = self.send(CommandName::GetCurrentUrl, &NoParams {}).await?;
         Ok(url.into_inner())
     }
 
@@ -168,68 +175,52 @@ impl Marionette {
 
     pub(super) async fn open_tab(&mut self) -> Result<()> {
         let _: Value = self
-            .send(
-                CommandName::NewWindow,
-                json!({"type": "tab", "focus": true}),
-            )
+            .send(CommandName::NewWindow, &NewWindow::FOCUSED_TAB)
             .await?;
         Ok(())
     }
 
     pub(super) async fn navigate(&mut self, url: &str) -> Result<()> {
-        let _: Value = self
-            .send(CommandName::Navigate, json!({"url": url}))
-            .await?;
+        let _: Value = self.send(CommandName::Navigate, &Navigate { url }).await?;
         Ok(())
     }
 
+    /// The script's completion value: arbitrary page data.
     pub(super) async fn execute_async(&mut self, script: &str) -> Result<Value> {
-        let params = json!({"script": script, "args": [], "scriptTimeout": SCRIPT_TIMEOUT_MS});
-        self.send(CommandName::ExecuteAsyncScript, params).await
+        self.send(CommandName::ExecuteAsyncScript, &ExecuteScript::new(script))
+            .await
     }
 
     pub(super) async fn press_key(&mut self, key: &str) -> Result<()> {
-        let actions = json!({"actions": [{
-            "type": "key",
-            "id": "kbd",
-            "actions": [{"type": "keyDown", "value": key}, {"type": "keyUp", "value": key}]
-        }]});
-        let _: Value = self.send(CommandName::PerformActions, actions).await?;
+        let actions = PerformActions::key_press(key);
+        let _: Value = self.send(CommandName::PerformActions, &actions).await?;
         Ok(())
     }
 
     pub(super) async fn click(&mut self, selector: &str) -> Result<()> {
         let found: MaybeWrapped<HashMap<String, String>> = self
-            .send(
-                CommandName::FindElement,
-                json!({"using": "css selector", "value": selector}),
-            )
+            .send(CommandName::FindElement, &FindElement::css(selector))
             .await?;
         let reference = found.into_inner();
         let id = element_id(&reference).ok_or_else(|| {
             FirefoxError::Failed(format!("Cannot resolve element id from {reference:?}"))
         })?;
-        let _: Value = self
-            .send(CommandName::ElementClick, json!({"id": id}))
-            .await?;
+        let _: Value = self.send(CommandName::ElementClick, &ById { id }).await?;
         Ok(())
     }
 
     pub(super) async fn uninstall_addon(&mut self, id: &str) -> Result<()> {
-        let _: Value = self
-            .send(CommandName::AddonUninstall, json!({"id": id}))
-            .await?;
+        let _: Value = self.send(CommandName::AddonUninstall, &ById { id }).await?;
         Ok(())
     }
 
+    /// The reply (the add-on's id) is only ever printed.
     pub(crate) async fn install_temporary_addon(&mut self, path: &str) -> Result<Value> {
-        self.send(
-            CommandName::AddonInstall,
-            json!({"path": path, "temporary": true}),
-        )
-        .await
+        self.send(CommandName::AddonInstall, &InstallAddon::temporary(path))
+            .await
     }
 }
 
+mod params;
 #[cfg(test)]
 mod tests;
