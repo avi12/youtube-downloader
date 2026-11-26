@@ -40,6 +40,13 @@
 - Strings: use enums; if no enum fits, use a descriptive `SCREAMING_SNAKE_CASE` constant
 - Numbers: use a descriptive `SCREAMING_SNAKE_CASE` constant
 
+# Validation
+- Import `z` from `@/lib/zod`, never from `zod`
+- Validate external data (page objects, DOM nodes, YouTube responses, messages between contexts) with guards from `createGuard`/`createLazyGuard` and `@/lib/dom-guards`, not casts, `querySelector<T>` generics or hand-written `x is T` functions
+- Use live objects in place, never a parsed copy
+- Use `z.looseObject` for YouTube data and require only what the code can't work without
+- Infer types with `z.infer`; avoid `z.custom`
+
 # Svelte
 - Single-use functions: inline them
 - `@attach` arrow functions in templates: extract to named functions in the script block
