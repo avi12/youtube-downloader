@@ -79,13 +79,15 @@ impl HmrHandle {
 mod tests {
     use crate::hmr_server::handle::*;
 
+    const ADVANCE_SECONDS: u64 = 3;
+
     #[tokio::test(start_paused = true)]
     async fn a_broadcast_reaches_subscribers_and_stamps_the_push() {
         let handle = HmrHandle::new();
         let mut receiver = handle.subscribe();
         assert_eq!(handle.since_last_import_push(), None);
         handle.broadcast_manifest(&Arc::from(r#"{"type":"manifest"}"#));
-        tokio::time::advance(Duration::from_secs(3)).await;
+        tokio::time::advance(Duration::from_secs(ADVANCE_SECONDS)).await;
         assert_eq!(
             receiver.recv().await.ok().as_deref(),
             Some(r#"{"type":"manifest"}"#)

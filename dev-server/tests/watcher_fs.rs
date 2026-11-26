@@ -10,6 +10,10 @@ use ytdl_dev_hot::changes::watcher::{spawn, ChangeBatch, WatchConfig};
 use ytdl_dev_hot::types::RelPath;
 use ytdl_dev_hot::Result;
 
+const POLL_INTERVAL_MS: u64 = 50;
+const DEBOUNCE_MS: u64 = 100;
+const SETTLE_MS: u64 = 250;
+
 const WAIT: Duration = Duration::from_secs(20);
 
 fn scratch_directory(name: &str) -> PathBuf {
@@ -20,8 +24,8 @@ fn config(root: &Path) -> WatchConfig {
     WatchConfig {
         root: root.to_path_buf(),
         paths: vec![RelPath::new("src"), RelPath::new(".env.local")],
-        poll_interval: Duration::from_millis(50),
-        debounce: Duration::from_millis(100),
+        poll_interval: Duration::from_millis(POLL_INTERVAL_MS),
+        debounce: Duration::from_millis(DEBOUNCE_MS),
     }
 }
 
@@ -44,7 +48,7 @@ async fn reports_edits_and_late_files_relative_to_the_root() -> Result<()> {
     let shutdown = CancellationToken::new();
     let mut batches = spawn(config(&root), shutdown.clone())?;
     // Polling compares modified times: let the baseline age past the filesystem clock tick
-    tokio::time::sleep(Duration::from_millis(250)).await;
+    tokio::time::sleep(Duration::from_millis(SETTLE_MS)).await;
 
     std::fs::write(root.join("src").join("a.ts"), b"2 and longer")?;
     assert_eq!(next_paths(&mut batches).await, ["src/a.ts"]);

@@ -13,6 +13,8 @@ use serde::{Deserialize, Deserializer, Serialize};
 use crate::dev::hmr::config::{EntryKind, ProjectPaths, HMR_ENTRIES};
 use crate::dev::hmr::error::{HmrError, Result};
 
+const EXPORTED_NAME_GROUP: usize = 3;
+
 const WXT_DIR: &str = ".wxt";
 const VIRTUAL_PREFIX: &str = "\0ytdl:";
 const WXT_IMPORTS_SPECIFIER: &str = "#imports";
@@ -229,7 +231,7 @@ pub(crate) fn read_auto_imports(paths: &ProjectPaths) -> Result<Vec<AutoImport>>
             Some(AutoImport {
                 name: captures.get(1)?.as_str().to_owned(),
                 source: captures.get(2)?.as_str().to_owned(),
-                exported: captures.get(3)?.as_str().to_owned(),
+                exported: captures.get(EXPORTED_NAME_GROUP)?.as_str().to_owned(),
             })
         })
         .collect())

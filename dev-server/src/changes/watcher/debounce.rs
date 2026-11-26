@@ -121,6 +121,10 @@ mod tests {
     use crate::changes::watcher::ChangeKind;
     use crate::types::RelPath;
 
+    const CHANNEL_CAPACITY: usize = 8;
+    const TICK_MS: u64 = 500;
+    const SETTLE_MS: u64 = 700;
+
     const WINDOW: Duration = Duration::from_millis(800);
 
     fn event(path: &str, kind: ChangeKind) -> ChangeEvent {
@@ -155,15 +159,15 @@ mod tests {
         mpsc::Receiver<ChangeBatch>,
         CancellationToken,
     ) {
-        let (raw_sender, raw_receiver) = mpsc::channel(8);
-        let (batch_sender, batch_receiver) = mpsc::channel(8);
+        let (raw_sender, raw_receiver) = mpsc::channel(CHANNEL_CAPACITY);
+        let (batch_sender, batch_receiver) = mpsc::channel(CHANNEL_CAPACITY);
         let shutdown = CancellationToken::new();
         tokio::spawn(run_loop(
             raw_receiver,
             batch_sender,
             LoopTiming {
                 debounce: WINDOW,
-                tick: Duration::from_millis(500),
+                tick: Duration::from_millis(TICK_MS),
             },
             on_tick,
             shutdown.clone(),
@@ -175,9 +179,9 @@ mod tests {
     async fn each_event_restarts_the_quiet_window() {
         let (raw, mut batches, _shutdown) = harness(Vec::new);
         assert!(raw.send(event("a", ChangeKind::Modified)).await.is_ok());
-        tokio::time::sleep(Duration::from_millis(700)).await;
+        tokio::time::sleep(Duration::from_millis(SETTLE_MS)).await;
         assert!(raw.send(event("b", ChangeKind::Modified)).await.is_ok());
-        tokio::time::sleep(Duration::from_millis(700)).await;
+        tokio::time::sleep(Duration::from_millis(SETTLE_MS)).await;
         assert!(batches.try_recv().is_err());
         let batch = batches.recv().await;
         assert_eq!(batch.map(|found| found.events.len()), Some(2));

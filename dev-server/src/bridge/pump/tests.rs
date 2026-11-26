@@ -7,6 +7,8 @@ use tracing_subscriber::layer::SubscriberExt;
 use crate::bridge::pump::*;
 use crate::bridge::Host;
 
+const PIPE_BUFFER_BYTES: usize = 4096;
+
 const WAIT: Duration = Duration::from_secs(5);
 
 struct FakeTypeScript {
@@ -30,8 +32,8 @@ impl FakeTypeScript {
 }
 
 fn start() -> Result<(BridgeLink, FakeTypeScript, CancellationToken)> {
-    let (sidecar_stdin, ts_stdin) = duplex(4096);
-    let (sidecar_stdout, ts_stdout) = duplex(4096);
+    let (sidecar_stdin, ts_stdin) = duplex(PIPE_BUFFER_BYTES);
+    let (sidecar_stdout, ts_stdout) = duplex(PIPE_BUFFER_BYTES);
     let shutdown = CancellationToken::new();
     let (stdin_reader, _unused_writer) = split(sidecar_stdin);
     let (_unused_reader, stdout_writer) = split(sidecar_stdout);

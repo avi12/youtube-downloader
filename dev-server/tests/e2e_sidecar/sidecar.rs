@@ -23,6 +23,8 @@ use crate::hmr_client::HmrClient;
 use crate::project::{write_file, Project};
 use crate::{eventually, DEBOUNCE_MS, FILE_POLL_MS, WAIT};
 
+const OUTGOING_CHANNEL_CAPACITY: usize = 16;
+
 fn free_port() -> u16 {
     StdListener::bind("127.0.0.1:0")
         .unwrap()
@@ -89,7 +91,7 @@ async fn spawn_sidecar(scenario: &Scenario) -> Sidecar {
         .unwrap();
     let mut stdin = child.stdin.take().unwrap();
     let stdout = child.stdout.take().unwrap();
-    let (to_child, mut outgoing) = mpsc::channel::<String>(16);
+    let (to_child, mut outgoing) = mpsc::channel::<String>(OUTGOING_CHANNEL_CAPACITY);
     to_child.send(encode_line(&config).unwrap()).await.unwrap();
     tokio::spawn(async move {
         while let Some(line) = outgoing.recv().await {

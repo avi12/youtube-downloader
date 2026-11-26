@@ -2,9 +2,12 @@ use serde_json::json;
 
 use crate::bridge::protocol::*;
 
+const SAMPLE_REQUEST_ID: u64 = 7;
+const SAMPLE_STARTED_AT_MS: u64 = 12;
+
 fn request_line(request: HostRequest) -> Result<String> {
     encode_line(&OutboundMessage::Request(RequestEnvelope {
-        id: RequestId(7),
+        id: RequestId(SAMPLE_REQUEST_ID),
         request,
     }))
 }
@@ -25,7 +28,7 @@ fn reload_request_round_trips() -> Result<()> {
             is_background_changed: true,
             ..ChangedOutputs::default()
         },
-        started_at_ms: 12,
+        started_at_ms: SAMPLE_STARTED_AT_MS,
     });
     let decoded: OutboundMessage = decode_line(&request_line(request.clone())?)?;
     assert_eq!(

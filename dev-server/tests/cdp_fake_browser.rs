@@ -13,6 +13,8 @@ use ytdl_dev_hot::driver::BrowserDriver;
 use ytdl_dev_hot::types::Port;
 use ytdl_dev_hot::Result;
 
+const HANG_SECONDS: u64 = 30;
+
 type CallLog = Arc<Mutex<Vec<String>>>;
 
 struct Fake {
@@ -56,7 +58,7 @@ async fn serve_http(mut stream: TcpStream, list: &str) {
         .unwrap();
     stream.write_all(response.as_bytes()).await.unwrap();
     // Like Chrome's DevTools server: `Connection: close` is ignored and the socket stays open.
-    tokio::time::sleep(std::time::Duration::from_secs(30)).await;
+    tokio::time::sleep(std::time::Duration::from_secs(HANG_SECONDS)).await;
 }
 
 async fn serve_websocket(stream: TcpStream, calls: CallLog, popup_tab: &'static str) {

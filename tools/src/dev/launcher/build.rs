@@ -182,6 +182,12 @@ pub(super) async fn build_hmr_modules(
 mod tests {
     use crate::dev::launcher::build::*;
 
+    const CDP_PORT: u16 = 9229;
+    const MARIONETTE_PORT: u16 = 2828;
+    const REBUILD_DEBOUNCE_MS: u32 = 800;
+    const WATCH_POLL_INTERVAL_MS: u32 = 500;
+    const HMR_PORT_OFFSET: u32 = 1000;
+
     fn options(out_directory: Option<&str>) -> DevOptions {
         DevOptions {
             project_root: PathBuf::from("repo"),
@@ -189,15 +195,15 @@ mod tests {
             is_audio_muted: false,
             is_wsl: false,
             profile_platform_suffix: "linux".to_owned(),
-            cdp_port: 9229,
-            marionette_port: 2828,
+            cdp_port: CDP_PORT,
+            marionette_port: MARIONETTE_PORT,
             profile_directory: PathBuf::from("profile"),
             out_directory: out_directory.map(str::to_owned),
             start_url: String::new(),
             lang: "en".to_owned(),
-            rebuild_debounce_ms: 800,
-            watch_poll_interval_ms: 500,
-            hmr_port_offset: 1000,
+            rebuild_debounce_ms: REBUILD_DEBOUNCE_MS,
+            watch_poll_interval_ms: WATCH_POLL_INTERVAL_MS,
+            hmr_port_offset: HMR_PORT_OFFSET,
             env_files: Vec::new(),
             install_marker_path: String::new(),
             installed_lockfile_path: PathBuf::new(),

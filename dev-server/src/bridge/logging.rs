@@ -76,9 +76,11 @@ mod tests {
 
     use crate::bridge::logging::*;
 
+    const LOG_CHANNEL_CAPACITY: usize = 4;
+
     #[test]
     fn an_event_becomes_a_log_line() {
-        let (sender, mut receiver) = mpsc::channel(4);
+        let (sender, mut receiver) = mpsc::channel(LOG_CHANNEL_CAPACITY);
         let subscriber = tracing_subscriber::registry().with(BridgeLogLayer::new(sender));
         with_default(subscriber, || tracing::info!("Hot-swapped"));
         let message = receiver.try_recv().ok();
@@ -92,7 +94,7 @@ mod tests {
 
     #[test]
     fn a_warning_carries_its_level() {
-        let (sender, mut receiver) = mpsc::channel(4);
+        let (sender, mut receiver) = mpsc::channel(LOG_CHANNEL_CAPACITY);
         let subscriber = tracing_subscriber::registry().with(BridgeLogLayer::new(sender));
         with_default(subscriber, || tracing::warn!("slow"));
         let message = receiver.try_recv().ok();

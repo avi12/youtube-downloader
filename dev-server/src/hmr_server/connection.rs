@@ -171,12 +171,14 @@ mod tests {
     use crate::hmr_server::connection::*;
     use crate::hmr_server::serve_listener_pinging;
 
+    const LOG_CHANNEL_CAPACITY: usize = 8;
+
     const WAIT: Duration = Duration::from_secs(5);
     const QUIET: Duration = Duration::from_millis(100);
 
     #[tokio::test]
     async fn a_connection_closed_before_the_handshake_logs_nothing() -> Result<()> {
-        let (sender, mut logs) = mpsc::channel(8);
+        let (sender, mut logs) = mpsc::channel(LOG_CHANNEL_CAPACITY);
         let _guard = tracing::subscriber::set_default(
             tracing_subscriber::registry().with(BridgeLogLayer::new(sender)),
         );

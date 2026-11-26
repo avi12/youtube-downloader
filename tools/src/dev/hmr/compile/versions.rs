@@ -9,6 +9,8 @@ use crate::dev::hmr::chunks::{ChunkType, OutputChunk};
 use crate::dev::hmr::config::{short_hash, without_query, ProjectPaths};
 use crate::dev::hmr::error::Result;
 
+const ALTERNATIVE_NAME_GROUP: usize = 3;
+
 const SVELTE_EXTENSION: &str = ".svelte";
 const NO_VERSION: &str = "0";
 const VENDOR_PATH_SEPARATOR: &str = "|";
@@ -179,9 +181,12 @@ impl ImportStamper {
         self.pattern
             .replace_all(&chunk.code, |captures: &Captures<'_>| {
                 let whole = captures.get(0).map_or("", |found| found.as_str());
-                let (Some(prefix), Some(specifier)) =
-                    (captures.get(1), captures.get(2).or_else(|| captures.get(3)))
-                else {
+                let (Some(prefix), Some(specifier)) = (
+                    captures.get(1),
+                    captures
+                        .get(2)
+                        .or_else(|| captures.get(ALTERNATIVE_NAME_GROUP)),
+                ) else {
                     return whole.to_owned();
                 };
                 let target = normalize_posix(&format!("{from_directory}/{}", specifier.as_str()));

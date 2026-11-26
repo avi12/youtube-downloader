@@ -3,6 +3,9 @@ use tokio::io::{duplex, DuplexStream};
 
 use crate::driver::rdp::connection::*;
 
+const PIPE_BUFFER_BYTES: usize = 4096;
+const SMALL_PIPE_BUFFER_BYTES: usize = 64;
+
 const LIMIT: Duration = Duration::from_secs(1);
 
 async fn push(server: &mut DuplexStream, packet: &Value) -> Result<()> {
@@ -12,7 +15,7 @@ async fn push(server: &mut DuplexStream, packet: &Value) -> Result<()> {
 
 #[tokio::test]
 async fn unmatched_packets_stay_queued_for_a_later_wait() -> Result<()> {
-    let (client, mut server) = duplex(4096);
+    let (client, mut server) = duplex(PIPE_BUFFER_BYTES);
     let mut connection = Connection::new(client);
     push(&mut server, &json!({"from":"noise"})).await?;
     push(&mut server, &json!({"from":"wanted"})).await?;
@@ -30,7 +33,7 @@ async fn unmatched_packets_stay_queued_for_a_later_wait() -> Result<()> {
 
 #[tokio::test]
 async fn evaluation_result_is_correlated_under_interleaving() -> Result<()> {
-    let (client, mut server) = duplex(4096);
+    let (client, mut server) = duplex(PIPE_BUFFER_BYTES);
     let mut connection = Connection::new(client);
     let console = ActorId::new("console1");
     for packet in [
@@ -59,7 +62,7 @@ async fn evaluation_result_is_correlated_under_interleaving() -> Result<()> {
 
 #[tokio::test]
 async fn an_unknown_packet_type_is_kept_but_never_an_acknowledgement() -> Result<()> {
-    let (client, mut server) = duplex(4096);
+    let (client, mut server) = duplex(PIPE_BUFFER_BYTES);
     let mut connection = Connection::new(client);
     push(
         &mut server,
@@ -76,7 +79,7 @@ async fn an_unknown_packet_type_is_kept_but_never_an_acknowledgement() -> Result
 
 #[tokio::test(start_paused = true)]
 async fn a_silent_peer_times_out() {
-    let (client, _server) = duplex(64);
+    let (client, _server) = duplex(SMALL_PIPE_BUFFER_BYTES);
     let mut connection = Connection::new(client);
     let waited = connection.wait_for(LIMIT, "silence", |_| true).await;
     assert!(matches!(waited, Err(Error::Timeout("silence"))));
@@ -84,7 +87,7 @@ async fn a_silent_peer_times_out() {
 
 #[tokio::test]
 async fn a_packet_arriving_byte_by_byte_is_read() -> Result<()> {
-    let (client, mut server) = duplex(4096);
+    let (client, mut server) = duplex(PIPE_BUFFER_BYTES);
     let mut connection = Connection::new(client);
     let bytes = encode_packet(&json!({"from":"slow"}))?;
     let writer = tokio::spawn(async move {
@@ -107,7 +110,7 @@ async fn a_packet_arriving_byte_by_byte_is_read() -> Result<()> {
 
 #[tokio::test]
 async fn a_closed_socket_is_a_protocol_error() {
-    let (client, server) = duplex(64);
+    let (client, server) = duplex(SMALL_PIPE_BUFFER_BYTES);
     drop(server);
     let mut connection = Connection::new(client);
     let waited = connection.wait_for(LIMIT, "x", |_| true).await;

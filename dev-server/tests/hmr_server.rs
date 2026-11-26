@@ -19,6 +19,9 @@ use ytdl_dev_hot::hmr_server::{
 use ytdl_dev_hot::types::Port;
 use ytdl_dev_hot::{Error, Result};
 
+const POLL_MS: u64 = 5;
+const CLIENT_COUNT: u64 = 4;
+
 type Client = WebSocketStream<MaybeTlsStream<TcpStream>>;
 
 const PING_INTERVAL: Duration = Duration::from_millis(60);
@@ -102,7 +105,7 @@ async fn wait_for_clients(handle: &HmrHandle, count: usize) -> Result<()> {
                 break;
             }
 
-            tokio::time::sleep(Duration::from_millis(5)).await;
+            tokio::time::sleep(Duration::from_millis(POLL_MS)).await;
         }
     })
     .await
@@ -153,7 +156,7 @@ async fn a_client_that_answers_pings_stays_and_a_silent_one_is_dropped() -> Resu
     let mut polite = connect(address).await?;
     let mut silent = connect(address).await?;
     wait_for_clients(&handle, 2).await?;
-    for _ in 0..4 {
+    for _ in 0..CLIENT_COUNT {
         assert_eq!(next_text(&mut polite).await?, PING);
         polite.send(Message::text(r#"{"type":"pong"}"#)).await?;
     }

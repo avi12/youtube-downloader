@@ -10,6 +10,8 @@ use crate::orchestrator::tests::fakes::snapshot;
 use crate::orchestrator::tests::harness::start;
 use crate::orchestrator::{PUSH_SETTLE, RELOAD_SETTLE};
 
+const POLL_MS: u64 = 10;
+
 #[tokio::test(start_paused = true)]
 async fn an_hmr_graph_edit_hot_swaps_then_catches_the_bundle_up() {
     let mut harness = start(&json!({}), |_| {}).await;
@@ -87,7 +89,7 @@ async fn a_reload_waits_out_the_tail_of_the_last_push() {
     })
     .await;
     harness.touch(&["src/a.svelte"]).await;
-    sleep(Duration::from_millis(10)).await;
+    sleep(Duration::from_millis(POLL_MS)).await;
     harness.touch(&["src/lib/a.ts"]).await;
     harness.settle().await;
     let pushed = harness.log.time_of("rebuildHmr", 0);

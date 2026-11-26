@@ -20,6 +20,10 @@ use crate::orchestrator::tests::fakes::{DiskState, FakeDriver, FakeFiles, FakeHo
 use crate::orchestrator::{run, Deps};
 use crate::types::RelPath;
 
+const CHANGE_CHANNEL_CAPACITY: usize = 16;
+const NOTIFICATION_CHANNEL_CAPACITY: usize = 4;
+const EPOCH_ORIGIN_MS: u64 = 1_000;
+
 const LONG_ENOUGH: Duration = Duration::from_secs(20);
 
 fn config(extra: &Value) -> SidecarConfig {
@@ -58,8 +62,8 @@ pub(super) async fn start(extra: &Value, setup: impl FnOnce(&mut DiskState)) -> 
     let build_failures = Arc::<Mutex<VecDeque<String>>>::default();
     let hmr = HmrHandle::new();
     let pushes = hmr.subscribe();
-    let (changes, change_receiver) = mpsc::channel(16);
-    let (notifications, notification_receiver) = mpsc::channel(4);
+    let (changes, change_receiver) = mpsc::channel(CHANGE_CHANNEL_CAPACITY);
+    let (notifications, notification_receiver) = mpsc::channel(NOTIFICATION_CHANNEL_CAPACITY);
     let deps = Deps {
         host: FakeHost {
             log: log.clone(),
@@ -76,7 +80,7 @@ pub(super) async fn start(extra: &Value, setup: impl FnOnce(&mut DiskState)) -> 
         config: config(extra),
         changes: change_receiver,
         notifications: notification_receiver,
-        epoch_origin_ms: 1_000,
+        epoch_origin_ms: EPOCH_ORIGIN_MS,
     };
     setup(&mut files.state.lock().unwrap());
     let task = tokio::spawn(run(deps, CancellationToken::new()));

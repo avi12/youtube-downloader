@@ -156,6 +156,9 @@ impl ReloadTarget for FirefoxTarget {
 mod tests {
     use crate::dev::browsers::targets::firefox::target::*;
 
+    const RDP_PORT: u16 = 6000;
+    const MARIONETTE_PORT: u16 = 2828;
+
     #[test]
     fn view_refreshes_become_page_actions() {
         let closed: ViewRefresh =
@@ -169,8 +172,8 @@ mod tests {
     #[test]
     fn the_connection_serializes_for_the_sidecar() {
         let target = FirefoxTarget::new(FirefoxTargetConfig {
-            rdp_port: Port::new(6000).unwrap(),
-            marionette_port: Port::new(2828).unwrap(),
+            rdp_port: Port::new(RDP_PORT).unwrap(),
+            marionette_port: Port::new(MARIONETTE_PORT).unwrap(),
             extension_id: "id@x".to_owned(),
             uuid: "u-u".to_owned(),
         });

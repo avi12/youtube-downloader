@@ -124,9 +124,11 @@ fn body(raw: &[u8]) -> Result<String> {
 mod tests {
     use crate::driver::cdp::http::*;
 
+    const CDP_PORT: u16 = 9229;
+
     #[test]
     fn the_host_header_carries_the_port() {
-        let port = Port::new(9229).ok();
+        let port = Port::new(CDP_PORT).ok();
         let request = port.map(|port| request_for("/json/list", port));
         assert!(request.is_some_and(|text| text.contains("Host: 127.0.0.1:9229\r\n")));
     }

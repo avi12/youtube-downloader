@@ -119,6 +119,8 @@ mod tests {
 
     use crate::dev::payload::*;
 
+    const POLL_INTERVAL_MS: u32 = 250;
+
     fn assert_parses(source: &str) {
         let allocator = Allocator::default();
         let parsed = Parser::new(&allocator, source, SourceType::mjs()).parse();
@@ -128,7 +130,7 @@ mod tests {
     fn config() -> PayloadConfig {
         PayloadConfig {
             manifest_path: "hmr/manifest.json".to_owned(),
-            poll_interval_ms: 250,
+            poll_interval_ms: POLL_INTERVAL_MS,
         }
     }
 

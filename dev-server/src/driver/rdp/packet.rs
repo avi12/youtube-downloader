@@ -61,10 +61,12 @@ mod tests {
 
     use crate::driver::rdp::packet::*;
 
+    const HEADER_SPLIT_INDEX: usize = 5;
+
     #[test]
     fn a_packet_split_across_reads_is_reassembled() -> Result<()> {
         let bytes = encode_packet(&json!({"from":"root","applicationType":"browser"}))?;
-        let (head, tail) = bytes.split_at(5);
+        let (head, tail) = bytes.split_at(HEADER_SPLIT_INDEX);
         let mut decoder = PacketDecoder::default();
         assert_eq!(decoder.push(head)?, Vec::<Value>::new());
         assert_eq!(

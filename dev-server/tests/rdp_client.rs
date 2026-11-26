@@ -11,6 +11,12 @@ use ytdl_dev_hot::driver::BrowserDriver;
 use ytdl_dev_hot::types::Port;
 use ytdl_dev_hot::{Error, Result};
 
+const CONNECT_MS: u64 = 500;
+const REPLY_MS: u64 = 500;
+const AWAKE_BACKGROUND_MS: u64 = 150;
+const WOKEN_BACKGROUND_MS: u64 = 300;
+const PROBE_MS: u64 = 300;
+
 const EXTENSION_ID: &str = "ytdl@example";
 const EXTENSION_UUID: &str = "1111-2222";
 
@@ -23,11 +29,11 @@ struct Fake {
 
 fn short_timings() -> RdpTimings {
     RdpTimings {
-        connect: Duration::from_millis(500),
-        reply: Duration::from_millis(500),
-        awake_background: Duration::from_millis(150),
-        woken_background: Duration::from_millis(300),
-        probe: Duration::from_millis(300),
+        connect: Duration::from_millis(CONNECT_MS),
+        reply: Duration::from_millis(REPLY_MS),
+        awake_background: Duration::from_millis(AWAKE_BACKGROUND_MS),
+        woken_background: Duration::from_millis(WOKEN_BACKGROUND_MS),
+        probe: Duration::from_millis(PROBE_MS),
     }
 }
 
