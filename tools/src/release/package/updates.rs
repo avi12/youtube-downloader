@@ -1,5 +1,6 @@
 //! The Firefox `updates.json` that self-hosted auto-updates read.
 
+use crate::firefox::GECKO_ID;
 use std::collections::BTreeMap;
 
 use serde::Serialize;
@@ -7,7 +8,6 @@ use serde::Serialize;
 use crate::release::ReleaseError;
 
 const FIREFOX_STRICT_MIN_VERSION: &str = "147.0";
-pub(super) const FIREFOX_GECKO_ID: &str = "youtube-downloader@avi12.com";
 
 #[derive(Debug, Serialize)]
 struct UpdatesDocument {
@@ -48,7 +48,7 @@ pub(super) fn render_updates_json(version: &str, xpi_url: &str) -> Result<String
     };
     let document = UpdatesDocument {
         addons: BTreeMap::from([(
-            FIREFOX_GECKO_ID,
+            GECKO_ID,
             AddonUpdates {
                 updates: vec![update],
             },
@@ -65,7 +65,7 @@ mod tests {
     fn updates_json_matches_the_amo_shape() {
         let rendered = render_updates_json("1.2.3", "https://example.test/a.xpi").unwrap();
         let value: serde_json::Value = serde_json::from_str(&rendered).unwrap();
-        let update = &value["addons"][FIREFOX_GECKO_ID]["updates"][0];
+        let update = &value["addons"][GECKO_ID]["updates"][0];
         assert_eq!(update["version"], "1.2.3");
         assert_eq!(update["update_link"], "https://example.test/a.xpi");
         assert_eq!(

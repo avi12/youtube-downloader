@@ -17,7 +17,6 @@ use self::params::{
 use crate::firefox::framed::Framed;
 use crate::firefox::{FirefoxError, Result};
 
-pub(super) const DEFAULT_PORT: u16 = 2828;
 const COMMAND_TIMEOUT: Duration = Duration::from_secs(60);
 const REQUEST_MESSAGE: u8 = 0;
 const YOUTUBE_PAGES: [&str; 2] = ["youtube.com/watch", "youtube.com/feed"];

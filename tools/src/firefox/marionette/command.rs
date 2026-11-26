@@ -4,11 +4,10 @@ use std::time::Duration;
 
 use clap::{Args, Subcommand};
 
-use super::client::{wrap_promise_expression, Marionette, DEFAULT_PORT};
-use crate::firefox::{pause, Result};
+use super::client::{wrap_promise_expression, Marionette};
+use crate::firefox::{pause, Result, GECKO_ID, MARIONETTE_DEFAULT_PORT};
 use crate::port::parse_port_number;
 
-const EXTENSION_ID: &str = "youtube-downloader@avi12.com";
 const DEFAULT_EXTENSION_DIR: &str = r"C:\repositories\avi\youtube-downloader\.output\firefox-mv3";
 const NEW_TAB_SETTLE: Duration = Duration::from_millis(500);
 
@@ -16,7 +15,7 @@ const NEW_TAB_SETTLE: Duration = Duration::from_millis(500);
 #[derive(Debug, Args)]
 pub(crate) struct MarionetteArgs {
     /// The Marionette port
-    #[arg(long, default_value_t = DEFAULT_PORT, value_parser = parse_port_number)]
+    #[arg(long, default_value_t = MARIONETTE_DEFAULT_PORT, value_parser = parse_port_number)]
     port: u16,
     #[command(subcommand)]
     action: Action,
@@ -101,7 +100,7 @@ async fn windows(client: &mut Marionette) -> Result<()> {
 }
 
 async fn reload_extension(client: &mut Marionette, path: &str) -> Result<()> {
-    if let Err(error) = client.uninstall_addon(EXTENSION_ID).await {
+    if let Err(error) = client.uninstall_addon(GECKO_ID).await {
         println!("Uninstall (ignored): {error}");
     }
     let result = client.install_temporary_addon(path).await?;

@@ -8,6 +8,11 @@ use std::time::Duration;
 
 use clap::Subcommand;
 
+/// The extension's gecko id, which is also its add-on id in Firefox's protocols.
+pub(crate) const GECKO_ID: &str = "youtube-downloader@avi12.com";
+/// The port Firefox's Marionette server listens on unless told otherwise.
+pub(crate) const MARIONETTE_DEFAULT_PORT: u16 = 2828;
+
 /// Everything that can go wrong in a Firefox command.
 #[derive(Debug, thiserror::Error)]
 pub(crate) enum FirefoxError {

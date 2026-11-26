@@ -16,10 +16,11 @@ use ytdl_dev_hot::driver::rdp::message::{
 
 use super::replies::{AddonList, Tab, TabList, TargetReply, WatcherEvent};
 use crate::firefox::framed::Framed;
-use crate::firefox::{FirefoxError, Result};
+use crate::firefox::{FirefoxError, Result, GECKO_ID, MARIONETTE_DEFAULT_PORT};
 
-pub(crate) const ADDON_ID: &str = "youtube-downloader@avi12.com";
-const SKIP_PORTS: [u16; 2] = [2828, 9230];
+/// A port Firefox listens on that is not its debugger server.
+const NON_DEBUGGER_PORT: u16 = 9230;
+const SKIP_PORTS: [u16; 2] = [MARIONETTE_DEFAULT_PORT, NON_DEBUGGER_PORT];
 const MIN_RDP_PORT: u16 = 1024;
 pub(crate) const DEFAULT_REPLY_TIMEOUT: Duration = Duration::from_secs(5);
 const LISTENING_PORTS_SCRIPT: &str = "$ff=Get-Process firefox -EA 0; Get-NetTCPConnection -State Listen -EA 0 | ?{ $_.OwningProcess -in $ff.Id } | Select-Object -ExpandProperty LocalPort";
@@ -261,7 +262,7 @@ impl Rdp {
         let addons = self.addons().await?;
         let addon_actor = addons
             .into_iter()
-            .find(|addon| addon.id.as_deref() == Some(ADDON_ID))
+            .find(|addon| addon.id.as_deref() == Some(GECKO_ID))
             .and_then(|addon| addon.actor)
             .ok_or_else(|| FirefoxError::Failed("addon not found".into()))?;
         let reply = self

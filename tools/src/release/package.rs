@@ -1,6 +1,7 @@
 //! `release package`: builds Chrome and Firefox, packs the CRX, signs the XPI through AMO and
 //! writes `docs/updates.json`. The builds themselves stay in Node (`pnpm build`, `web-ext`).
 
+use crate::firefox::GECKO_ID;
 use std::path::{Path, PathBuf};
 
 use clap::Args as ClapArgs;
@@ -10,7 +11,7 @@ mod environment;
 mod updates;
 
 use self::environment::Environment;
-use self::updates::{render_updates_json, FIREFOX_GECKO_ID};
+use self::updates::render_updates_json;
 use super::process::Invocation;
 use super::ReleaseError;
 
@@ -254,7 +255,7 @@ pub(super) async fn run(args: Args) -> Result<(), ReleaseError> {
     let updates = render_updates_json(&layout.version, &layout.firefox_xpi_url())?;
     tokio::fs::write(docs.join("updates.json"), updates).await?;
     println!(
-        "Wrote docs/updates.json (Firefox addon={FIREFOX_GECKO_ID}, version={})",
+        "Wrote docs/updates.json (Firefox addon={GECKO_ID}, version={})",
         layout.version
     );
     println!("Release artifacts:");
