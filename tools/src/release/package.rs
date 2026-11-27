@@ -236,7 +236,8 @@ pub(super) async fn run(args: Args) -> Result<(), ReleaseError> {
     let environment = Environment::load(&args.root).await;
     let manifest = tokio::fs::read_to_string(args.root.join("package.json")).await?;
     let PackageJson { version } = serde_json::from_str(&manifest)?;
-    let layout = Layout::new(args.root, version);
+    // Chrome's packer rejects a relative extension directory
+    let layout = Layout::new(std::path::absolute(&args.root)?, version);
     let key_path = PathBuf::from(environment.require(KEY_PATH_VARIABLE)?);
     let issuer = environment.require(AMO_ISSUER_VARIABLE)?;
     let secret = environment.require(AMO_SECRET_VARIABLE)?;
